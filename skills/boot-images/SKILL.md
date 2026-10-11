@@ -12,7 +12,8 @@ Take the facts from, in order of trust:
 2. pmaports `deviceinfo`: `deviceinfo_flash_offset_base/kernel/ramdisk/second/tags`,
    `deviceinfo_flash_pagesize`, `deviceinfo_header_version`, `deviceinfo_append_dtb`,
    `deviceinfo_bootimg_qcdt`, `deviceinfo_bootimg_mtk_mkimage`, `deviceinfo_bootimg_dtb_second`.
-3. The second-stage bootloader's own expectations (lk2nd: any v0 image, appended DTB OK, or extlinux).
+3. The second-stage bootloader's own expectations (lk2nd: a v0 image with an appended DTB, or
+   extlinux; a QCDT only when its ids are the standard Qualcomm ones, see section 3).
 
 Record the result under `device.bootimg` in `port.yaml`.
 
@@ -56,7 +57,11 @@ label buildroot
 ```
 
 This is how buildroot-android boots the Fairphone 2 (`board/fairphone2/overlay/extlinux/extlinux.conf`).
-For RAM tests through lk2nd: `fastboot -s <serial> boot boot.img` works like on a stock fastboot.
+For RAM tests through lk2nd: `fastboot -s <serial> boot boot.img` works like on a stock fastboot,
+with an appended DTB (mainline style, as pmaports does for lk2nd devices). lk2nd picks a QCDT entry
+by the SMEM ids (chip, platform, subtype); vendor-encoded ids only match the vendor's aboot. A stock
+Samsung `boot.img` (QCDT ids like `<0xdd08ff01 4 0x20000>`) therefore fails with "dtb not found"
+(lk2nd log: "Unable to find suitable device tree for device (221/0x00020000/…)").
 
 ## 4. Test, RAM first
 
