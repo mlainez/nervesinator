@@ -1,0 +1,24 @@
+#!/bin/sh
+# /init of the first-light initramfs: prove the kernel and userspace run, on screen, in RAM only.
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+[ -c /dev/tty0 ] && exec >/dev/tty0 2>&1 </dev/tty0
+echo
+echo "=============================================="
+echo "  FIRST LIGHT: userspace is alive"
+echo "=============================================="
+uname -a
+grep -E 'MemTotal|MemFree' /proc/meminfo
+echo "--- block devices ---"
+cat /proc/partitions
+echo "--- cmdline ---"
+cat /proc/cmdline
+echo "--- framebuffer ---"
+cat /sys/class/graphics/fb0/virtual_size 2>/dev/null
+# A ticking uptime shows on a photo that the system is not frozen.
+while true; do
+  echo "alive: $(cut -d' ' -f1 /proc/uptime)s"
+  sleep 10
+done

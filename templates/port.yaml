@@ -1,0 +1,55 @@
+# Machine-readable state of one port. The orchestrator keeps it current; agents propose changes.
+# Facts carry their source in the dossier; this file holds the values.
+id: "@ID@"
+created: "@DATE@"
+
+device:
+  serial: "@SERIAL@"
+  manufacturer: ""
+  model: ""                # ro.product.model
+  codename: ""             # ro.product.device
+  product: ""              # what the bootloader reports (fastboot getvar product / PIT), checked before writes
+  soc: ""                  # e.g. qcom msm8226
+  arch: ""                 # armv7 | aarch64
+  ram_mb: 0
+  storage: ""              # emmc | ufs, size
+  android_version: ""
+  flash_mode: ""           # fastboot | samsung-download | mtk-fastboot | mtk-brom
+  modes: {}                # name -> how to enter (keys / command), tested in M3
+  bootimg: {}              # header_version, pagesize, base, offsets, dtb (appended|qcdt|v2), cmdline, footer
+  pmos_name: ""            # <vendor>-<codename> as named in pmaports, if any
+
+learner:
+  level: ""                # beginner | intermediate | expert
+  depth: normal            # short | normal | deep
+  language: en
+  linux_experience: ""
+  elixir_experience: ""
+  accepted_costs: []       # e.g. [data-wipe, knox-warranty-fuse]
+
+milestone: M0
+gates_passed: []
+
+safety:
+  unbrick_kit_ready: false
+  bootloader_unlocked: unknown      # unknown | no | yes | not-needed
+  backups_verified: false
+  writable_partitions: []           # class D partitions the user approved, after backup
+  experiment_partition: ""          # used for test images when there is no RAM boot
+  ram_boot: unknown                 # fastboot-boot | lk2nd | none | unknown
+  irreversible_done: []             # e.g. knox-fuse-tripped (recorded honestly)
+
+path:
+  scenario: ""                      # A (mainline device) | B (mainline SoC) | C (downstream)
+  kernel_repo: ""
+  kernel_ref: ""                    # tag or commit SHA
+  kernel_config: ""                 # where the base config comes from
+  dtb: ""
+  bootloader: ""                    # stock | lk2nd | u-boot
+  boot_method: ""                   # how we load our kernel (command)
+  rootfs_placement: ""
+  nerves_layout: ""
+
+repos:
+  buildroot_android: ""             # fork URL used in ports/<id>/buildroot-android
+  nerves_system: ""

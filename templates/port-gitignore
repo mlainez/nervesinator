@@ -1,0 +1,11 @@
+# Large, private or reproducible: never committed
+backups/
+output/
+*.img
+*.img.zst
+*.fw
+journal/photos/*.raw
+buildroot-android/
+nerves_system_*/_build/
+nerves_system_*/deps/
+.nerves/

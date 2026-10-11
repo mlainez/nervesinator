@@ -1,0 +1,134 @@
+# Partitions that must never be written, erased or formatted by the porting kit.
+# One name per line, case-insensitive, compared after stripping an A/B slot suffix (_a/_b).
+# Read by .claude/hooks/device_guard.py and tools/safe-flash.sh.
+# Writing any of these can hard-brick the device or destroy data that exists nowhere else
+# (IMEI, calibration, DRM keys). A legitimate exception needs an ADR and the user typing the
+# command themselves.
+
+# Qualcomm boot chain and firmware
+sbl1
+sbl2
+sbl3
+sbl1bak
+xbl
+xbl_config
+abl
+aboot
+abootbak
+rpm
+rpmbak
+tz
+tzbak
+hyp
+hypbak
+pmic
+pmicbak
+devcfg
+devcfgbak
+keymaster
+keymasterbak
+cmnlib
+cmnlib64
+cmnlibbak
+cmnlib64bak
+sdi
+dbi
+dpo
+qsee
+qhee
+aop
+tzsq
+imagefv
+uefisecapp
+multiimgoem
+ddr
+cdt
+apdp
+msadp
+limits
+splash
+storsec
+ssd
+fsc
+fsg
+sec
+# Qualcomm radio calibration and per-device data
+modemst1
+modemst2
+efs
+persist
+persistbak
+oem
+mdtp
+devinfo
+frp
+config
+# Modem / DSP firmware (restorable only from a matching backup; keep out of reach)
+modem
+non-hlos
+mdm1m9kefs1
+mdm1m9kefs2
+mdm1m9kefs3
+mdm1m9kefsc
+dsp
+adsp
+bluetooth
+# Samsung
+param
+efs
+cpefs
+sec_efs
+cache_efs
+steady
+pit
+bota0
+bota1
+bootloader
+up_param
+keydata
+keyrefuge
+carrier
+# MediaTek
+preloader
+preloader_a
+preloader_b
+lk
+lk2
+pgpt
+sgpt
+proinfo
+nvram
+nvdata
+nvcfg
+protect1
+protect2
+protect_f
+protect_s
+seccfg
+sec1
+sec_ro
+expdb
+otp
+md1img
+md1dsp
+md1arm7
+md3img
+spmfw
+scp1
+scp2
+sspm_1
+sspm_2
+tee1
+tee2
+gz1
+gz2
+# Sony
+ta
+# Generic / other vendors
+bl
+bootloader2
+mbr
+gpt
+partition
+vbmeta_system
+misc_bak

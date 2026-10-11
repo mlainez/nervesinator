@@ -1,0 +1,47 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/hooks/device_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/hooks/start_trigger.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(adb devices*)",
+      "Bash(adb -s * get-state)",
+      "Bash(adb -s * shell getprop*)",
+      "Bash(fastboot devices*)",
+      "Bash(fastboot -s * getvar *)",
+      "Bash(backlog *)",
+      "Bash(tools/check-host.sh*)",
+      "Bash(tools/detect-devices.sh*)",
+      "Bash(tools/recon/collect.sh *)",
+      "Bash(python3 -I hooks/device_guard.py --check *)",
+      "Bash(tests/test_device_guard.sh)"
+    ],
+    "deny": [
+      "Bash(fastboot * flashing lock*)",
+      "Bash(fastboot * oem lock*)",
+      "Bash(fastboot * flashall*)"
+    ]
+  }
+}

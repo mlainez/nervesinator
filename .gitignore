@@ -1,0 +1,5 @@
+# Per-device work lives in its own git repos and caches
+ports/
+cache/
+.claude/settings.local.json
+__pycache__/

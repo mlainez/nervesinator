@@ -1,0 +1,140 @@
+{
+  "_comment": "Milestones and tasks created by tools/new-port.sh. Titles match skills/port-playbook/milestones.md. Each task depends on the previous task of its milestone; the first task of a milestone depends on the previous milestone's gate.",
+  "milestones": [
+    {
+      "id": "M0", "title": "M0 Setup", "description": "Host tools, workspace, learner profile, safety briefing. Risk: green.",
+      "tasks": [
+        {"title": "Check host tools", "labels": "risk-green,agent-orchestrator", "ac": ["tools/check-host.sh reports no blocking item for M0-M3"]},
+        {"title": "Create learner profile", "labels": "risk-green,agent-orchestrator,lesson", "ac": ["learner section of port.yaml filled (level, depth, language, experience)"]},
+        {"title": "Safety briefing", "labels": "risk-green,agent-orchestrator,lesson", "ac": ["Risk colors, gates, soft/hard brick explained", "User confirmed personal data is backed up or not needed", "Accepted irreversible costs recorded in learner.accepted_costs"]},
+        {"title": "GATE M0: ready to investigate the device", "labels": "risk-green,gate", "ac": ["All M0 tasks Done", "Kickoff lesson given (three pillars, journey map)", "User said go"]}
+      ]
+    },
+    {
+      "id": "M1", "title": "M1 Reconnaissance", "description": "Read-only investigation of the device over adb. Risk: green.",
+      "tasks": [
+        {"title": "Collect Android properties and hardware info", "labels": "risk-green,agent-recon,needs-device", "ac": ["dossier/raw/ populated by tools/recon/collect.sh", "Unreadable items listed with the reason"]},
+        {"title": "Identify the SoC, board and peripheral chips", "labels": "risk-green,agent-recon", "ac": ["SoC, arch, RAM, storage identified with sources", "Display, touch, WiFi/BT, modem, PMIC/charger listed (or unknown with a plan)"]},
+        {"title": "Map the partition table", "labels": "risk-green,agent-recon", "ac": ["dossier/partitions.md lists every partition with size and class A/B/C/D", "Unknown partitions are class A"]},
+        {"title": "Identify the boot image format", "labels": "risk-green,agent-recon", "ac": ["Header version, page size, offsets, DTB placement known or sourced from pmaports", "device.bootimg in port.yaml filled"]},
+        {"title": "Check bootloader and secure-boot state", "labels": "risk-green,agent-recon", "ac": ["Lock state, verified boot state, OEM unlock support, warranty/KNOX bits recorded", "Flash mode identified"]},
+        {"title": "Root-enhanced recon (optional)", "labels": "risk-green,agent-recon,needs-root", "ac": ["Done with root reads, or marked N/A (device not rooted)"]},
+        {"title": "Write device dossier summary", "labels": "risk-green,agent-recon", "ac": ["dossier/device.md written with a source for every fact", "device section of port.yaml filled"]},
+        {"title": "GATE M1: we know the device", "labels": "risk-green,gate", "ac": ["SoC, arch, partition map, flash mode, boot format known with sources", "M1 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M2", "title": "M2 Prior art", "description": "Find existing Linux work, choose the kernel and boot path. Risk: green.",
+      "tasks": [
+        {"title": "Clone or update pmaports", "labels": "risk-green,agent-scout", "ac": ["cache/pmaports up to date"]},
+        {"title": "Search pmaports for the device and SoC", "labels": "risk-green,agent-scout", "ac": ["Device, kernel and firmware packages found or confirmed absent", "Sibling devices on the same SoC listed"]},
+        {"title": "Search the postmarketOS wiki", "labels": "risk-green,agent-scout", "ac": ["Device and SoC pages summarised with links"]},
+        {"title": "Search mainline Linux and SoC forks", "labels": "risk-green,agent-scout", "ac": ["DTS for the board/SoC located or confirmed absent", "SoC community forks listed with activity dates"]},
+        {"title": "Check second-stage bootloader support", "labels": "risk-green,agent-scout", "ac": ["lk2nd/U-Boot support for SoC and device checked"]},
+        {"title": "Search downstream sources (LineageOS, vendor)", "labels": "risk-green,agent-scout", "ac": ["Device/kernel trees and blob repos listed"]},
+        {"title": "Feasibility verdict and kernel path decision", "labels": "risk-green,agent-scout", "ac": ["dossier/prior-art.md written", "Decision recorded (kernel repo + ref + config + DTB, boot path)", "path section of port.yaml filled"]},
+        {"title": "GATE M2: go or no-go", "labels": "risk-green,gate", "ac": ["Scenario and confidence explained to the user", "M2 lesson given", "User said go (or chose to stop)"]}
+      ]
+    },
+    {
+      "id": "M3", "title": "M3 Unbrick kit", "description": "Prove we can always return to stock before changing anything. Risk: green/yellow.",
+      "tasks": [
+        {"title": "Locate and download stock firmware", "labels": "risk-green,agent-bootloader", "ac": ["Stock firmware matching the build fingerprint (or newer) in backups/stock with sha256", "Source URL recorded"]},
+        {"title": "Install and test the flash tool", "labels": "risk-yellow,agent-bootloader,needs-device", "ac": ["Tool installed", "A read-only command (getvar / print-pit / printgpt) works against the device"]},
+        {"title": "Test every boot mode entry", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Bootloader/download, recovery and force-power-off combos tested by the user", "device.modes in port.yaml filled"]},
+        {"title": "Document the emergency recovery procedure", "labels": "risk-green,agent-bootloader", "ac": ["dossier/unbrick.md covers soft brick, bootloop, stock reflash, EDL/BROM"]},
+        {"title": "GATE M3: unbrick kit ready", "labels": "risk-green,gate", "ac": ["safety.unbrick_kit_ready true", "M3 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M4", "title": "M4 Unlock", "description": "Unlock the bootloader with informed consent. Risk: orange (wipes data).",
+      "tasks": [
+        {"title": "Research the unlock procedure for this device", "labels": "risk-green,agent-bootloader", "ac": ["dossier/unlock.md with procedure, irreversible effects, two sources"]},
+        {"title": "Pre-unlock checklist", "labels": "risk-green,agent-flash", "ac": ["Plan file written by flash-guardian with all checks green", "User accepted the costs explicitly"]},
+        {"title": "Unlock the bootloader", "labels": "risk-orange,agent-flash,needs-device", "ac": ["Executed from the approved plan, log saved", "Or marked not-needed with evidence"]},
+        {"title": "Verify unlocked state and Android still boots", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Unlocked state shown by the bootloader", "Android boots, adb re-authorised", "safety.bootloader_unlocked updated"]},
+        {"title": "GATE M4: bootloader open", "labels": "risk-green,gate", "ac": ["M4 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M5", "title": "M5 Backup", "description": "Dump and verify every partition we could ever need. Risk: green/yellow.",
+      "tasks": [
+        {"title": "Choose the backup method", "labels": "risk-green,agent-flash", "ac": ["Method chosen (root dd / temporary recovery / vendor read tool) and recorded"]},
+        {"title": "Dump all partitions except userdata and system", "labels": "risk-yellow,agent-flash,needs-device", "ac": ["backups/<name>.img for every partition except userdata/system/super", "Class B partitions dumped first"]},
+        {"title": "Verify backups and store a copy off the machine", "labels": "risk-green,agent-flash", "ac": ["sha256sum -c backups/SHA256SUMS passes", "User confirmed an off-machine copy"]},
+        {"title": "Set the writable partitions allowlist", "labels": "risk-green,agent-orchestrator", "ac": ["safety.writable_partitions set with the user's agreement", "Every listed partition has a verified backup"]},
+        {"title": "GATE M5: safety net in place", "labels": "risk-green,gate", "ac": ["safety.backups_verified true", "M5 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M6", "title": "M6 Boot path", "description": "A repeatable way to load our own kernel without touching the bootloader chain. Risk: yellow/orange.",
+      "tasks": [
+        {"title": "Decide whether a second-stage bootloader is needed", "labels": "risk-green,agent-bootloader", "ac": ["dossier/boot-path.md written", "Decision recorded", "experiment_partition set if there is no RAM boot"]},
+        {"title": "Round-trip test with the stock boot image", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Stock boot image booted from RAM, or flashed back to its own partition, and Android boots"]},
+        {"title": "Install or temporarily boot the second stage", "labels": "risk-orange,agent-flash,needs-device", "ac": ["lk2nd/U-Boot running from RAM or from the experiment partition via an approved plan", "Or marked N/A per the decision"]},
+        {"title": "Verify the second stage offers fastboot and boots extlinux", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["fastboot devices shows it", "Android still reachable through the escape route", "path.boot_method recorded"]},
+        {"title": "GATE M6: we can load our own kernel", "labels": "risk-green,gate", "ac": ["M6 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M7", "title": "M7 First light", "description": "Our kernel prints its boot log on the phone screen, from RAM. Risk: yellow.",
+      "tasks": [
+        {"title": "Prepare the kernel source and config", "labels": "risk-green,agent-buildroot", "ac": ["Kernel repo/ref pinned", "Config with the first-light options"]},
+        {"title": "Build the first-light defconfig", "labels": "risk-green,agent-buildroot", "ac": ["<id>_firstlight_defconfig builds", "boot.img produced, fits the partition"]},
+        {"title": "Boot it temporarily", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Booted with path.boot_method", "Photo of the screen saved in journal/photos"]},
+        {"title": "Analyse the result", "labels": "risk-green,agent-debug", "ac": ["Kernel log visible on screen, or a diagnosis with the next experiment"]},
+        {"title": "GATE M7: first light", "labels": "risk-green,gate", "ac": ["Photo shows the kernel log and the init banner", "M7 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M8", "title": "M8 Rescue shell", "description": "A RAM-only Buildroot system with USB networking and ssh. Risk: yellow.",
+      "tasks": [
+        {"title": "Build the rescue initramfs defconfig", "labels": "risk-green,agent-buildroot", "ac": ["<id>_rescue_defconfig builds with dropbear, unudhcpd and the gadget script"]},
+        {"title": "Boot rescue and connect over USB networking", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["ssh root@10.0.42.1 works"]},
+        {"title": "Linux hardware inventory", "labels": "risk-green,agent-recon", "ac": ["Linux dmesg saved", "Working/failing devices listed with the reasons"]},
+        {"title": "Map Android partitions to Linux block devices", "labels": "risk-green,agent-recon", "ac": ["dossier/partitions-linux.md maps mmcblk0pN to names and classes"]},
+        {"title": "GATE M8: shell into Linux", "labels": "risk-green,gate", "ac": ["M8 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M9", "title": "M9 Persistent Buildroot", "description": "A real Buildroot system on flash, in buildroot-android style. Risk: orange.",
+      "tasks": [
+        {"title": "Fork or clone buildroot-android and add the board", "labels": "risk-green,agent-buildroot", "ac": ["ports/<id>/buildroot-android on branch port/<id> with board/<id> and configs"]},
+        {"title": "Choose rootfs placement and boot flow", "labels": "risk-green,agent-buildroot", "ac": ["Decision recorded", "path.rootfs_placement set"]},
+        {"title": "Build the full system", "labels": "risk-green,agent-buildroot", "ac": ["<id>_defconfig builds; images fit their partitions"]},
+        {"title": "Flash plan and first persistent flash", "labels": "risk-orange,agent-flash,needs-device", "ac": ["Approved plan executed", "Only allowlisted partitions written", "Read-back hash matches"]},
+        {"title": "Boot, ssh in, check reflash cycle", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Survives a reboot", "reflash.sh works by serial", "Rescue RAM boot still works"]},
+        {"title": "GATE M9: Buildroot lives on the phone", "labels": "risk-green,gate", "ac": ["M9 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M10", "title": "M10 Hardware", "description": "Peripherals the user cares about, one child task each. Risk: orange.",
+      "tasks": [
+        {"title": "Prioritise peripherals with the user", "labels": "risk-green,agent-orchestrator", "ac": ["Child tasks created per peripheral with ACs"]},
+        {"title": "Write the init-scripts inventory for Nerves", "labels": "risk-green,agent-buildroot", "ac": ["dossier/init-inventory.md lists every script, daemon, blob and config"]},
+        {"title": "GATE M10: hardware enabled", "labels": "risk-green,gate", "ac": ["Chosen peripherals work or are documented as deferred", "M10 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M11", "title": "M11 Nerves", "description": "Nerves with A/B updates inside the Android partitions. Risk: orange.",
+      "tasks": [
+        {"title": "Design the A/B layout inside Android partitions", "labels": "risk-green,agent-nerves", "ac": ["Decision with exact offsets/sizes", "path.nerves_layout set"]},
+        {"title": "Bootstrap the Nerves system", "labels": "risk-green,agent-nerves", "ac": ["nerves_system_<id> builds"]},
+        {"title": "Boot flow for slot switching", "labels": "risk-green,agent-nerves", "ac": ["Slot selection and revert designed and tested on file images"]},
+        {"title": "Port init scripts to Elixir", "labels": "risk-green,agent-nerves", "ac": ["Each init-inventory row has an Elixir replacement or a task"]},
+        {"title": "Build firmware and first flash", "labels": "risk-orange,agent-flash,needs-device", "ac": ["Approved plan executed", "IEx reachable over ssh"]},
+        {"title": "Test mix upload, revert and factory reset", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["mix upload boots the other slot", "Revert returns to the previous slot"]},
+        {"title": "GATE M11: Nerves runs", "labels": "risk-green,gate", "ac": ["M11 lesson given", "User said go"]}
+      ]
+    },
+    {
+      "id": "M12", "title": "M12 Share", "description": "Document, contribute, celebrate. Risk: green.",
+      "tasks": [
+        {"title": "Write device documentation", "labels": "risk-green,agent-buildroot", "ac": ["docs/<id>.md in buildroot-android: what works, how to flash, partitions"]},
+        {"title": "Prepare a PR to buildroot-android", "labels": "risk-green,agent-orchestrator", "ac": ["Branch ready; the user decided whether to open the PR"]},
+        {"title": "Compile the learner journal", "labels": "risk-green,agent-tutor,lesson", "ac": ["journal/README.md tells the story with links to all lessons"]},
+        {"title": "GATE M12: done", "labels": "risk-green,gate", "ac": ["Celebration 🎉", "Next device ideas noted"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Regression tests for hooks/device_guard.py. Usage: tests/test_device_guard.sh
+set -u
+G="$(cd "$(dirname "$0")/.." && pwd)/hooks/device_guard.py"
+fail=0
+t() { # expected-label command
+  out=$(python3 -I "$G" --check "$2" 2>&1); got=${out%%:*}
+  if [ "$got" != "$1" ]; then echo "FAIL want=$1 got=$out :: $2"; fail=1; else echo "ok   $1  $2"; fi
+}
+t ALLOW "adb devices -l"
+t ALLOW "adb -s X shell getprop ro.product.device"
+t ALLOW "fastboot -s X getvar all"
+t ALLOW "fastboot -s X boot out/boot.img"
+t ALLOW "fastboot -s X oem log"
+t ALLOW "heimdall print-pit"
+t ALLOW "grep 'fastboot flash aboot' notes.md"
+t ALLOW "dd if=/dev/zero of=out.img bs=1M count=8"
+t ALLOW "adb -s X shell su -c 'dd if=/dev/block/by-name/boot of=/sdcard/boot.img'"
+t ALLOW "edl printgpt"
+t ALLOW "tools/safe-flash.sh --port samsung-x flash boot boot.img"
+t ASK   "fastboot -s X flash boot boot.img"
+t ASK   "fastboot -s X flash recovery_a lk2nd.img"
+t ASK   "fastboot -s X flashing unlock"
+t ASK   "fastboot -s X oem unlock"
+t ASK   "fastboot -s X -w"
+t ASK   "heimdall flash --RECOVERY lk2nd.img --no-reboot"
+t ASK   "ssh root@10.0.42.1 'dd if=/tmp/rootfs.ext4 of=/dev/mmcblk0p7 bs=1M'"
+t ASK   "adb -s X shell su -c 'dd if=/sdcard/b.img of=/dev/block/by-name/boot'"
+t ASK   "tools/safe-flash.sh --port samsung-x --execute flash boot boot.img"
+t ASK   "mtk da seccfg unlock"
+t DENY  "fastboot flash boot boot.img"
+t DENY  "fastboot -s X flash aboot lk2nd.img"
+t DENY  "fastboot -s X flash sbl1_a x.img"
+t DENY  "fastboot -s X erase persist"
+t DENY  "fastboot -s X flashing lock"
+t DENY  "fastboot -s X oem lock"
+t DENY  "fastboot -s X flashall"
+t DENY  "heimdall flash --repartition --pit s.pit --BOOT b.img"
+t DENY  "heimdall flash --ABOOT x.img"
+t DENY  "heimdall flash --EFS x.img"
+t DENY  "odin4 -b BL.tar.md5"
+t DENY  "edl w aboot x.img"
+t DENY  "mtk w preloader x.bin"
+t DENY  "sudo dd if=img of=/dev/sda bs=4M"
+t DENY  "adb -s X shell su -c 'dd if=x of=/dev/block/mmcblk0boot0'"
+t DENY  "adb -s X shell su -c 'dd if=x of=/dev/block/mmcblk0'"
+t DENY  "adb -s X shell su -c 'dd if=x of=/dev/block/platform/msm_sdcc.1/by-name/modemst1'"
+t DENY  "ssh root@10.0.42.1 sgdisk -Z /dev/mmcblk0"
+t DENY  "ssh root@10.0.42.1 'echo 0 > /sys/block/mmcblk0boot0/force_ro'"
+t DENY  "bash -c 'fastboot -s X flash tz tz.img'"
+t DENY  "echo ZmFzdGJvb3Q= | base64 -d | sh # fastboot"
+exit $fail
