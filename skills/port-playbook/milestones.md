@@ -113,7 +113,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 ---
 
-## M6: Boot path proven (risk-yellow; risk-orange if a second stage is written to boot/recovery)
+## M6: Boot path proven (risk-yellow; risk-orange if a second stage is written to boot)
 
 **Goal:** a repeatable way to load our own kernel, without touching the bootloader chain.
 
@@ -121,8 +121,8 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 |---|---|---|
 | Decide whether a second-stage bootloader is needed | bootloader-strategist | Decision tree in [decisions.md](decisions.md); ADR |
 | Round-trip test with the stock boot image | orchestrator | `fastboot boot stock-boot.img` (when it exists) proves temporary boot works; on devices without `fastboot boot`, flash the stock image back to the same partition to prove the flash path |
-| Install or temporarily boot the second stage | flash-guardian | lk2nd: `fastboot boot lk2nd.img` first when supported, then flash to `boot` (or `recovery` to keep Android) only after the user agrees; U-Boot chainloaded the same way |
-| Verify the second stage offers fastboot and boots extlinux | orchestrator | `fastboot devices` shows lk2nd; `fastboot oem log` readable; Android still bootable through the escape route |
+| Install or temporarily boot the second stage | flash-guardian | lk2nd: `fastboot boot lk2nd.img` first when supported, then flash to `boot` only after the user agrees; U-Boot chainloaded the same way |
+| Verify the second stage offers fastboot and boots extlinux | orchestrator | `fastboot devices` shows lk2nd; `fastboot oem log` readable; `aboot` flash mode (fastboot / Samsung download mode) still reachable to reflash `boot` |
 | GATE M6 | orchestrator | |
 
 **Exit:** the documented command to load a kernel from RAM works, and we can get back to stock.

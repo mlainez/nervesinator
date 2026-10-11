@@ -63,8 +63,8 @@ For RAM tests through lk2nd: `fastboot -s <serial> boot boot.img` works like on 
 Order of preference (record the method in `port.yaml` `path.boot_method`):
 
 1. `fastboot -s <serial> boot boot.img` (stock or lk2nd): nothing written; a reboot returns to the previous state.
-2. On no-RAM-boot devices: flash to the **experiment partition** (usually `recovery`) via
-   `tools/safe-flash.sh`, boot it with the recovery key combo, while `boot` keeps Android.
+2. On no-RAM-boot devices: install lk2nd to `boot` and use its `fastboot boot`; without lk2nd,
+   flash to the **experiment partition** (`boot`) via `tools/safe-flash.sh`; `aboot`, never written, always brings back its flash mode to reflash `boot`.
 3. Only once proven, write to the final partition (M9).
 
 Before each test, tell the user what they should see, how long to wait, and how to get out

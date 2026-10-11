@@ -72,7 +72,7 @@
         {"title": "Decide whether a second-stage bootloader is needed", "labels": "risk-green,agent-bootloader", "ac": ["dossier/boot-path.md written", "Decision recorded", "experiment_partition set if there is no RAM boot"]},
         {"title": "Round-trip test with the stock boot image", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Stock boot image booted from RAM, or flashed back to its own partition, and Android boots"]},
         {"title": "Install or temporarily boot the second stage", "labels": "risk-orange,agent-flash,needs-device", "ac": ["lk2nd/U-Boot running from RAM or from the experiment partition via an approved plan", "Or marked N/A per the decision"]},
-        {"title": "Verify the second stage offers fastboot and boots extlinux", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["fastboot devices shows it", "Android still reachable through the escape route", "path.boot_method recorded"]},
+        {"title": "Verify the second stage offers fastboot and boots extlinux", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["fastboot devices shows it", "aboot flash mode (fastboot / Samsung download mode) still reachable to reflash boot", "path.boot_method recorded"]},
         {"title": "GATE M6: we can load our own kernel", "labels": "risk-green,gate", "ac": ["M6 lesson given", "User said go"]}
       ]
     },

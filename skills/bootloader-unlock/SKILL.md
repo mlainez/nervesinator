@@ -39,8 +39,8 @@ LineageOS install guide for the device). Write the device's procedure in
 - Tools: Heimdall (`heimdall print-pit` reads the partition table: read-only and safe; the
   `--repartition` flag is forbidden), or Odin on Windows. Partition names are uppercase in PIT
   (`BOOT`, `RECOVERY`).
-- No RAM boot: test images go to `RECOVERY` first (Android stays bootable from `BOOT`), until lk2nd
-  is installed (on supported Qualcomm Samsungs lk2nd then provides fastboot and `fastboot boot`).
+- No RAM boot: lk2nd is flashed to `BOOT` (on supported Qualcomm Samsungs it then provides fastboot
+  and `fastboot boot`). Download mode lives in the untouched `aboot`, so it can always reflash `BOOT`.
 
 **MediaTek**
 - Many expose fastboot from LK: `fastboot flashing unlock` (or `oem unlock`) after the OEM toggle.
@@ -61,7 +61,8 @@ LineageOS install guide for the device). Write the device's procedure in
 lack `fastboot boot`, or only boot Android images. A second stage running *as the kernel* of a boot
 image gives us a modern, open bootloader without touching the bootloader chain.
 
-- **lk2nd** (Qualcomm): flashed to `boot` (or `recovery`), it gives fastboot (with `fastboot boot`)
+- **lk2nd** (Qualcomm): the preferred path on every Qualcomm SoC it supports, even when stock
+  fastboot works. Flashed to `boot` as postmarketOS does, it gives fastboot (with `fastboot boot`)
   and boots `extlinux/extlinux.conf` from a partition, or a second Android boot image placed 512 KiB
   into `boot`. Its `fastboot oem log` shows its own log: great for debugging. Try
   `fastboot boot lk2nd.img` before flashing it, when the stock bootloader allows that.

@@ -13,6 +13,17 @@ equivalent for most models) with signed loaders that are often not public.
 
 **Our promise to the user: we only ever risk soft bricks, and every soft brick has a tested way back.**
 
+Two invariants, whatever happens:
+
+1. **The flash mode is never broken.** `aboot` (download mode on Samsung, fastboot elsewhere) and
+   the rest of class A are never written, so the phone can always be put back into it.
+2. **A return to stock is never made impossible.** Class B is never written and is backed up, the
+   kit never relocks or repartitions, never flashes an older stock bootloader (anti-rollback), and
+   the stock firmware for this exact model is downloaded in M3 before the first write.
+
+Android does not need to stay bootable during the work: `boot`, `recovery`, `system` and `userdata`
+are ours once backed up.
+
 ## The four partition classes
 
 Classify every partition in M1 (in `dossier/partitions.md`) and refer to the classes, not to memory.
@@ -54,7 +65,8 @@ partition, **add it to that file** (a commit in the kit) before going further.
   with Heimdall/Odin. **Never** `--repartition`/`--pit`. Flashing anything unofficial trips the
   **KNOX warranty e-fuse** (irreversible, Samsung Pay/Knox features gone). Newer models: the "OEM
   unlock" toggle + FRP + "RMM/KG state: prenormal" can block flashing ("Only official released
-  binaries are allowed"). Flash experiments to `RECOVERY` first, so `BOOT` keeps Android bootable.
+  binaries are allowed"). lk2nd and test images go to `BOOT`. Keeping Android is not a goal: download
+  mode lives in the untouched `aboot` and can always reflash `BOOT`.
 - **Sony:** unlocking erases the **TA partition DRM keys** forever: back up TA (needs an exploit,
   before unlock) if the user cares about camera quality/DRM. Ask them.
 - **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;

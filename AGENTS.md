@@ -37,8 +37,13 @@ or "invoke" a skill.
 2. **Stop at every gate.** Each milestone ends with a `GATE` task. When you reach it: summarize what
    was done, teach the milestone lesson, list what the next milestone will risk, then **stop and
    wait** for an explicit "go". Never cross two milestones in a row on your own.
-3. **Temporary before permanent.** Prove each boot path from RAM first (`fastboot boot`, lk2nd, or a
-   spare partition) before anything is written for good. Always keep one boot path you know works.
+3. **Temporary before permanent.** Prove each boot path from RAM first (`fastboot boot`, lk2nd) before
+   anything is written for good. The safety net is `aboot` (or the vendor's equivalent: `abl`,
+   `lk`): it is never written, so it always brings the phone into its flash mode (fastboot on most
+   Qualcomm phones, download mode on Samsung) to reflash `boot`. Two invariants hold whatever
+   happens: the flash mode is never broken, and a return to stock is never made impossible (no
+   class A/B write, no relock, no repartition, no stock bootloader downgrade, stock firmware on
+   hand). A bootable Android during the work is not required.
 4. **No write without a verified backup.** A partition is written only when a backup of it with a
    checked sha256 sits in `ports/<id>/backups/` and the partition is listed in
    `safety.writable_partitions` in `ports/<id>/port.yaml`.

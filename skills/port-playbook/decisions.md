@@ -29,22 +29,27 @@ Questions to answer for any choice: Does the DTB exist in the tree (name)? What 
 Can the stock bootloader be unlocked (or does it already accept unsigned images)?
 ├─ no  → STOP: secure boot. Options: a vendor exploit (Kobo-style pivot_root from the stock OS),
 │        or choose another device. Never try to bypass signatures by writing bootloader partitions.
-└─ yes → Does the stock bootloader support `fastboot boot` (temporary boot from RAM)?
-         ├─ yes → Does it load a mainline kernel + DTB fine
-         │        (an Android boot image v0-2 with an appended DTB, or a matching QCDT)?
-         │        ├─ yes → No second stage needed: pack boot.img (TB3-710F: stock LK, appended DTB).
-         │        └─ no / painful (QCDT picking, a cmdline it overrides, a size limit)
-         │               → lk2nd (Qualcomm) or chainloaded U-Boot: `fastboot boot` it first.
-         └─ no (Samsung download mode, some MTK) →
-                  Is lk2nd/U-Boot available for this SoC? (Samsung msm8916/msm8226/msm8974: often yes)
-                  ├─ yes → Flash it to a spare boot-type partition (recovery first, so Android
-                  │        still boots from boot), then lk2nd gives us fastboot + `fastboot boot`.
-                  └─ no  → Use `recovery` as the experiment partition for every test boot image;
-                           `boot` stays stock as the escape route.
+└─ yes → Qualcomm SoC supported by lk2nd? (msm8916/8939/8952/8953/8974/8226/8610/…)
+         ├─ yes → lk2nd, flashed to `boot` as postmarketOS does (after backing up `boot`).
+         │        `fastboot boot lk2nd.img` first when the stock
+         │        bootloader allows it. lk2nd then gives us fastboot + `fastboot boot`.
+         └─ no  → Does the stock bootloader support `fastboot boot` (temporary boot from RAM)?
+                  ├─ yes → Does it load a mainline kernel + DTB fine
+                  │        (an Android boot image v0-2 with an appended DTB, or a matching QCDT)?
+                  │        ├─ yes → No second stage needed: pack boot.img (TB3-710F: stock LK, appended DTB).
+                  │        └─ no / painful (DTB picking, a cmdline it overrides, a size limit)
+                  │               → chainloaded U-Boot: `fastboot boot` it first, then `boot`.
+                  └─ no (Samsung Exynos download mode, some MTK) →
+                           Chainloaded U-Boot available for this SoC?
+                           ├─ yes → Flash it to `boot` (after backing up `boot`).
+                           └─ no  → Use `boot` as the experiment partition for every test boot image.
 ```
 
-**Experiment partition rule:** if there is no RAM boot, use **one** partition (normally
-`recovery`) for experiments and keep the other one stock. Record it as `safety.experiment_partition`.
+**Escape route rule:** keeping Android bootable is not a goal; keeping the flash mode and a return
+to stock possible is (see `device-safety`). The safety net is `aboot` (with the rest of class A,
+never written): it always brings the phone into its flash mode (fastboot on most Qualcomm phones,
+download mode on Samsung), which reflashes `boot` with lk2nd, `backups/boot.img` or full stock.
+Without a RAM boot, `boot` is the experiment partition; record it as `safety.experiment_partition`.
 
 ## 3. Where does the rootfs live?
 

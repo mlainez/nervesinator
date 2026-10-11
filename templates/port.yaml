@@ -35,7 +35,7 @@ safety:
   bootloader_unlocked: unknown      # unknown | no | yes | not-needed
   backups_verified: false
   writable_partitions: []           # class D partitions the user approved, after backup
-  experiment_partition: ""          # used for test images when there is no RAM boot
+  experiment_partition: ""          # boot: lk2nd or test images when there is no RAM boot
   ram_boot: unknown                 # fastboot-boot | lk2nd | none | unknown
   irreversible_done: []             # e.g. knox-fuse-tripped (recorded honestly)
 
