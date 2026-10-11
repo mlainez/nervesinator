@@ -9,6 +9,7 @@ device:
   model: ""                # ro.product.model
   codename: ""             # ro.product.device
   product: ""              # what the bootloader reports (fastboot getvar product / PIT), checked before writes
+  lk2nd_compatible: ""     # fastboot getvar lk2nd:compatible, e.g. samsung,s3ve3g; checked when lk2nd reports its SoC board as product
   soc: ""                  # e.g. qcom msm8226
   arch: ""                 # armv7 | aarch64
   ram_mb: 0

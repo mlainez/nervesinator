@@ -32,6 +32,7 @@ P="$KIT/ports/$PORT"; Y="$P/port.yaml"
 [ -f "$Y" ] || { echo "no such port: $P"; exit 2; }
 cfg() { python3 -I "$KIT/tools/lib/portcfg.py" "$Y" "$1"; }
 SER=$(cfg device.serial); PRODUCT=$(cfg device.product); MODE=$(cfg device.flash_mode)
+LK2ND_COMPAT=$(cfg device.lk2nd_compatible)
 LOG="$P/journal/plans/safe-flash.log"; mkdir -p "$(dirname "$LOG")"
 
 fails=0
@@ -44,14 +45,23 @@ forbidden() {
 }
 
 check_fastboot_device() {
-  local devs others prod
+  local devs others prod compat
   devs=$(timeout 10 fastboot devices 2>/dev/null | awk '{print $1}')
   echo "$devs" | grep -qx "$SER" && ok "device $SER is in fastboot mode" || { bad "device $SER not in fastboot mode"; return; }
   others=$(echo "$devs" | grep -vx "$SER" | grep . || true)
   [ -z "$others" ] && ok "no other fastboot device attached" || bad "other fastboot devices attached: $others (unplug them)"
   if [ -n "$PRODUCT" ]; then
     prod=$(fastboot -s "$SER" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
-    [ "$prod" = "$PRODUCT" ] && ok "product '$prod' matches port.yaml" || bad "product '$prod' != port.yaml '$PRODUCT'"
+    if [ "$prod" = "$PRODUCT" ]; then
+      ok "product '$prod' matches port.yaml"
+    elif [ -n "$LK2ND_COMPAT" ]; then
+      # lk2nd reports the SoC board name as product, shared by many devices: match its DT compatible
+      compat=$(fastboot -s "$SER" getvar lk2nd:compatible 2>&1 | awk -F': ' '/^lk2nd:compatible:/{print $2}')
+      [ "$compat" = "$LK2ND_COMPAT" ] && ok "lk2nd:compatible '$compat' matches port.yaml (lk2nd product '$prod')" \
+        || bad "product '$prod' != port.yaml '$PRODUCT' and lk2nd:compatible '$compat' != '$LK2ND_COMPAT'"
+    else
+      bad "product '$prod' != port.yaml '$PRODUCT' (under lk2nd, set device.lk2nd_compatible)"
+    fi
   else
     bad "device.product is empty in port.yaml (set it from 'fastboot getvar product' first)"
   fi
