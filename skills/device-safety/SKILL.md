@@ -66,7 +66,10 @@ partition, **add it to that file** (a commit in the kit) before going further.
   **KNOX warranty e-fuse** (irreversible, Samsung Pay/Knox features gone). Newer models: the "OEM
   unlock" toggle + FRP + "RMM/KG state: prenormal" can block flashing ("Only official released
   binaries are allowed"). lk2nd and test images go to `BOOT`. Keeping Android is not a goal: download
-  mode lives in the untouched `aboot` and can always reflash `BOOT`.
+  mode lives in the untouched `aboot` and can always reflash `BOOT`. Flash per partition only: an AP
+  tar can carry class B images (`persist.img.ext4` on some Qualcomm models), so a whole-AP Odin
+  flash overwrites calibration. The PIT's `PGPT`, `PIT`, `MD5` and `SGPT` entries are not partitions
+  to flash.
 - **Sony:** unlocking erases the **TA partition DRM keys** forever: back up TA (needs an exploit,
   before unlock) if the user cares about camera quality/DRM. Ask them.
 - **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;
@@ -107,7 +110,8 @@ partition, **add it to that file** (a commit in the kit) before going further.
 1. **Bootloop / boots to a black screen:** force reboot (key combo, often Power 10–20 s) → bootloader
    or download mode → restore `backups/boot.img` (or recovery).
 2. **Android broken, bootloader fine:** reflash stock firmware with the official tool (fastboot
-   factory image / Odin package without BL / SP Flash Tool "Download only" with the stock scatter).
+   factory image / the stock images of class D partitions only, per partition with Heimdall/Odin (an AP
+   tar may hold class B images) / SP Flash Tool "Download only" with the stock scatter).
 3. **Nothing on screen, PC sees a vendor USB ID** (`05c6:9008` Qualcomm EDL, `0e8d:0003` MediaTek
    BROM): stop and research. EDL needs a signed firehose programmer for the device; BROM can use
    mtkclient. **The user runs these, never the agents** (the guard denies writes).

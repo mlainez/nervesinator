@@ -81,6 +81,7 @@ sec_efs
 cache_efs
 steady
 pit
+md5
 bota0
 bota1
 bootloader
