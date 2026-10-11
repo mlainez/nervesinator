@@ -7,6 +7,7 @@
         {"title": "Check host tools", "labels": "risk-green,agent-orchestrator", "ac": ["tools/check-host.sh reports no blocking item for M0-M3"]},
         {"title": "Create learner profile", "labels": "risk-green,agent-orchestrator,lesson", "ac": ["learner section of port.yaml filled (level, depth, language, experience)"]},
         {"title": "Safety briefing", "labels": "risk-green,agent-orchestrator,lesson", "ac": ["Risk colors, gates, soft/hard brick explained", "User confirmed personal data is backed up or not needed", "Accepted irreversible costs recorded in learner.accepted_costs"]},
+        {"title": "Root preference", "labels": "risk-green,agent-orchestrator,lesson", "ac": ["What root is, what it unlocks for the port (full recon, raw partition backups) and what it costs on this vendor explained", "Answer recorded in safety.root (already / wanted / declined)"]},
         {"title": "GATE M0: ready to investigate the device", "labels": "risk-green,gate", "ac": ["All M0 tasks Done", "Kickoff lesson given (three pillars, journey map)", "User said go"]}
       ]
     },
@@ -18,7 +19,7 @@
         {"title": "Map the partition table", "labels": "risk-green,agent-recon", "ac": ["dossier/partitions.md lists every partition with size and class A/B/C/D", "Unknown partitions are class A"]},
         {"title": "Identify the boot image format", "labels": "risk-green,agent-recon", "ac": ["Header version, page size, offsets, DTB placement known or sourced from pmaports", "device.bootimg in port.yaml filled"]},
         {"title": "Check bootloader and secure-boot state", "labels": "risk-green,agent-recon", "ac": ["Lock state, verified boot state, OEM unlock support, warranty/KNOX bits recorded", "Flash mode identified"]},
-        {"title": "Root-enhanced recon (optional)", "labels": "risk-green,agent-recon,needs-root", "ac": ["Done with root reads, or marked N/A (device not rooted)"]},
+        {"title": "Root-enhanced recon", "labels": "risk-green,agent-recon,needs-root", "ac": ["Done with root reads if the phone is already rooted, otherwise deferred to the root shell task (M5) or marked N/A (root declined or not possible)"]},
         {"title": "Write device dossier summary", "labels": "risk-green,agent-recon", "ac": ["dossier/device.md written with a source for every fact", "device section of port.yaml filled"]},
         {"title": "GATE M1: we know the device", "labels": "risk-green,gate", "ac": ["SoC, arch, partition map, flash mode, boot format known with sources", "M1 lesson given", "User said go"]}
       ]
@@ -43,6 +44,7 @@
         {"title": "Install and test the flash tool", "labels": "risk-yellow,agent-bootloader,needs-device", "ac": ["Tool installed", "A read-only command (getvar / print-pit / printgpt) works against the device"]},
         {"title": "Test every boot mode entry", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Bootloader/download, recovery and force-power-off combos tested by the user", "device.modes in port.yaml filled"]},
         {"title": "Document the emergency recovery procedure", "labels": "risk-green,agent-bootloader", "ac": ["dossier/unbrick.md covers soft brick, bootloop, stock reflash, EDL/BROM"]},
+        {"title": "Research the root method", "labels": "risk-green,agent-bootloader", "ac": ["Skipped if safety.root is declined or already", "Method for this device (custom recovery, patched boot image, vendor tool) with sources, what it writes and how to undo it", "safety.root_method set, or safety.root set to not-possible"]},
         {"title": "GATE M3: unbrick kit ready", "labels": "risk-green,gate", "ac": ["safety.unbrick_kit_ready true", "M3 lesson given", "User said go"]}
       ]
     },
@@ -59,6 +61,7 @@
     {
       "id": "M5", "title": "M5 Backup", "description": "Dump and verify every partition we could ever need. Risk: green/yellow.",
       "tasks": [
+        {"title": "Get a root shell", "labels": "risk-orange,agent-flash,needs-device,needs-root", "ac": ["Skipped if safety.root is declined, already or not-possible", "Flash plan approved by the user and run through flash-guardian", "Root adb shell confirmed (id shows uid=0)", "Root-enhanced recon re-run and the M1 gaps filled"]},
         {"title": "Choose the backup method", "labels": "risk-green,agent-flash", "ac": ["Method chosen (root dd / temporary recovery / vendor read tool) and recorded"]},
         {"title": "Dump all partitions except userdata and system", "labels": "risk-yellow,agent-flash,needs-device", "ac": ["backups/<name>.img for every partition except userdata/system/super", "Class B partitions dumped first"]},
         {"title": "Verify backups and store a copy off the machine", "labels": "risk-green,agent-flash", "ac": ["sha256sum -c backups/SHA256SUMS passes", "User confirmed an off-machine copy"]},

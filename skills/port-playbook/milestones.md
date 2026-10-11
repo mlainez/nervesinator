@@ -15,6 +15,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Check host tools | orchestrator | `tools/check-host.sh`; install what is missing (adb, fastboot, git, python3, build deps for Buildroot, and depending on the device heimdall/mtkclient/edl, mkbootimg, Elixir+Nerves for M11) |
 | Create learner profile | orchestrator | Ask: experience with Linux, the command line, electronics, Elixir; depth (short/normal/deep); language. Store in `port.yaml` `learner:` |
 | Safety briefing | orchestrator | Explain the risk levels, the gates, what "brick" means (soft vs hard) and why backups come first. Ask the user to back up their personal data (photos…) now: unlocking will wipe it |
+| Root preference | orchestrator | Explain root (a uid 0 shell on Android), what it gives the port (full recon: dmesg, `/proc/cmdline`, the device tree, the raw boot image; raw `dd` backups of every partition, which some vendor modes cannot read back) and its costs (usually needs an unlocked bootloader or a custom recovery flash, may trip KNOX or void warranty, may be impossible on locked devices). Ask; record `safety.root` |
 | GATE M0 | orchestrator | |
 
 **Exit:** `check-host.sh` passes for the tools needed up to M3; profile saved; briefing done.
@@ -33,7 +34,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Map the partition table | device-recon | Names, sizes, block devices; mark each partition as bootloader-chain / radio-calibration / boot / system / userdata (see the `device-safety` skill) |
 | Identify the boot image format | device-recon | Boot image header version, page size, base/offsets, cmdline, appended DTB or QCDT `dt.img`, AVB/dm-verity, A/B slots, Samsung SEAndroid footer. From the stock boot image if it can be read, otherwise from `getprop` and the prior art |
 | Check bootloader and secure-boot state | device-recon | `ro.boot.*`, `ro.oem_unlock_supported`, `sys.oem_unlock_allowed`, verified boot state, KNOX warranty bit, flash mode (fastboot / Samsung download / MTK BROM) |
-| Root-enhanced recon (optional) | device-recon | Only if the phone is already rooted: full dmesg, `/sys/firmware/devicetree`, the vendor firmware list, `/proc/config.gz`, `dd` reads of the boot image |
+| Root-enhanced recon | device-recon | Now if the phone is already rooted, otherwise after the M5 root shell (or N/A if root is declined or not possible): full dmesg, `/sys/firmware/devicetree`, the vendor firmware list, `/proc/config.gz`, `dd` reads of the boot image |
 | Write device dossier summary | device-recon | `$P/dossier/device.md` + fill the `device:` section of `port.yaml` |
 | GATE M1 | orchestrator | |
 
@@ -72,6 +73,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Install and test the flash tool | bootloader-strategist + orchestrator | fastboot / heimdall (`heimdall print-pit` reads only) / mtkclient (`printgpt` reads only); check it sees the device |
 | Test every boot mode entry | orchestrator | adb reboot bootloader/recovery/download; the key combos; how to force power off. Record them in `port.yaml` `device.modes` |
 | Document the emergency recovery procedure | bootloader-strategist | `$P/dossier/unbrick.md`: soft-brick → reflash stock boot; bootloop → recovery/download mode; hard-brick → EDL/BROM/Odin options and what they need |
+| Research the root method | bootloader-strategist | Only if `safety.root: wanted`. Standard, documented methods only (custom recovery, patched boot image, vendor tool), never exploits or closed one-click rooting apps. Record what it writes, whether it trips KNOX/warranty, and how to restore stock. Set `safety.root_method`, or `safety.root: not-possible` |
 | GATE M3 | orchestrator | Set `safety.unbrick_kit_ready: true` |
 
 **Exit:** stock firmware on disk with a checksum; the flash tool talks to the device; every mode tested; unbrick.md written.
@@ -102,6 +104,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 | Task | Agent | Notes |
 |---|---|---|
+| Get a root shell | flash-guardian (user approves) | Only if `safety.root: wanted` and a method was found. A device write: flash plan, the user's yes, `safety.root: done`. Then re-run root-enhanced recon to fill the M1 gaps |
 | Choose the backup method | flash-guardian | Root `dd` over adb, or a temporarily booted recovery (TWRP via `fastboot boot`), or `heimdall`/`edl`/`mtkclient` reads; never a method that writes |
 | Dump all partitions except userdata and system | flash-guardian | `tools/backup-partitions.sh`: per partition `.img` + `SHA256SUMS`; radio calibration (`efs`, `modemst*`, `fsg`, `persist`, `nvram`, `nvdata`, `TA`) first |
 | Verify backups and store a copy off the machine | flash-guardian + user | Re-read and compare hashes; the user copies `backups/` to a second place |
