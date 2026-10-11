@@ -17,6 +17,7 @@ device:
   flash_mode: ""           # fastboot | samsung-download | mtk-fastboot | mtk-brom
   modes: {}                # name -> how to enter (keys / command), tested in M3
   bootimg: {}              # header_version, pagesize, base, offsets, dtb (appended|qcdt|v2), cmdline, footer
+  partition_sizes: {}      # name -> bytes, when dossier/raw cannot give it (safe-flash size check)
   pmos_name: ""            # <vendor>-<codename> as named in pmaports, if any
 
 learner:

@@ -69,7 +69,8 @@ partition, **add it to that file** (a commit in the kit) before going further.
   mode lives in the untouched `aboot` and can always reflash `BOOT`. Flash per partition only: an AP
   tar can carry class B images (`persist.img.ext4` on some Qualcomm models), so a whole-AP Odin
   flash overwrites calibration. The PIT's `PGPT`, `PIT`, `MD5` and `SGPT` entries are not partitions
-  to flash.
+  to flash. After a heimdall command with `--no-reboot`, the next one in the same download mode
+  session needs `--resume` (`tools/safe-flash.sh --resume`), or reboot into download mode first.
 - **Sony:** unlocking erases the **TA partition DRM keys** forever: back up TA (needs an exploit,
   before unlock) if the user cares about camera quality/DRM. Ask them.
 - **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;

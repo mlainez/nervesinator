@@ -4,23 +4,30 @@
 #
 # Usage:
 #   tools/safe-flash.sh --port <id> [--execute] boot  <image>              # fastboot boot (RAM only)
-#   tools/safe-flash.sh --port <id> [--execute] flash <partition> <image>  # fastboot or heimdall
+#   tools/safe-flash.sh --port <id> [--execute] [--resume] flash <partition> <image>  # fastboot or heimdall
 #   tools/safe-flash.sh --port <id> [--execute] unlock [flashing|oem]      # bootloader unlock (wipes data)
 #
 # Checks: device present by serial and alone in its mode, product matches port.yaml, partition not
 # forbidden, partition allowlisted, verified backup present, image fits, boot image magic.
+# The partition size comes from port.yaml device.partition_sizes (bytes), else from the M1 recon
+# (dossier/raw/by-name.txt or partnames-sysfs.txt + partitions.txt), else from the backup, which is
+# right only when the backup is a full dump, not a stock image.
+#
+# heimdall flashes run with --no-reboot. The next heimdall command in the same download mode session
+# needs --resume; without it, reboot into download mode first.
 set -uo pipefail
 KIT=$(cd "$(dirname "$0")/.." && pwd)
-EXEC=0; PORT=""
+EXEC=0; PORT=""; RESUME=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --port) PORT=$2; shift 2 ;;
     --execute) EXEC=1; shift ;;
+    --resume) RESUME=1; shift ;;
     *) break ;;
   esac
 done
 OP=${1:-}; shift || true
-[ -n "$PORT" ] && [ -n "$OP" ] || { sed -n '2,12p' "$0"; exit 2; }
+[ -n "$PORT" ] && [ -n "$OP" ] || { sed -n '2,17p' "$0"; exit 2; }
 P="$KIT/ports/$PORT"; Y="$P/port.yaml"
 [ -f "$Y" ] || { echo "no such port: $P"; exit 2; }
 cfg() { python3 -I "$KIT/tools/lib/portcfg.py" "$Y" "$1"; }
@@ -59,15 +66,37 @@ check_heimdall_device() {
   echo "  ⚠️  heimdall cannot address a device by serial: make sure the right phone is the only one in download mode"
 }
 
+partition_size() { # partition -> "<bytes> <source>", or nothing when unknown
+  local n R dev blocks size
+  n=$(lower "$1"); R="$P/dossier/raw"
+  size=$(cfg device.partition_sizes 2>/dev/null | awk -F= -v n="$n" 'tolower($1)==n{print $2; exit}')
+  [ -n "$size" ] && { echo "$size port.yaml device.partition_sizes"; return; }
+  [ -f "$R/by-name.txt" ] && dev=$(awk -v n="$n" '{for (i=1; i<NF; i++) if (tolower($i)==n && $(i+1)=="->") {d=$(i+2); sub(/.*\//,"",d); print d; exit}}' "$R/by-name.txt")
+  [ -z "${dev:-}" ] && [ -f "$R/partnames-sysfs.txt" ] && dev=$(awk -v n="$n" 'tolower($2)==n{print $1; exit}' "$R/partnames-sysfs.txt")
+  if [ -n "${dev:-}" ] && [ -f "$R/partitions.txt" ]; then
+    blocks=$(awk -v d="$dev" '$4==d{print $3; exit}' "$R/partitions.txt")
+    [ -n "$blocks" ] && echo "$((blocks * 1024)) dossier/raw/partitions.txt ($dev)"
+  fi
+}
+
 check_image() { # image partition
-  local img=$1 part=${2:-} bsize isize
+  local img=$1 part=${2:-} bsize isize psize src
   [ -f "$img" ] && ok "image exists: $img ($(stat -c %s "$img") bytes)" || { bad "image not found: $img"; return; }
   if [ -z "$part" ] || [[ "$(lower "$part")" =~ ^(boot|recovery|boot_a|boot_b|recovery_a|recovery_b)$ ]]; then
     [ "$(head -c 8 "$img")" = "ANDROID!" ] && ok "Android boot image magic present" || bad "no ANDROID! magic: not a boot image"
   fi
-  if [ -n "$part" ] && [ -f "$P/backups/$part.img" ]; then
-    bsize=$(stat -c %s "$P/backups/$part.img"); isize=$(stat -c %s "$img")
-    [ "$isize" -le "$bsize" ] && ok "image fits the partition ($isize <= $bsize)" || bad "image ($isize) larger than partition backup ($bsize)"
+  [ -n "$part" ] || return
+  isize=$(stat -c %s "$img")
+  read -r psize src <<< "$(partition_size "$part")"
+  if [ -n "$psize" ]; then
+    [ "$isize" -le "$psize" ] && ok "image fits the partition ($isize <= $psize bytes, from $src)" \
+      || bad "image ($isize) larger than the partition ($psize bytes, from $src)"
+  elif [ -f "$P/backups/$part.img" ]; then
+    bsize=$(stat -c %s "$P/backups/$part.img")
+    [ "$isize" -le "$bsize" ] && ok "image fits backups/$part.img ($isize <= $bsize; partition size unknown, valid only if the backup is a full dump)" \
+      || bad "image ($isize) larger than backups/$part.img ($bsize) and the partition size is unknown: set device.partition_sizes.$part (bytes) in port.yaml"
+  else
+    bad "partition size unknown: set device.partition_sizes.$part (bytes) in port.yaml"
   fi
 }
 
@@ -102,7 +131,9 @@ case "$OP" in
     if [ "$MODE" = "samsung-download" ]; then
       check_heimdall_device
       CMD=(heimdall flash "--$(echo "$PART" | tr 'a-z' 'A-Z')" "$IMG" --no-reboot)
+      [ $RESUME = 1 ] && CMD+=(--resume)
     else
+      [ $RESUME = 1 ] && bad "--resume only applies to heimdall (samsung-download mode)"
       check_fastboot_device
       CMD=(fastboot -s "$SER" flash "$PART" "$IMG")
     fi ;;
