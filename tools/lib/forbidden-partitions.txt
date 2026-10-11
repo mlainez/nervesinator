@@ -88,6 +88,11 @@ up_param
 keydata
 keyrefuge
 carrier
+apnhlos
+persdata
+# Samsung partitions of unknown purpose (an unknown partition is class A)
+pad
+backup
 # MediaTek
 preloader
 preloader_a
