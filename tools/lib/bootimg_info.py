@@ -44,6 +44,25 @@ def appended_dtbs(kernel):
     return found
 
 
+def qcdt_entries(table):
+    """QCDT dt.img table (versions 1-3) -> {"version", "entries": [{platform_id, variant_id, subtype_id, soc_rev}]}."""
+    version, count = struct.unpack_from("<II", table, 4)
+    # u32 fields per entry: v1 platform, variant, soc_rev, offset, size; v2 adds subtype after
+    # variant; v3 adds four pmic ids after soc_rev
+    width = {1: 5, 2: 6, 3: 10}.get(version)
+    if width is None:
+        return {"version": version, "entries": []}
+    entries = []
+    for i in range(count):
+        f = struct.unpack_from("<%dI" % width, table, 12 + i * width * 4)
+        if version == 1:
+            e = {"platform_id": f[0], "variant_id": f[1], "subtype_id": None, "soc_rev": f[2]}
+        else:
+            e = {"platform_id": f[0], "variant_id": f[1], "subtype_id": f[2], "soc_rev": f[3]}
+        entries.append(e)
+    return {"version": version, "entries": entries}
+
+
 def parse(data):
     if data[:8] != b"ANDROID!":
         raise ValueError("no ANDROID! magic: not an Android boot image (or wrapped/compressed)")
@@ -86,6 +105,7 @@ def parse(data):
         elif field9 and data[after_second:after_second + 4] == b"QCDT":
             info["header_version"] = 0
             info["qcdt"] = {"offset": after_second, "size": field9}
+            info["qcdt"].update(qcdt_entries(data[after_second:after_second + field9]))
         else:
             info["header_version"] = 0
             if field9:

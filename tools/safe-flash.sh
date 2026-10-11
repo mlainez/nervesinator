@@ -5,6 +5,7 @@
 # Usage:
 #   tools/safe-flash.sh --port <id> [--execute] boot  <image>              # fastboot boot (RAM only)
 #   tools/safe-flash.sh --port <id> [--execute] [--resume] flash <partition> <image>  # fastboot or heimdall
+#   --mode fastboot|samsung-download overrides device.flash_mode (e.g. fastboot under lk2nd)
 #   tools/safe-flash.sh --port <id> [--execute] unlock [flashing|oem]      # bootloader unlock (wipes data)
 #
 # Checks: device present by serial and alone in its mode, product matches port.yaml, partition not
@@ -15,24 +16,30 @@
 #
 # heimdall flashes run with --no-reboot. The next heimdall command in the same download mode session
 # needs --resume; without it, reboot into download mode first.
+#
+# Under lk2nd, boot and flash boot also check that lk2nd will find a device tree in the image
+# (tools/lib/lk2nd_dtb_check.py, with lk2nd's ids from its log or device.qcom_ids), and print
+# lk2nd's log when the command fails.
 set -uo pipefail
 KIT=$(cd "$(dirname "$0")/.." && pwd)
-EXEC=0; PORT=""; RESUME=0
+EXEC=0; PORT=""; RESUME=0; MODE_ARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --port) PORT=$2; shift 2 ;;
     --execute) EXEC=1; shift ;;
     --resume) RESUME=1; shift ;;
+    --mode) MODE_ARG=$2; shift 2 ;;
     *) break ;;
   esac
 done
 OP=${1:-}; shift || true
-[ -n "$PORT" ] && [ -n "$OP" ] || { sed -n '2,17p' "$0"; exit 2; }
+[ -n "$PORT" ] && [ -n "$OP" ] || { sed -n '2,22p' "$0"; exit 2; }
 P="$KIT/ports/$PORT"; Y="$P/port.yaml"
 [ -f "$Y" ] || { echo "no such port: $P"; exit 2; }
 cfg() { python3 -I "$KIT/tools/lib/portcfg.py" "$Y" "$1"; }
 SER=$(cfg device.serial); PRODUCT=$(cfg device.product); MODE=$(cfg device.flash_mode)
-LK2ND_COMPAT=$(cfg device.lk2nd_compatible)
+STOCK_MODE=$MODE; [ -n "$MODE_ARG" ] && MODE=$MODE_ARG
+LK2ND_COMPAT=$(cfg device.lk2nd_compatible); QCOM_IDS=$(cfg device.qcom_ids); LK2ND=0
 LOG="$P/journal/plans/safe-flash.log"; mkdir -p "$(dirname "$LOG")"
 
 fails=0
@@ -45,7 +52,7 @@ forbidden() {
 }
 
 check_fastboot_device() {
-  local devs others prod compat
+  local devs others prod compat ver
   devs=$(timeout 10 fastboot devices 2>/dev/null | awk '{print $1}')
   echo "$devs" | grep -qx "$SER" && ok "device $SER is in fastboot mode" || { bad "device $SER not in fastboot mode"; return; }
   others=$(echo "$devs" | grep -vx "$SER" | grep . || true)
@@ -62,6 +69,8 @@ check_fastboot_device() {
     else
       bad "product '$prod' != port.yaml '$PRODUCT' (under lk2nd, set device.lk2nd_compatible)"
     fi
+    ver=$(fastboot -s "$SER" getvar lk2nd:version 2>&1 | awk -F': ' '/^lk2nd:version:/{print $2}')
+    [ -n "$ver" ] && { LK2ND=1; echo "  ℹ️  lk2nd $ver is running"; }
   else
     bad "device.product is empty in port.yaml (set it from 'fastboot getvar product' first)"
   fi
@@ -110,6 +119,34 @@ check_image() { # image partition
   fi
 }
 
+check_fastboot_size() { # partition image: the size the running bootloader reports (under lk2nd,
+  # boot is the space after lk2nd itself, smaller than Android's partition)
+  local hex isize
+  hex=$(fastboot -s "$SER" getvar "partition-size:$1" 2>&1 | sed -n "s/^partition-size:$1:[[:space:]]*\(0x[0-9a-fA-F]*\).*/\1/p")
+  [ -n "$hex" ] || return
+  isize=$(stat -c %s "$2")
+  [ "$isize" -le $((hex)) ] && ok "image fits '$1' as the bootloader reports it ($isize <= $((hex)))" \
+    || bad "image ($isize) larger than '$1' as the bootloader reports it ($((hex)))"
+}
+
+lk2nd_log() { # file: lk2nd's own log, read through fastboot (read-only)
+  fastboot -s "$SER" oem log >/dev/null 2>&1 && fastboot -s "$SER" get_staged "$1" >/dev/null 2>&1
+}
+
+check_lk2nd_dtb() { # image
+  local img=$1 out rc log="$P/journal/plans/lk2nd-oem-log.txt"
+  [ $LK2ND = 1 ] || return
+  lk2nd_log "$log" || : > "$log"
+  out=$(python3 -I "$KIT/tools/lib/lk2nd_dtb_check.py" "$img" --log "$log" ${QCOM_IDS:+--ids "$QCOM_IDS"} 2>&1); rc=$?
+  case $rc in
+    0) ok "lk2nd device tree: ${out#ok: }" ;;
+    1) bad "${out#refuse: }"
+       echo "     → build the image with an appended DTB (skills/boot-images), or, to get stock Android back,"
+       echo "       restore boot from the stock flash mode: tools/safe-flash.sh --port $PORT --mode ${STOCK_MODE:-<flash mode>} --execute flash boot backups/boot.img" ;;
+    *) echo "  ⚠️  lk2nd device tree: ${out#unknown: }" ;;
+  esac
+}
+
 check_partition() { # partition
   local part=$1 line
   forbidden "$part" && bad "'$part' is on the forbidden list (tools/lib/forbidden-partitions.txt)" || ok "'$part' is not forbidden"
@@ -133,7 +170,7 @@ echo "checks:"
 case "$OP" in
   boot)
     IMG=${1:?image}
-    check_fastboot_device; check_image "$IMG"
+    check_fastboot_device; check_image "$IMG"; check_lk2nd_dtb "$IMG"
     CMD=(fastboot -s "$SER" boot "$IMG") ;;
   flash)
     PART=${1:?partition}; IMG=${2:?image}
@@ -145,6 +182,8 @@ case "$OP" in
     else
       [ $RESUME = 1 ] && bad "--resume only applies to heimdall (samsung-download mode)"
       check_fastboot_device
+      check_fastboot_size "$PART" "$IMG"
+      [ "$(lower "$PART")" = boot ] && check_lk2nd_dtb "$IMG"
       CMD=(fastboot -s "$SER" flash "$PART" "$IMG")
     fi ;;
   unlock)
@@ -166,4 +205,8 @@ fi
 echo "$(date -Is) EXECUTE ${CMD[*]}" >> "$LOG"
 "${CMD[@]}" 2>&1 | tee -a "$LOG"; rc=${PIPESTATUS[0]}
 echo "$(date -Is) RESULT rc=$rc" >> "$LOG"
+if [ "$rc" != 0 ] && [ $LK2ND = 1 ]; then
+  echo "lk2nd log (tail):"
+  lk2nd_log "$P/journal/plans/lk2nd-oem-log.txt" && tail -15 "$P/journal/plans/lk2nd-oem-log.txt" | tee -a "$LOG"
+fi
 exit $rc

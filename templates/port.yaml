@@ -10,6 +10,7 @@ device:
   codename: ""             # ro.product.device
   product: ""              # what the bootloader reports (fastboot getvar product / PIT), checked before writes
   lk2nd_compatible: ""     # fastboot getvar lk2nd:compatible, e.g. samsung,s3ve3g; checked when lk2nd reports its SoC board as product
+  qcom_ids: ""             # lk2nd's SMEM ids chip/soc_rev/platform/subtype from its "Device info" log line, e.g. 221/0x00020000/8/0
   soc: ""                  # e.g. qcom msm8226
   arch: ""                 # armv7 | aarch64
   ram_mb: 0

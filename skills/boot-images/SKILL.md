@@ -62,6 +62,9 @@ with an appended DTB (mainline style, as pmaports does for lk2nd devices). lk2nd
 by the SMEM ids (chip, platform, subtype); vendor-encoded ids only match the vendor's aboot. A stock
 Samsung `boot.img` (QCDT ids like `<0xdd08ff01 4 0x20000>`) therefore fails with "dtb not found"
 (lk2nd log: "Unable to find suitable device tree for device (221/0x00020000/…)").
+`tools/safe-flash.sh` checks this in its dry run under lk2nd (`tools/lib/lk2nd_dtb_check.py`); record
+lk2nd's ids once in `device.qcom_ids` from the "Device info" line of `fastboot oem log`, since lk2nd
+prints that line only after a failed boot.
 
 ## 4. Test, RAM first
 
