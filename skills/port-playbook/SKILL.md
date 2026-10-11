@@ -28,12 +28,12 @@ Every task carries one `risk-*` label. The level of a milestone is that of its r
 
 | # | Milestone | Risk | What we get at the end |
 |---|---|---|---|
-| M0 | Setup & safety briefing | green | Host tools ready, workspace + backlog created, learner profile, safety rules explained |
+| M0 | Setup & safety briefing | green | Host tools ready, workspace + backlog created, learner profile, safety rules explained, root preference recorded |
 | M1 | Reconnaissance | green | `dossier/` with SoC, board, partitions, boot image format, kernel config, display/touch/WiFi/modem chips |
 | M2 | Prior art & feasibility | green | `dossier/prior-art.md`, kernel path chosen (ADR), go/no-go verdict |
 | M3 | Unbrick kit | green / yellow | Stock firmware located and downloaded, the flash tool works, every boot mode key combo tested, recovery procedure written |
 | M4 | Bootloader unlock | orange | Bootloader reports unlocked; the user knows what they gave up (warranty, data, KNOX fuse…) |
-| M5 | Full backup | green / yellow | Every partition except `userdata`/`system` dumped with sha256, verified, stored safely |
+| M5 | Full backup | green / yellow (orange if the root shell needs a flash) | Every partition except `userdata`/`system` dumped with sha256, verified, stored safely |
 | M6 | Boot path proven | yellow (orange if a 2nd stage has to be written) | We can load our own kernel without touching the bootloader chain: `fastboot boot`, lk2nd, or an experiment partition |
 | M7 | First light | yellow | Our mainline kernel prints its boot log on the phone screen |
 | M8 | Rescue shell | yellow | A Buildroot initramfs running from RAM with USB networking (unudhcpd) and a shell over ssh/telnet; hardware inventory under Linux |
@@ -57,7 +57,8 @@ Every task carries one `risk-*` label. The level of a milestone is that of its r
 5. **Hard prerequisites** (the gate refuses otherwise):
    - M4 needs M3 done (an unbrick kit before the first change that cannot be undone).
    - Any `risk-orange` task needs M5 done and the target partition listed in
-     `safety.writable_partitions`.
+     `safety.writable_partitions`. The one exception is the M5 root shell: its target's backup is
+     the matching image from the stock firmware, and the user allowlists it for that task.
    - M9 needs M8 (never make a persistent system you cannot get a shell into).
    - M11 needs M9 and a working list of everything the Buildroot init scripts do.
 6. **Every boot experiment keeps an escape route.** Before a boot test, write down how we get back:

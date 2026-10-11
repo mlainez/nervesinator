@@ -34,7 +34,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Map the partition table | device-recon | Names, sizes, block devices; mark each partition as bootloader-chain / radio-calibration / boot / system / userdata (see the `device-safety` skill) |
 | Identify the boot image format | device-recon | Boot image header version, page size, base/offsets, cmdline, appended DTB or QCDT `dt.img`, AVB/dm-verity, A/B slots, Samsung SEAndroid footer. From the stock boot image if it can be read, otherwise from `getprop` and the prior art |
 | Check bootloader and secure-boot state | device-recon | `ro.boot.*`, `ro.oem_unlock_supported`, `sys.oem_unlock_allowed`, verified boot state, KNOX warranty bit, flash mode (fastboot / Samsung download / MTK BROM) |
-| Root-enhanced recon | device-recon | Now if the phone is already rooted, otherwise after the M5 root shell (or N/A if root is declined or not possible): full dmesg, `/sys/firmware/devicetree`, the vendor firmware list, `/proc/config.gz`, `dd` reads of the boot image |
+| Root-enhanced recon | device-recon | Now if `safety.root: already`. Otherwise close it as Done with a note: deferred to the M5 root shell, or N/A when root is declined or not possible. Reads: full dmesg, `/sys/firmware/devicetree`, the vendor firmware list, `/proc/config.gz`, `dd` reads of the boot image |
 | Write device dossier summary | device-recon | `$P/dossier/device.md` + fill the `device:` section of `port.yaml` |
 | GATE M1 | orchestrator | |
 
@@ -98,13 +98,13 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 ---
 
-## M5: Full backup (risk-green; risk-yellow if a temporary recovery is booted)
+## M5: Full backup (risk-green; risk-yellow if a temporary recovery is booted; risk-orange if the root shell needs a flash)
 
 **Goal:** a copy of every partition we might ever need, so any later mistake can be undone.
 
 | Task | Agent | Notes |
 |---|---|---|
-| Get a root shell | flash-guardian (user approves) | Only if `safety.root: wanted` and a method was found. A device write: flash plan, the user's yes, `safety.root: done`. Then re-run root-enhanced recon to fill the M1 gaps |
+| Get a root shell | flash-guardian (user approves) | Only if `safety.root: wanted` and a method was found. RAM first: `fastboot boot` of a recovery or patched boot image when the bootloader allows it. If a write is needed (Samsung download mode), the target is class D and its backup is the matching image from the stock firmware: copy it to `backups/<name>.img`, add it to `SHA256SUMS`, allowlist the partition with the user, and check the new image against the partition size in `dossier/partitions.md`. Flash plan, the user's yes, `safety.root: done`. Then re-run root-enhanced recon to fill the M1 gaps |
 | Choose the backup method | flash-guardian | Root `dd` over adb, or a temporarily booted recovery (TWRP via `fastboot boot`), or `heimdall`/`edl`/`mtkclient` reads; never a method that writes |
 | Dump all partitions except userdata and system | flash-guardian | `tools/backup-partitions.sh`: per partition `.img` + `SHA256SUMS`; radio calibration (`efs`, `modemst*`, `fsg`, `persist`, `nvram`, `nvdata`, `TA`) first |
 | Verify backups and store a copy off the machine | flash-guardian + user | Re-read and compare hashes; the user copies `backups/` to a second place |
@@ -122,7 +122,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 | Task | Agent | Notes |
 |---|---|---|
-| Decide whether a second-stage bootloader is needed | bootloader-strategist | Decision tree in [decisions.md](decisions.md); ADR |
+| Decide whether a second-stage bootloader is needed | bootloader-strategist | Confirm or revise the M2 boot path with what M3-M5 showed (unlock result, `fastboot boot` support); decision tree in [decisions.md](decisions.md); ADR |
 | Round-trip test with the stock boot image | orchestrator | `fastboot boot stock-boot.img` (when it exists) proves temporary boot works; on devices without `fastboot boot`, flash the stock image back to the same partition to prove the flash path |
 | Install or temporarily boot the second stage | flash-guardian | lk2nd: `fastboot boot lk2nd.img` first when supported, then flash to `boot` only after the user agrees; U-Boot chainloaded the same way |
 | Verify the second stage offers fastboot and boots extlinux | orchestrator | `fastboot devices` shows lk2nd; `fastboot oem log` readable; `aboot` flash mode (fastboot / Samsung download mode) still reachable to reflash `boot` |
@@ -139,6 +139,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 | Task | Agent | Notes |
 |---|---|---|
+| Fork or clone buildroot-android | buildroot-engineer | Ask the user for their fork of Spin42/buildroot-android; clone into `$P/buildroot-android`, branch `port/<id>`; the first-light and rescue defconfigs live there (see `buildroot-port`) |
 | Prepare the kernel source and config | buildroot-engineer | From the chosen fork; config from pmaports (`config-*`) or `qcom_defconfig`/`multi_v7_defconfig` + the device fragment; enable `FB_SIMPLE`/`DRM_SIMPLEDRM`, `FRAMEBUFFER_CONSOLE`, `PSTORE_RAM`, `USB_GADGET`/`USB_CONFIGFS_*` |
 | Build the first-light defconfig | buildroot-engineer | `<id>_firstlight_defconfig` in buildroot-android: kernel + a tiny initramfs whose init prints and sleeps; the boot image packed for this bootloader |
 | Boot it temporarily | orchestrator | `fastboot boot` / lk2nd / experiment partition; ask the user for a photo of the screen |
@@ -173,7 +174,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 | Task | Agent | Notes |
 |---|---|---|
-| Fork or clone buildroot-android and add the board | buildroot-engineer | `board/<id>/`, `configs/<id>_defconfig`, `linux.config`, overlay, genimage; follow the repo's conventions |
+| Add the board to buildroot-android | buildroot-engineer | `board/<id>/`, `configs/<id>_defconfig`, `linux.config`, overlay, genimage; follow the repo's conventions |
 | Choose rootfs placement and boot flow | buildroot-engineer + orchestrator | Decision tree in decisions.md (extlinux on userdata through lk2nd, boot.img + root on userdata, sub-image…); ADR |
 | Build the full system | buildroot-engineer | |
 | Flash plan and first persistent flash | flash-guardian (user approves) | Only allowlisted partitions; keep the rescue path (RAM boot) available |

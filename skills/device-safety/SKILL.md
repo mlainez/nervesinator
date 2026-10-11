@@ -95,6 +95,9 @@ partition, **add it to that file** (a commit in the kit) before going further.
 - Methods, safest first: root `dd if=/dev/block/by-name/X` over adb → a temporarily booted recovery
   (`fastboot boot twrp.img`, never flashed just for backups) → vendor tools in read mode
   (`edl r`, `mtk r`, `heimdall` cannot read partitions: use one of the others).
+- When getting root (M5) must write a class D partition before it can be dumped, its backup is the
+  matching image from the stock firmware downloaded in M3, copied to `backups/<name>.img` and
+  added to `SHA256SUMS`.
 - `tools/backup-partitions.sh` writes `backups/<name>.img` + `backups/SHA256SUMS` and re-reads to
   verify. The user then copies `backups/` somewhere else (a USB stick, the cloud). Backups are never
   committed to git and never deleted by the kit.
