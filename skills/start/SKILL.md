@@ -69,6 +69,11 @@ vendor IDs (EDL/BROM). Then handle the result:
    - **Safety briefing.** Load `device-safety`. Explain soft vs hard brick, the four risk colors,
      the gates, and that unlocking will wipe the phone: ask them to save their personal data now.
      Ask whether they are OK with losing warranty/KNOX status, and record the answer.
+   - **Root preference.** Explain what root is (a uid 0 shell on Android), what it would give the
+     port (full recon and raw partition backups) and what it usually costs (an unlock or a custom
+     recovery flash, KNOX/warranty). Ask: already rooted / root it if possible / no root. Record it
+     in `safety.root` (`already` / `wanted` / `declined`). If wanted, the M3 research finds a
+     standard method for this device and the M5 root shell task carries it out.
    - **Kickoff lesson.** Load `teach`. Give the "three pillars" lesson (bootloader, kernel, rootfs)
      and draw the map of the whole journey (the ladder from `port-playbook`).
    - Then go to the **work loop** (step 6), which will reach GATE M0.

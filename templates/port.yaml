@@ -38,6 +38,8 @@ safety:
   experiment_partition: ""          # boot: lk2nd or test images when there is no RAM boot
   ram_boot: unknown                 # fastboot-boot | lk2nd | none | unknown
   irreversible_done: []             # e.g. knox-fuse-tripped (recorded honestly)
+  root: unknown                     # unknown | already | wanted | declined | not-possible | done
+  root_method: ""                   # how root is obtained on this device (M3 research), e.g. custom recovery on recovery
 
 path:
   scenario: ""                      # A (mainline device) | B (mainline SoC) | C (downstream)
