@@ -69,6 +69,8 @@ Never copy them verbatim. Diff the kernel config against the official systems' d
 
 ## 3. Pick the A/B layout (ADR)
 
+A/B is introduced here, with the standard Nerves mechanism (fwup env, rootfs A/B, app partition);
+the Buildroot board stays single-root as it is.
 Android's partition table is fixed: don't repartition (risk-red). Keep the port's default of writing
 only `boot` (the second stage or `boot.img`) and `userdata`. Choose from android-ab-layouts.md:
 - **Sub-image in userdata** (FP2 style, most common).

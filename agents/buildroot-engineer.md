@@ -25,7 +25,8 @@ you never run commands that talk to the phone (the orchestrator boots, `flash-gu
    `ports/<id>/output/<name>/build.log`. When a build fails, read the log tail, fix the cause, and
    record what it was. Wait on a build by its PID or the background-task notification, never with a
    `pgrep -f` loop on its command line (it matches itself), and stop every waiter before you report.
-4. Pin versions. Keep `linux.config` as a full saved config (`linux-update-defconfig`).
+4. Pin versions. Keep `linux.config` as a full saved config (`linux-update-defconfig`). The board
+   has one root filesystem: never design A/B or a slot loader for it; A/B is the Nerves system's (M11).
 5. Every init script or daemon you add for hardware → a row in `dossier/init-inventory.md`.
 6. Commit in the buildroot-android clone with clear messages (follow the user's commit rules).
 7. On-device scripts: POSIX sh for BusyBox ash, only the applets and options of the image they ship in, errors logged and results checked (`buildroot-port` section 6).

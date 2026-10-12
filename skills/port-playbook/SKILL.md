@@ -37,9 +37,9 @@ Every task carries one `risk-*` label. The level of a milestone is that of its r
 | M6 | Boot path proven | yellow (orange if a 2nd stage has to be written) | We can load our own kernel without touching the bootloader chain: `fastboot boot`, lk2nd, or an experiment partition |
 | M7 | First light | yellow | Our mainline kernel prints its boot log on the phone screen |
 | M8 | Rescue shell | yellow | A Buildroot initramfs running from RAM with USB networking (unudhcpd) and a shell over ssh/telnet; hardware inventory under Linux |
-| M9 | Persistent Buildroot | orange | A Buildroot system in `buildroot-android` style, booting from flash, reflashable, rescue path kept |
+| M9 | Persistent Buildroot | orange | A Buildroot system in `buildroot-android` style with a single root filesystem (no A/B), booting from flash, reflashable, rescue path kept |
 | M10 | Hardware enablement | orange | One task per peripheral (display, touch, WiFi, modem, audio, battery…): firmware and userspace daemons packaged |
-| M11 | Nerves system | orange | `nerves_system_<id>` with A/B in an Android partition, `mix firmware`, first flash, `mix upload` and revert tested |
+| M11 | Nerves system | orange | `nerves_system_<id>`, where A/B first appears (the standard Nerves fwup scheme) in an Android partition, `mix firmware`, first flash, `mix upload` and revert tested |
 | M12 | Share it | green | Docs, a PR to buildroot-android, the learner's journal, a write-up |
 
 ## Rules for moving along the ladder
@@ -65,3 +65,7 @@ Every task carries one `risk-*` label. The level of a milestone is that of its r
      sessions stay short and the battery guard rails of the `autonomy` skill apply.
 6. **Every boot experiment keeps an escape route.** Before a boot test, write down how we get back:
    which key combo, which command, which backup image.
+7. **Buildroot has a single root, A/B comes with Nerves.** M7 to M10 use one root filesystem
+   (initramfs, an image on `userdata`, or `system`) and never an A/B layout, a slot switcher or a
+   custom update scheme. A/B appears at M11 only, through the standard Nerves mechanism (fwup env,
+   rootfs A/B, an app partition, e.g. a sub-image in `userdata`).

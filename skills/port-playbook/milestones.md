@@ -171,6 +171,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 ## M9: Persistent Buildroot (risk-orange)
 
 **Goal:** a real Buildroot system on flash, structured like buildroot-android, that survives a reboot.
+It has a **single root filesystem**: no A/B slots and no slot switching (they come with Nerves in M11).
 
 | Task | Agent | Notes |
 |---|---|---|
@@ -228,7 +229,9 @@ install, a re-check and a tagged commit.
 
 ## M11: Nerves system (risk-orange)
 
-**Goal:** a Nerves system with A/B updates, living inside the Android partition table.
+**Goal:** a Nerves system with A/B updates, living inside the Android partition table. A/B appears
+here for the first time, through the standard Nerves mechanism (fwup env, rootfs A/B, app partition);
+the Buildroot board stays single-root.
 
 | Task | Agent | Notes |
 |---|---|---|

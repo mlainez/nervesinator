@@ -53,6 +53,8 @@ Without a RAM boot, `boot` is the experiment partition; record it as `safety.exp
 
 ## 3. Where does the rootfs live?
 
+The Buildroot options below are single-root (M7 to M10); A/B is a Nerves matter (M11).
+
 **Recommended default: the whole system in one image on `userdata`**, and writes only to `boot`
 and `userdata`; every other partition only when the user explicitly asks.
 
@@ -74,7 +76,7 @@ confirm), or dump it first from the rescue shell.
 | Initramfs only | M7–M8, rescue | Nothing written |
 | ext4 on `userdata` | First persistent Buildroot | Simple; `root=/dev/mmcblk0pN rootwait`. Check whether the vendor reserves a tail (MTK BMT pool, encryption footer) and keep the filesystem smaller |
 | extlinux + rootfs on `userdata` (lk2nd) | Qualcomm with lk2nd | lk2nd scans for `extlinux/extlinux.conf`; buildroot-android FP2 style |
-| Sub-image (MBR inside `userdata`) | Nerves A/B | Partitions mapped by the initramfs with kpartx/losetup; FP2 Nerves style |
+| Sub-image (MBR inside `userdata`) | Nerves A/B only (M11) | Partitions mapped by the initramfs with kpartx/losetup; FP2 Nerves style. Never for the Buildroot board |
 | `system` partition | userdata too small or must be kept | Often 1-3 GB, fine for Buildroot/Nerves |
 
 Never repartition (PIT/GPT rewrite) as a first choice: it is `risk-red`.

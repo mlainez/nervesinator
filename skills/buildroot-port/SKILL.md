@@ -99,6 +99,8 @@ Copy the style of the existing packages in `buildroot-external/package/` (`Confi
 
 ## 5. Rules
 
+- The Buildroot board has a single root filesystem. Never design A/B slots, a slot switcher
+  or a custom update loader for it: A/B comes with Nerves (M11, standard fwup).
 - Pin every git version (kernel, packages) to a tag or SHA in committed defconfigs.
 - Every init script added for hardware → a line in `dossier/init-inventory.md`: what it does, why,
   in what order, what it depends on. Nerves (M11) replaces each one with Elixir.
