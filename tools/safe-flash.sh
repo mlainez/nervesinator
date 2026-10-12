@@ -47,6 +47,7 @@ LOG="$P/journal/plans/safe-flash.log"; mkdir -p "$(dirname "$LOG")"
 fails=0
 ok()   { echo "  ✅ $*"; }
 bad()  { echo "  ❌ $*"; fails=$((fails+1)); }
+warn_override() { echo "  ⚠️  $* (overridden by the user)"; }
 lower() { echo "$1" | tr 'A-Z' 'a-z'; }
 forbidden() {
   local n; n=$(lower "$1"); n=${n%_a}; n=${n%_b}
@@ -164,22 +165,39 @@ check_lk2nd_dtb() { # image
   esac
 }
 
+# Is this partition named in the user's valid /override? (hooks/autonomy_grant.py)
+overridden() {
+  python3 -I - "$KIT/hooks" "$KIT/ports" "$1" <<'EOF'
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location("g", os.path.join(sys.argv[1], "autonomy_grant.py"))
+g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
+o = g.valid_override(sys.argv[2])
+sys.exit(0 if o and sys.argv[3].lower() in o["targets"] else 1)
+EOF
+}
+
 check_partition() { # partition
   local part=$1 line
-  forbidden "$part" && bad "'$part' is on the forbidden list (tools/lib/forbidden-partitions.txt)" || ok "'$part' is not forbidden"
+  # The user's override turns these three checks into warnings: they decided, informed, to do it
+  local fail=bad
+  if overridden "$part"; then
+    fail=warn_override
+    echo "  ⚠️  '$part' is named in the user's /override: the checks below warn instead of refusing"
+  fi
+  forbidden "$part" && $fail "'$part' is on the forbidden list (tools/lib/forbidden-partitions.txt)" || ok "'$part' is not forbidden"
   cfg safety.writable_partitions | grep -qix "$part" && ok "'$part' is in safety.writable_partitions" \
-    || bad "'$part' is not in safety.writable_partitions"
+    || $fail "'$part' is not in safety.writable_partitions"
   if [ -f "$P/backups/$part.img" ]; then
     line=$(cd "$P/backups" && grep -E "[ *]$part\.img$" SHA256SUMS 2>/dev/null)
     if [ -n "$line" ] && (cd "$P/backups" && echo "$line" | sha256sum -c --quiet - >/dev/null 2>&1); then
       ok "backup backups/$part.img verifies against SHA256SUMS"
     else
-      bad "backup backups/$part.img does not verify against SHA256SUMS"
+      $fail "backup backups/$part.img does not verify against SHA256SUMS"
     fi
   elif cfg safety.accepted_loss | grep -qix "$part"; then
     ok "no backup of '$part': its loss was accepted by the user (safety.accepted_loss)"
   else
-    bad "no backup: backups/$part.img (or, for userdata, the user's accepted loss in safety.accepted_loss)"
+    $fail "no backup: backups/$part.img (or, for userdata, the user's accepted loss in safety.accepted_loss)"
   fi
 }
 

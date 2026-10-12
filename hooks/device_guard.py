@@ -75,6 +75,8 @@ class Verdict:
     def __init__(self):
         self.level = 0
         self.reasons = []
+        self.hard = False        # a deny no user override can lift
+        self.overridden = False  # lowered to ask by the user's override
 
     def add(self, level, reason):
         self.level = max(self.level, level)
@@ -346,8 +348,9 @@ def analyse(cmd, v, depth=0):
         return
     if depth == 0:
         if any(n in cmd for n in autonomy_grant.PROTECTED_NAMES):
-            v.add(DENY, "The autonomy grant and the hands-off marker are set only by the user's own "
-                        "words (/autonomous full, hands off / hands on).")
+            v.add(DENY, "The autonomy grant, the hands-off marker and user overrides are set only by "
+                        "the user's own words (/autonomous full, hands off / hands on, /override).")
+            v.hard = True
         cmd = strip_file_heredocs(cmd)
     remote_whole = bool(REMOTE_RE.search(cmd))
     if remote_whole:
@@ -399,6 +402,7 @@ def analyse(cmd, v, depth=0):
     if re.search(r"base64\s+(-d|--decode)[^|]*\|\s*(ba|z|da)?sh\b", cmd) and \
             re.search(r"fastboot|heimdall|edl|mtk|dd\b", cmd):
         v.add(DENY, "Obfuscated device command. Run device commands in plain form.")
+        v.hard = True
 
 
 def log(decision, cmd, reasons):
@@ -425,9 +429,27 @@ def apply_hands_off(cmd, v, ports_dir):
         v.add(DENY, "Hands off: the user is working on the device. Wait until they type \"hands on\".")
 
 
+def apply_override(cmd, v, ports_dir):
+    """DENY becomes ASK, with the consequences, when the user's /override names this command's target."""
+    if v.level != DENY or v.hard:
+        return None
+    override = autonomy_grant.valid_override(ports_dir)
+    if not override:
+        return None
+    hits = [t for t in override["targets"]
+            if re.search(r"(?<![\w-])" + re.escape(t) + r"(?![\w-])", cmd, re.I)]
+    if not hits:
+        return None
+    v.level = ASK
+    v.overridden = True
+    v.reasons.insert(0, "USER OVERRIDE of a safety invariant (%s, until %s). Consequences, which the "
+                        "user accepts by confirming:" % (", ".join(hits), override["expires_at"]))
+    return override
+
+
 def apply_grant(v, ports_dir):
     """ASK becomes ALLOW under a valid full-autonomy grant; returns the grant used, if any."""
-    if v.level != ASK:
+    if v.level != ASK or v.overridden:
         return None
     grant = autonomy_grant.valid_grant(ports_dir)
     if grant:
@@ -440,6 +462,8 @@ def apply_grant(v, ports_dir):
 def check_cli(cmd, ports_dir=PORTS_DIR):
     v = Verdict()
     analyse(cmd, v)
+    if apply_override(cmd, v, ports_dir):
+        log("ask-override", cmd, v.reasons)
     apply_hands_off(cmd, v, ports_dir)
     if apply_grant(v, ports_dir):
         log("allow-autonomy", cmd, v.reasons)
@@ -465,8 +489,9 @@ def main():
         if os.path.basename(path) in autonomy_grant.PROTECTED_NAMES:
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse", "permissionDecision": "deny",
-                "permissionDecisionReason": "[device-guard] The autonomy grant and the hands-off "
-                                            "marker are set only by the user's own words."}}))
+                "permissionDecisionReason": "[device-guard] The autonomy grant, the hands-off "
+                                            "marker and user overrides are set only by the user's "
+                                            "own words."}}))
         return 0
     if data.get("tool_name") != "Bash":
         return 0
@@ -477,6 +502,8 @@ def main():
     except Exception as exc:  # never let a parser bug silently allow a device write
         if re.search(r"fastboot|heimdall|odin|edl|mtk|\bdd\b|/dev/block", cmd):
             v.add(ASK, "device_guard could not parse this command (%s); confirm manually." % exc)
+    if apply_override(cmd, v, PORTS_DIR):
+        log("ask-override", cmd, v.reasons)
     apply_hands_off(cmd, v, PORTS_DIR)
     if apply_grant(v, PORTS_DIR):
         log("allow-autonomy", cmd, v.reasons)
