@@ -176,7 +176,11 @@ with the phone through it without keys, screen photos or the vendor's tools:
    bounded to its vendor size (never a vendor tail or another partition), so the host runs
    `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` or `mix burn` directly: no
    `.img`, no sparse, no fastboot buffer limit. Offer `fastboot oem board:ums` to switch without keys.
-   Fastboot stays for `flash boot` (self-update), RAM boot and diagnostics.
+   Fastboot stays for `flash boot` (self-update), RAM boot and diagnostics. Desktops auto-mount the
+   disk read-write the moment it appears: install the udev rule
+   (`templates/udev/99-porting-kit-no-automount.rules`), and unmount before writing and before
+   leaving UMS (`ums-target.sh` refuses a mounted target and prints the `udisksctl unmount`
+   commands). After the write: `sync`, then `udisksctl power-off -b /dev/sdX`, then leave UMS.
 7. **Entry without keys:** a DRAM/RTC flag so `fastboot reboot-bootloader` and Linux (write the flag,
    reboot) land back in U-Boot's fastboot; `reboot-recovery` and the vendor's fastboot through the
    boot-mode bits; with nothing bootable, fall into U-Boot's fastboot rather than the vendor's.

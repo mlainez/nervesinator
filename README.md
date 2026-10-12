@@ -151,6 +151,12 @@ root, never into a subdirectory such as `tools/` (`tools/check-host.sh` warns ab
 To update a copied kit, compare each file with the kit's history first (`git hash-object` of the
 local file against the kit's blobs) so local changes are never overwritten.
 
+## Phones as USB disks
+
+When a port's second stage exposes `userdata` as a USB disk, keep the desktop from auto-mounting
+it: install `templates/udev/99-porting-kit-no-automount.rules` with the phone's serial (the file
+says how). `tools/ums-target.sh` finds the disk and refuses while anything on it is mounted.
+
 ## Extending the kit
 
 - A new vendor trap or partition name → `skills/device-safety/SKILL.md` and

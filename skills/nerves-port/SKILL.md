@@ -93,7 +93,9 @@ Whoever starts the kernel must know the Nerves active slot:
   `nerves_fw_active` picks the slot, and `sysboot` reads extlinux from the sub-image through `blkmap`
   (`uboot-chainload`). Its `ums` mode exposes only `userdata`, so the host writes the firmware with
   `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` (or `mix burn`), and its own
-  fastboot handles `flash boot` and RAM boots.
+  fastboot handles `flash boot` and RAM boots. The disk must not be mounted on the host (the
+  desktop may mount the boot FAT or the app partition): `ums-target.sh` refuses then; finish with
+  `sync` and `udisksctl power-off -b /dev/sdX` before leaving UMS.
 - **lk2nd + extlinux:** the fwup `on-finish` rewrites `extlinux.conf` (or two labels `nerves_a`/`nerves_b`
   with `default` switched) on a small FAT/ext partition inside the sub-image.
 - **Stock LK + boot.img:** a single boot.img with an initramfs that reads the fwup env

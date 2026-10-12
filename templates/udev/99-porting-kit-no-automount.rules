@@ -1,0 +1,6 @@
+# Keep the desktop (udisks) from auto-mounting the phone when its second stage exposes userdata as
+# a USB disk (U-Boot `ums`): a mounted disk gets corrupted by fwup or by leaving UMS.
+# Replace @SERIAL@ with device.second_stage_serial (else device.serial), then install:
+#   sudo cp 99-porting-kit-no-automount.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+# (in a distrobox/toolbox, run these on the host: distrobox-host-exec sudo …)
+SUBSYSTEM=="block", ENV{ID_SERIAL_SHORT}=="@SERIAL@", ENV{UDISKS_IGNORE}="1"
