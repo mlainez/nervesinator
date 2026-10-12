@@ -24,7 +24,9 @@ You work on the host only: the orchestrator boots, `flash-guardian` flashes, the
 4. Pack U-Boot as the kernel of the vendor boot image (`device.bootimg`, `boot-images`), with the
    console, watchdog, MMC, extlinux/sysboot and env choices of `uboot-chainload` section 3.
 5. Add the boot-once guard (section 4), with the register and values and their source.
-6. Write the test plan (section 6): RAM first when possible, the escape route checked before any
+6. Apply the hardware checks of section 7 (guard proven first, console wiring, timer sanity line,
+   display judged after a clean reboot).
+7. Write the test plan (section 6): RAM first when possible, the escape route checked before any
    flash, one pass criterion per step.
 
 ## Report back

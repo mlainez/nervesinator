@@ -62,7 +62,32 @@ unattended work. It also needs the guard's rules: only allowlisted partitions.
 - RAM first when the stock bootloader can (`fastboot boot`); otherwise through the port's key-free
   flash path to `boot`, after checking the escape route by hand (the vendor flash mode reachable
   with keys or by command, `backups/boot.img` verified).
-- Steps that each must pass before the next: U-Boot prints on the console, the watchdog does not
-  fire, MMC lists the partitions, `sysboot` finds extlinux, Linux starts with the expected cmdline,
+- Steps that each must pass before the next: U-Boot prints on the console (with its `In/Out/Err`
+  lines), the timer runs (the countdown moves), the watchdog does not fire, MMC lists the partitions, `sysboot` finds extlinux, Linux starts with the expected cmdline,
   the boot-once guard turns a deliberate hang into the flash mode.
 - Each image goes through `safe-flash.sh` and `await-boot.sh` like any other.
+
+## 7. Checks learned on hardware
+
+Proven so far on MediaTek LK (MT8127: U-Boot in `boot`, extlinux on `userdata`, Linux booted).
+Each item is a check to run on the device, not an assumption.
+
+- **Prove the boot-once guard first.** Set the bit, hang on purpose, and see the stock bootloader
+  honour it after the watchdog reset (seen: the PMIC RTC recovery bit, MT6323 RTC PDN1 bit 4 via
+  pwrap, turned every hang into a key-free recovery boot in about 40 s).
+- **Console wiring:** check that U-Boot prints its `In:/Out:/Err:` lines. With `stdin=nulldev` but
+  `CONFIG_SYS_DEVICE_NULLDEV` off, console setup fails silently and output goes to a missing serial
+  port: only the logo shows.
+- **Colours:** some video consoles default to black on white; a white screen can be a working console.
+- **Timer:** print a sanity line (frequency, running or STOPPED) early, and check on hardware that the
+  autoboot countdown moves. Some SoCs gate the arch timer behind a block the stock bootloader leaves
+  off (seen on MT6589/MT7623/MT8135/MT8127: GPT6, enabled by Linux's `arch/arm/mach-mediatek`):
+  `get_timer()` then never advances, the countdown freezes, watchdog servicing never runs and the
+  watchdog fires. Read the SoC's `mach-*` code in Linux for what it does before `timer_probe`. QEMU
+  does not reproduce this.
+- **Display after a watchdog reset** can stay stalled until a clean reboot (seen on MediaTek: a
+  white halo, `vblank wait timed out`): judge the display only after a clean reboot.
+- **The user's eyes are a debug channel:** without a UART, a photo of the screen is the log. Logs
+  left in RAM at a fixed address can be overwritten by the next (vendor) kernel.
+- **One device, by serial:** flash by serial and check the product (MediaTek reports a platform
+  name, e.g. `HQ8127_TB_B2B_L`); refuse when another device is in the same mode.
