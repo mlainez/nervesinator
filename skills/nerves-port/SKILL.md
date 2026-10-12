@@ -85,6 +85,9 @@ equivalent, as nerves_system_fp3 and ex_qbootctl do). See android-ab-layouts.md,
 Android A/B".
 
 Whoever starts the kernel must know the Nerves active slot:
+- **Chainloaded U-Boot** (no lk2nd for the SoC): its env lives where fwup writes it (`fw_env.config`),
+  `nerves_fw_active` picks the slot, and `sysboot` reads extlinux from the sub-image through `blkmap`
+  (`uboot-chainload`).
 - **lk2nd + extlinux:** the fwup `on-finish` rewrites `extlinux.conf` (or two labels `nerves_a`/`nerves_b`
   with `default` switched) on a small FAT/ext partition inside the sub-image.
 - **Stock LK + boot.img:** a single boot.img with an initramfs that reads the fwup env

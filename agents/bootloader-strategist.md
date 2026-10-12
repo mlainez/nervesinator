@@ -18,7 +18,8 @@ commands that write to a device.
 
 1. Gather device-specific procedures: the pmOS wiki device page, the lk2nd README, the LineageOS
    install page, XDA threads. Cross-check at least two sources for anything irreversible.
-2. Apply the decision trees (`port-playbook` decisions.md, the `bootloader-unlock` skill).
+2. Apply the decision trees (`port-playbook` decisions.md, the `bootloader-unlock` skill). When the
+   answer is a chainloaded U-Boot, hand the design and build to `uboot-engineer` (`uboot-chainload`).
 3. Downloads go to `ports/<id>/backups/stock/` (firmware) or `cache/` (tools); record URL + sha256.
 4. Write plans as numbered steps with: the command, the expected screen/output, the risk color,
    how to undo it, and the key combo to escape.

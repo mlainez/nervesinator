@@ -122,7 +122,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 | Task | Agent | Notes |
 |---|---|---|
-| Decide whether a second-stage bootloader is needed | bootloader-strategist | Confirm or revise the M2 boot path with what M3-M5 showed (unlock result, `fastboot boot` support); decision tree in [decisions.md](decisions.md); ADR |
+| Decide whether a second-stage bootloader is needed | bootloader-strategist (+ uboot-engineer when lk2nd does not support the SoC) | Confirm or revise the M2 boot path with what M3-M5 showed (unlock result, `fastboot boot` support); decision tree in [decisions.md](decisions.md); ADR |
 | Round-trip test with the stock boot image | orchestrator | `fastboot boot stock-boot.img` (when the stock bootloader offers it) proves temporary boot works; on devices without it, flash the stock image back to the same partition from the flash mode to prove the flash path. Not through lk2nd: it cannot boot a stock image whose QCDT uses vendor ids (Samsung), see `boot-images` |
 | Install or temporarily boot the second stage | flash-guardian | lk2nd: `fastboot boot lk2nd.img` first when supported, then flash to `boot` only after the user agrees; U-Boot chainloaded the same way |
 | Verify the second stage offers fastboot and boots extlinux | orchestrator | `fastboot devices` shows lk2nd; `fastboot oem log` readable; `aboot` flash mode (fastboot / Samsung download mode) still reachable to reflash `boot` |

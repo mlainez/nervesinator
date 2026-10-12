@@ -40,7 +40,7 @@ Can the stock bootloader be unlocked (or does it already accept unsigned images)
                   │        └─ no / painful (DTB picking, a cmdline it overrides, a size limit)
                   │               → chainloaded U-Boot: `fastboot boot` it first, then `boot`.
                   └─ no (Samsung Exynos download mode, some MTK) →
-                           Chainloaded U-Boot available for this SoC?
+                           Chainloaded U-Boot available for this SoC? (uboot-engineer, uboot-chainload skill)
                            ├─ yes → Flash it to `boot` (after backing up `boot`).
                            └─ no  → Use `boot` as the experiment partition for every test boot image.
 ```
