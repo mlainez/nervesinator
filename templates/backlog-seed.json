@@ -65,7 +65,7 @@
         {"title": "Choose the backup method", "labels": "risk-green,agent-flash", "ac": ["Method chosen (root dd / temporary recovery / vendor read tool) and recorded"]},
         {"title": "Dump all partitions except userdata and system", "labels": "risk-yellow,agent-flash,needs-device", "ac": ["backups/<name>.img for every partition except userdata/system/super", "Class B partitions dumped first"]},
         {"title": "Verify backups and store a copy off the machine", "labels": "risk-green,agent-flash", "ac": ["sha256sum -c backups/SHA256SUMS passes", "User confirmed an off-machine copy"]},
-        {"title": "Set the writable partitions allowlist", "labels": "risk-green,agent-orchestrator", "ac": ["safety.writable_partitions set with the user's agreement", "Every listed partition has a verified backup"]},
+        {"title": "Set the writable partitions allowlist", "labels": "risk-green,agent-orchestrator", "ac": ["safety.writable_partitions set with the user's agreement (default boot + userdata)", "Every listed partition has a verified backup, or its loss is recorded in safety.accepted_loss after the user confirmed (userdata)"]},
         {"title": "GATE M5: safety net in place", "labels": "risk-green,gate", "ac": ["safety.backups_verified true", "M5 lesson given", "User said go"]}
       ]
     },

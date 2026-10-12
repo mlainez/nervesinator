@@ -43,7 +43,9 @@ safety:
   unbrick_kit_ready: false
   bootloader_unlocked: unknown      # unknown | no | yes | not-needed
   backups_verified: false
-  writable_partitions: []           # class D partitions the user approved, after backup
+  writable_partitions: []           # default boot + userdata; others only when the user asks
+  accepted_loss: []                 # partitions written without a backup because the user accepted
+                                    # losing them (userdata); the date and words go in the journal
   experiment_partition: ""          # boot: lk2nd or test images when there is no RAM boot
   ram_boot: unknown                 # fastboot-boot | lk2nd | none | unknown
   irreversible_done: []             # e.g. knox-fuse-tripped (recorded honestly)
@@ -58,7 +60,7 @@ path:
   dtb: ""
   bootloader: ""                    # stock | lk2nd | u-boot
   boot_method: ""                   # how we load our kernel (command)
-  rootfs_placement: ""
+  rootfs_placement: ""              # recommended: ext2-userdata (one ext2 image with /extlinux, lk2nd)
   nerves_layout: ""
 
 repos:

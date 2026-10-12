@@ -34,7 +34,8 @@ porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 system.
 
 ## 3. Pick the A/B layout (ADR)
 
-Android's partition table is fixed: don't repartition (risk-red). Choose from android-ab-layouts.md:
+Android's partition table is fixed: don't repartition (risk-red). Keep the port's default of writing
+only `boot` (lk2nd) and `userdata`. Choose from android-ab-layouts.md:
 - **Sub-image in userdata** (FP2 style, most common).
 - **Split across boot / system / userdata** when partitions are big enough.
 Record the choice, the offsets and the device paths in the decision and in `port.yaml` `path.nerves_layout`.

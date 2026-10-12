@@ -42,7 +42,14 @@ In Buildroot, do it in a post-image script (`board/<id>/post-image.sh`) so the b
 
 ## 3. lk2nd + extlinux (Qualcomm)
 
-lk2nd searches the partitions for `/extlinux/extlinux.conf` (ext2/3/4) and boots it:
+lk2nd scans every leaf partition of 16 MiB or more (and its own `boot`) for `/extlinux/extlinux.conf`
+and reads it with LK's **ext2** driver, which refuses any `ro_compat` feature other than
+`sparse_super` and `large_file` (lk2nd `lib/fs/ext2/ext2.c`). So the filesystem must be real ext2:
+`mkfs.ext2`/`genext2fs` or Buildroot `BR2_TARGET_ROOTFS_EXT2_2r1=y`, never ext4 features
+(`huge_file`, `dir_nlink`, `extra_isize`, `metadata_csum`, `extents`); check with `dumpe2fs -h`.
+Stock ext4 partitions are skipped, which is why the image is flashed whole.
+
+The kit's recommended layout is one such ext2 image flashed to `userdata` (see decisions.md):
 
 ```
 timeout 1
@@ -53,7 +60,7 @@ label buildroot
     kernel /boot/zImage
     fdt /boot/qcom-msm8226-<vendor>-<codename>.dtb
     initrd /boot/initramfs        # optional
-    append console=tty0 root=/dev/mmcblk0pNN rootwait rw
+    append console=tty0 root=PARTLABEL=userdata rootwait rw   # match the GPT name's case (USERDATA on Samsung), or root=/dev/mmcblk0pNN
 ```
 
 This is how buildroot-android boots the Fairphone 2 (`board/fairphone2/overlay/extlinux/extlinux.conf`).

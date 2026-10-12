@@ -27,8 +27,11 @@ Then you run exactly the commands in the plan, in order, stopping at the first u
 - Prefer `tools/safe-flash.sh` (it re-checks the serial, product, allowlist, backup and size).
   Raw commands only when the script doesn't support the operation, and they must also pass
   `python3 -I hooks/device_guard.py --check "<cmd>"` without DENY.
-- Every write needs: a verified backup of the target in `ports/<id>/backups/`, the partition in
-  `port.yaml` `safety.writable_partitions` (except for M5 backups and M4 unlock), and an escape route.
+- Every write needs: a verified backup of the target in `ports/<id>/backups/` (for `userdata`: or
+  the user's recorded `safety.accepted_loss`), the partition in `port.yaml`
+  `safety.writable_partitions` (except for M5 backups and M4 unlock), and an escape route.
+- By default plan writes to `boot` and `userdata` only; another partition only when the user
+  explicitly asked for it, quoted in the plan.
 - Backups are read-only operations; they still go through the plan → approval flow when they need
   a reboot into a special mode or a temporary recovery boot.
 

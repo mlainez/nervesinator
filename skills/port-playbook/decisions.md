@@ -53,8 +53,19 @@ Without a RAM boot, `boot` is the experiment partition; record it as `safety.exp
 
 ## 3. Where does the rootfs live?
 
+**Recommended default: one ext2 image on `userdata`.** The image holds `/extlinux/extlinux.conf`, the
+kernel (zImage/Image with an appended DTB, or `fdt`/`fdtdir`) and the whole root filesystem; lk2nd
+boots it (`boot-images` section 3 for the ext2 rules). The port then writes only `boot` (lk2nd, and
+what lives after it) and `userdata`; every other partition only when the user explicitly asks.
+Flash it through lk2nd fastboot (`safe-flash.sh --mode fastboot flash userdata <img>`, sparse
+handled by fastboot, size checked against `getvar partition-size:userdata`), or with heimdall
+`--USERDATA` from Samsung download mode. `userdata` is personal and huge: instead of a backup the
+user may accept its loss (`safety.accepted_loss: [userdata]`, recorded with the date after they
+confirm), or dump it first from the rescue shell.
+
 | Option | When | Notes |
 |---|---|---|
+| **ext2 image on `userdata` with /extlinux (lk2nd)** | **Default** | Writes only `boot` + `userdata`; `root=PARTLABEL=userdata rootwait` (case as in the GPT) |
 | Initramfs only | M7–M8, rescue | Nothing written |
 | ext4 on `userdata` | First persistent Buildroot | Simple; `root=/dev/mmcblk0pN rootwait`. Check whether the vendor reserves a tail (MTK BMT pool, encryption footer) and keep the filesystem smaller |
 | extlinux + rootfs on `userdata` (lk2nd) | Qualcomm with lk2nd | lk2nd scans for `extlinux/extlinux.conf`; buildroot-android FP2 style |

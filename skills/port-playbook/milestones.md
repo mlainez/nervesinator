@@ -108,7 +108,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Choose the backup method | flash-guardian | Root `dd` over adb, or a temporarily booted recovery (TWRP via `fastboot boot`), or `heimdall`/`edl`/`mtkclient` reads; never a method that writes |
 | Dump all partitions except userdata and system | flash-guardian | `tools/backup-partitions.sh`: per partition `.img` + `SHA256SUMS`; radio calibration (`efs`, `modemst*`, `fsg`, `persist`, `nvram`, `nvdata`, `TA`) first |
 | Verify backups and store a copy off the machine | flash-guardian + user | Re-read and compare hashes; the user copies `backups/` to a second place |
-| Set the writable partitions allowlist | orchestrator + user | Usually `boot`, `recovery`, `userdata` (+ `cache`/`system` if used); record in `port.yaml` `safety.writable_partitions` |
+| Set the writable partitions allowlist | orchestrator + user | Default `boot` + `userdata`; any other partition only when the user explicitly asks. Record in `port.yaml` `safety.writable_partitions`; for `userdata`, either a backup or the user's confirmed `safety.accepted_loss` |
 | GATE M5 | orchestrator | Set `safety.backups_verified: true` |
 
 **Exit:** `backups/SHA256SUMS` verifies; the allowlist is set; the user confirms an off-machine copy.
@@ -175,7 +175,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Task | Agent | Notes |
 |---|---|---|
 | Add the board to buildroot-android | buildroot-engineer | `board/<id>/`, `configs/<id>_defconfig`, `linux.config`, overlay, genimage; follow the repo's conventions |
-| Choose rootfs placement and boot flow | buildroot-engineer + orchestrator | Decision tree in decisions.md (extlinux on userdata through lk2nd, boot.img + root on userdata, sub-image…); ADR |
+| Choose rootfs placement and boot flow | buildroot-engineer + orchestrator | Recommend the default: one ext2 image on `userdata` with /extlinux, booted by lk2nd (decisions.md section 3); other options only with a reason; ADR |
 | Build the full system | buildroot-engineer | |
 | Flash plan and first persistent flash | flash-guardian (user approves) | Only allowlisted partitions; keep the rescue path (RAM boot) available |
 | Boot, ssh in, check reflash cycle | orchestrator | Write a `reflash.sh` like tb3_710f's: talks only to this serial |

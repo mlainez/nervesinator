@@ -9,7 +9,8 @@
 #   tools/safe-flash.sh --port <id> [--execute] unlock [flashing|oem]      # bootloader unlock (wipes data)
 #
 # Checks: device present by serial and alone in its mode, product matches port.yaml, partition not
-# forbidden, partition allowlisted, verified backup present, image fits, boot image magic.
+# forbidden, partition allowlisted, verified backup present (or its loss accepted by the user in
+# safety.accepted_loss, for userdata), image fits, boot image magic.
 # The partition size comes from port.yaml device.partition_sizes (bytes), else from the M1 recon
 # (dossier/raw/by-name.txt or partnames-sysfs.txt + partitions.txt), else from the backup, which is
 # right only when the backup is a full dump, not a stock image.
@@ -159,8 +160,10 @@ check_partition() { # partition
     else
       bad "backup backups/$part.img does not verify against SHA256SUMS"
     fi
+  elif cfg safety.accepted_loss | grep -qix "$part"; then
+    ok "no backup of '$part': its loss was accepted by the user (safety.accepted_loss)"
   else
-    bad "no backup: backups/$part.img"
+    bad "no backup: backups/$part.img (or, for userdata, the user's accepted loss in safety.accepted_loss)"
   fi
 }
 

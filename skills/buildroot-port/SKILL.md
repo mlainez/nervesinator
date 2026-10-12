@@ -28,6 +28,10 @@ buildroot-external/
   board/<id>/overlay/                   /etc (fstab, network/interfaces, dhcp, ssh), extlinux/ if lk2nd
   board/<id>/rescue-overlay/            from templates/rescue
   board/<id>/genimage.cfg               when an image of userdata is produced
+  board/<id>/overlay/extlinux/extlinux.conf   the default layout: the rootfs image itself is the
+                                        ext2 userdata image (BR2_TARGET_ROOTFS_EXT2_2r1=y,
+                                        BR2_LINUX_KERNEL_INSTALL_TARGET=y for /boot); see
+                                        boot-images section 3 for the ext2 rules
   board/<id>/post-image.sh              packs boot.img (mkbootimg args from port.yaml device.bootimg)
   board/<id>/scripts/flash.sh           flashes by serial only, checks the product (copy tb3_710f's)
   board/<id>/scripts/reflash.sh         ssh → bootloader → flash → wait for ssh

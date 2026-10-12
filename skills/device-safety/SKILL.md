@@ -33,7 +33,7 @@ Classify every partition in M1 (in `dossier/partitions.md`) and refer to the cla
 | **A: boot chain** | `sbl1`, `xbl`, `aboot`, `abl`, `rpm`, `tz`, `hyp`, `preloader`, `lk`, `bootloader`, `mmcblk0boot0/1`, the GPT/PIT itself | **Never written.** Not even with "the same version". A wrong byte = hard brick |
 | **B: irreplaceable data** | `efs`, `modemst1/2`, `fsg`, `persist`, `nvram`, `nvdata`, `proinfo`, `TA` (Sony), `param` (Samsung), `devinfo`, `frp` | **Never written. Backed up first.** Holds the IMEI, WiFi/BT MAC, sensor and radio calibration, DRM keys. It exists nowhere else on the planet |
 | **C: replaceable firmware** | `modem`/`NON-HLOS`, `dsp`, `vendor`, `vbmeta`, `dtbo` | Not written by default (on the forbidden list where it applies). Reading them is how we get firmware blobs |
-| **D: our playground** | `boot`, `recovery`, `userdata`, `cache`, `system` (and `super` with care) | Written **only** after a verified backup, when allowlisted in `safety.writable_partitions` |
+| **D: our playground** | `boot`, `recovery`, `userdata`, `cache`, `system` (and `super` with care) | Written **only** after a verified backup (for `userdata`: or the user's recorded `safety.accepted_loss`), when allowlisted in `safety.writable_partitions`. By default the port writes only `boot` and `userdata` |
 
 The machine-readable list of class A/B/C names is `tools/lib/forbidden-partitions.txt`. Both the
 guard and `tools/safe-flash.sh` refuse those names. If a device uses an unusual name for a class A/B
