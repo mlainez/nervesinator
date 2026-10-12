@@ -178,10 +178,10 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Choose rootfs placement and boot flow | buildroot-engineer + orchestrator | Recommend the default: one ext2 image on `userdata` with /extlinux, booted by lk2nd (decisions.md section 3); other options only with a reason; ADR |
 | Build the full system | buildroot-engineer | |
 | Flash plan and first persistent flash | flash-guardian (user approves) | Only allowlisted partitions; keep the rescue path (RAM boot) available |
-| Boot, ssh in, check reflash cycle | orchestrator | Write a `reflash.sh` like tb3_710f's: talks only to this serial |
+| Boot, ssh in, check reflash cycle | orchestrator | Write a `reflash.sh` like tb3_710f's: talks only to this serial; it returns to the flash mode with `tools/return-to-flash.sh` (`reboot-mode <device.return_mode>`), flashes, and waits for ssh, with no keys |
 | GATE M9 | orchestrator | |
 
-**Exit:** survives a reboot; ssh works; a documented reflash cycle; the rescue boot still works.
+**Exit:** survives a reboot; ssh works; a documented key-free reflash cycle (`reboot-mode` from Linux lands in the flash mode); the rescue boot still works.
 **Lesson:** "Buildroot: a kitchen that cooks a whole OS from source", "External trees and defconfigs".
 
 ---

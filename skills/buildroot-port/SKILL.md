@@ -34,7 +34,8 @@ buildroot-external/
                                         boot-images section 3 for the ext2 rules
   board/<id>/post-image.sh              packs boot.img (mkbootimg args from port.yaml device.bootimg)
   board/<id>/scripts/flash.sh           flashes by serial only, checks the product (copy tb3_710f's)
-  board/<id>/scripts/reflash.sh         ssh → bootloader → flash → wait for ssh
+  board/<id>/scripts/reflash.sh         reboot-mode <device.return_mode> (tools/return-to-flash.sh)
+                                        → fastboot or heimdall flash → wait for ssh; no keys
   package/<id>-firmware/                proprietary blobs (not committed: see firmware-userspace)
 docs/<id>.md                            what works, how to flash (tb3_710f.md is the model)
 ```

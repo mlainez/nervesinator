@@ -41,6 +41,12 @@ LineageOS install guide for the device). Write the device's procedure in
   (`BOOT`, `RECOVERY`).
 - No RAM boot: lk2nd is flashed to `BOOT` (on supported Qualcomm Samsungs it then provides fastboot
   and `fastboot boot`). Download mode lives in the untouched `aboot`, so it can always reflash `BOOT`.
+- Getting back without keys: the stock `aboot` runs before lk2nd and consumes/clears the restart
+  reason (IMEM+0x65C on msm8226), so `reboot-mode bootloader` never reaches lk2nd's fastboot.
+  `reboot-mode download` (Samsung magic 0x12345671, as in Samsung's `restart.c`; needs a reboot-mode
+  DT node with that value) lands in download mode, then heimdall flashes `BOOT`/`USERDATA`. Record
+  `device.return_mode: download`. The restart reason survives only a **warm** reset: mainline may
+  hard-reset through the PMIC (PM8226 PS_HOLD), so check it in M8.
 
 **MediaTek**
 - Many expose fastboot from LK: `fastboot flashing unlock` (or `oem unlock`) after the OEM toggle.

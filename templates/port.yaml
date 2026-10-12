@@ -17,6 +17,8 @@ device:
   storage: ""              # emmc | ufs, size
   android_version: ""
   flash_mode: ""           # fastboot | samsung-download | mtk-fastboot | mtk-brom
+  return_mode: ""          # reboot-mode target that reaches a flashable state with no keys:
+                           # download (Samsung: heimdall) | bootloader (fastboot, stock or lk2nd)
   modes: {}                # name -> how to enter (keys / command), tested in M3
   bootimg: {}              # header_version, pagesize, base, offsets, dtb (appended|qcdt|v2), cmdline, footer
   partition_sizes: {}      # name -> bytes, when dossier/raw cannot give it (safe-flash size check)

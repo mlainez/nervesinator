@@ -35,7 +35,8 @@ current milestone's tasks in order, and put everything that needs a human in the
 - read-only device commands: `adb shell` reads, `fastboot getvar` / `oem log` / `get_staged`,
   `heimdall print-pit`, `tools/recon/collect.sh`, `tools/detect-devices.sh`;
 - reboots between modes that need no keys: `adb reboot bootloader|recovery|download`,
-  `fastboot reboot`, `fastboot reboot-bootloader`, `reboot-mode <mode>` from a kit image;
+  `fastboot reboot`, `fastboot reboot-bootloader`, `tools/return-to-flash.sh` (`reboot-mode` from a
+  kit image or the port's Linux);
 - RAM-only test boots through `tools/await-boot.sh` (it runs `safe-flash.sh --execute boot`, so
   every dry-run check applies, including the lk2nd device-tree check), and `--return` to bring the
   phone back to its flash mode afterwards.

@@ -24,6 +24,7 @@ fi
 echo "host address: $addr"
 if ping -c 2 -W 2 "$IP" >/dev/null 2>&1; then
   echo "phone answers at $IP:  ssh root@$IP   (rescue password: root)"
+  echo "back to the flash mode without keys: tools/return-to-flash.sh --port <id>"
 else
   echo "phone does not answer at $IP"; exit 1
 fi
