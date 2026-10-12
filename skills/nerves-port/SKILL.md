@@ -49,6 +49,12 @@ porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 official 
 
 ## 2b. Review against the official systems (and productize)
 
+**Compliance checklist**, against an official system built on the **same `nerves_system_br`
+version**: `erlinit.config`; `fw_env.config`, the board-id and provisioning setup; the fwup metadata
+and every `nerves_fw_*` variable `nerves_runtime` expects; the `nerves_defconfig` must-haves; the
+`nerves_package` fields of `mix.exs`. The app is checked against a fresh `mix nerves.new`
+(`nerves-app-engineer`). Results go into `dossier/nerves-config-review.md`.
+
 The board's `linux.config` and overlay come from a Buildroot port with first-light and debug aids.
 Never copy them verbatim. Diff the kernel config against the official systems' defconfigs and the
 `nerves_system_br` requirements, and justify every difference in `dossier/nerves-config-review.md`:

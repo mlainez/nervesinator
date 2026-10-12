@@ -6,6 +6,7 @@ skills:
   - uboot-chainload
   - boot-images
   - buildroot-port
+  - device-safety
 model: inherit
 color: cyan
 ---

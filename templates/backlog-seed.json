@@ -128,7 +128,7 @@
         {"title": "Bootstrap the Nerves system", "labels": "risk-green,agent-nerves", "ac": ["nerves_system_<id> builds"]},
         {"title": "Review the system against official Nerves systems", "labels": "risk-green,agent-nerves", "ac": ["dossier/nerves-config-review.md: option | Buildroot port | official Nerves | chosen | why", "First-light and debug options removed (CONFIG_LOGO, verbose loglevel)", "erlinit.config, fwup.conf and the overlay compared with the official templates"]},
         {"title": "Boot flow for slot switching", "labels": "risk-green,agent-nerves", "ac": ["Slot selection and revert designed and tested on file images"]},
-        {"title": "Port init scripts to Elixir", "labels": "risk-green,agent-nerves", "ac": ["Each init-inventory row has an Elixir replacement or a task"]},
+        {"title": "Port init scripts to Elixir", "labels": "risk-green,agent-nerves-app", "ac": ["Each init-inventory row has an Elixir replacement or a task"]},
         {"title": "Build firmware and first flash", "labels": "risk-orange,agent-flash,needs-device", "ac": ["Approved plan executed", "IEx reachable over ssh"]},
         {"title": "Test mix upload, revert and factory reset", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["mix upload boots the other slot", "Revert returns to the previous slot", "Factory reset clears the application data partition"]},
         {"title": "GATE M11: Nerves runs", "labels": "risk-green,gate", "ac": ["M11 lesson given", "User said go"]}

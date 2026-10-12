@@ -24,7 +24,8 @@ If unsure about a command, `backlog <command> --help` lists the exact flags.
 
 - One risk label: `risk-green`, `risk-yellow`, `risk-orange`, `risk-red`.
 - One agent label: `agent-recon`, `agent-scout`, `agent-bootloader`, `agent-flash`, `agent-buildroot`,
-  `agent-debug`, `agent-firmware`, `agent-nerves`, `agent-tutor`, `agent-orchestrator`.
+  `agent-debug`, `agent-firmware`, `agent-nerves`, `agent-tutor`, `agent-orchestrator`,
+  `agent-kernel`, `agent-nerves-app`, `agent-uboot`.
 - Extras: `gate`, `needs-device` (the phone must be attached), `needs-root`, `lesson`, `peripheral`,
   `deferred` (kept for later by a decision, e.g. peripherals skipped to reach Nerves sooner; the
   work loop skips it, and its dependents do not wait for it).

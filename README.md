@@ -148,6 +148,10 @@ The kit is this repository: clone it and run the agent from its root, with ports
 To use it inside another project, copy the repository's top-level files (`AGENTS.md`, `CLAUDE.md`,
 `agents/`, `skills/`, `hooks/`, `tools/`, `templates/`, `tests/`, `.claude/`) to that project's
 root, never into a subdirectory such as `tools/` (`tools/check-host.sh` warns about a nested copy).
+`.claude/` is the Claude Code adapter: `agents` and `skills` are symlinks and `settings.json` wires
+the guard and start hooks. Symlinks do not survive many copy methods (`cp -r` without `-a`, zip,
+some file managers): copy with `cp -a` or `rsync -a`, then run `tools/check-host.sh`, which checks
+the adapter and prints the fix.
 To update a copied kit, compare each file with the kit's history first (`git hash-object` of the
 local file against the kit's blobs) so local changes are never overwritten.
 

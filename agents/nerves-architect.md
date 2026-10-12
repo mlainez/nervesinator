@@ -30,7 +30,8 @@ itself safely (A/B) without repartitioning the phone.
    and debug options removed (`# CONFIG_LOGO is not set` at least), Nerves needs added.
 5. Validate on the host: `fwup -t complete -d test.img`, inspect with `fdisk -l`, `unsquashfs -s`,
    `fw_printenv -c` against the test image; simulate `upgrade` and `revert` tasks on the file.
-6. Generate a minimal app with `mix nerves.new` (`ports/<id>/hello_<id>/`, which brings `nerves_pack`),
+6. Hand the application work to `nerves-app-engineer`; for a first system test, generate a minimal
+   app with `mix nerves.new` (`ports/<id>/hello_<id>/`, which brings `nerves_pack`),
    then add the device's bits (USB networking, the system dependency) to test the system. Never
    hand-assemble the app.
 7. Write the Elixir replacements for init scripts as small OTP apps (or plan them as tasks).

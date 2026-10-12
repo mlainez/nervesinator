@@ -11,3 +11,6 @@ nerves_system_*/deps/
 .nerves/
 # Full-autonomy grant: written by the prompt hook from the user's own words, never committed
 .autonomy-grant
+# Markers set by the user's words (hands off) and the device-owner record
+.hands-off
+.device-owner

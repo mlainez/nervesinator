@@ -25,6 +25,7 @@ or "invoke" a skill.
 | `Start`, `start`, `/start`, `Resume`, `continue` | Load `skills/start/SKILL.md` and follow it exactly |
 | `/status`, `where are we?` | Load `skills/status/SKILL.md` |
 | `/explain <topic>`, `why…?`, `what is…?` | Load `skills/explain/SKILL.md` (a short answer inline, or a full lesson from the `tutor` agent) |
+| `hands off` / `hands on` | The user works on the device themselves: the guard denies every device command from every session until `hands on`. Stop device work, keep host work |
 | `/autonomous on`, `I'm away` / `/autonomous full <goal>` / `/autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / full / attended |
 
 ## Golden rules (never break them)
@@ -73,7 +74,23 @@ or "invoke" a skill.
   `ports/<id>/` (each port is its own git repo with its own backlog).
 - **Delegate** focused work to the agents below (`agents/<name>.md`). Give each one the port id and
   path, the backlog task id, the `port.yaml` facts it needs, and the exact output you expect back.
-  Agents cannot ask the user anything: you collect answers first, or relay their questions.
+  Agents cannot ask the user anything: you collect answers first, or relay their questions. The
+  safety facts always go with the task: the serials (`device.serial`, `second_stage_serial`), the
+  allowlist, the return mode, and that on-device commands need short timeouts written for BusyBox
+  (no `timeout` applet). Agents name artifacts by sha256, never overwrite a rollback image, and say
+  which state they leave the device in.
+- **The kit's agents are real agent types.** If one is missing (the `.claude/agents` and
+  `.claude/skills` links or the hooks in `.claude/settings.json` did not survive a copy), stop and
+  fix the adapter (`tools/check-host.sh` prints how) instead of imitating it with a general-purpose
+  prompt: without the adapter, the guard does not run either.
+- **One device, one owner.** Exactly one agent works on the device at a time: it claims it
+  (`tools/device-owner.sh --port <id> claim <agent> <purpose>`) and releases it when it reports. Other
+  agents do host work; read-only ssh is shared only when the owner allows. You hand the device over
+  explicitly. Use the `hands-on-test` skill whenever the user must act on the device.
+- **Writes the host tool blocks.** The host's own permission rules may refuse a raw write (e.g. Claude
+  Code's auto mode on `fwup -d /dev/sdX`). Then the user runs it: give the exact one-liner with its
+  safety check inline (`tools/ums-target.sh`), to run with `!` in the right container, or the
+  permission rule they can add.
 - **The user's eyes:** when a test relies on the user watching the screen, never flash or boot until
   they confirm they are watching, and tell them what to look for. Their photos are often the best
   debug channel: ask for them explicitly. Judge the display only after a clean reboot (a watchdog
@@ -97,6 +114,8 @@ or "invoke" a skill.
 | `boot-debugger` | Working out why a boot failed (screen photos, ramoops, dmesg, lk2nd logs) | No |
 | `firmware-hunter` | Proprietary blobs and the userspace daemons (rmtfs, qrtr…) needed by WiFi, modem, GPU | No (read-only adb pulls) |
 | `nerves-architect` | The Nerves system: A/B layout inside Android partitions, fwup, erlinit, the toolchain | No (host only) |
+| `kernel-engineer` | Driver and DT fixes in the kernel fork: a worktree per topic, upstreamable commits, a fast module/zImage loop, acceptance tests | Through the owner protocol (scp, reboot); no flashing |
+| `nerves-app-engineer` | The Nerves app: `mix nerves.new` + the device's bits, init scripts as Elixir, `mix upload` iterations, compliance with the generator | `mix upload` only |
 | `tutor` | Deep lessons, saved to `ports/<id>/journal/lessons/` | No |
 
 ## Workspace layout
