@@ -24,6 +24,19 @@ Record the choice as a decision.
   `arch/arm/dts/`), else the same SoC family, then community trees (postmarketOS, the SoC's mainline
   group) for drivers to port as patches.
 
+Shape that worked (MediaTek LK, mainline v2026.10):
+
+- `BR2_TARGET_UBOOT_CUSTOM_GIT` from source.denx.de at a release tag,
+  `BR2_TARGET_UBOOT_BUILD_SYSTEM_KCONFIG`, the board defconfig, `NEEDS_OPENSSL` when the build asks.
+- The series, one concern per patch: the MMC driver (often only a compatible string), the SoC
+  support with its `mach_cpu_init` (what the vendor bootloader leaves undone, e.g. the timer), the
+  board DT, the board file and defconfig (boot-once guard in `board_early_init_f`, video console,
+  watchdog, MMC, extlinux).
+- `u-boot.bin` packed as the boot image's kernel with the **same** `mkbootimg` arguments as the
+  Linux boot image.
+- `/boot/extlinux/extlinux.conf` (kernel + fdt) in the Buildroot board overlay: the existing
+  single-root system becomes U-Boot-booted with no layout change.
+
 ## 3. Chainloading design
 
 - **No SPL, no DRAM init:** the stock bootloader has set up DRAM and clocks
@@ -66,6 +79,15 @@ unattended work. It also needs the guard's rules: only allowlisted partitions.
   lines), the timer runs (the countdown moves), the watchdog does not fire, MMC lists the partitions, `sysboot` finds extlinux, Linux starts with the expected cmdline,
   the boot-once guard turns a deliberate hang into the flash mode.
 - Each image goes through `safe-flash.sh` and `await-boot.sh` like any other.
+- Bring U-Boot up against the **existing** single-root Buildroot system first (an M6/M9 re-run);
+  Nerves comes after.
+- Run the exact binary in QEMU `virt` at the same load address to debug the console and relocation
+  without the device (it finds wiring bugs such as a missing nulldev). QEMU hides SoC clock
+  gating, so hardware tests stay mandatory.
+- One change per flash, each with a predicted screen transcript the user compares against
+  ("you should see X, then Y").
+- The kernel's `arch/arm/mach-<vendor>` init code is the checklist of what the vendor bootloader
+  leaves undone (timer ungating, SMP pens…): U-Boot must do the same before relying on it.
 
 ## 7. Checks learned on hardware
 

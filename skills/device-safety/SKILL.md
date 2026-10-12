@@ -80,7 +80,13 @@ partition, **add it to that file** (a commit in the kit) before going further.
   past the scatter's USRDATA), so size and resize filesystems to the **scatter** size. MTK LK's
   `fastboot getvar partition-size:*` can be wrong (and list a name several times): take sizes from
   the scatter file or Linux sysfs into `device.partition_sizes`; `safe-flash.sh` ignores LK's value
-  on `mtk-*` flash modes. Scatter names to know: `uboot` is LK, `ebr1/ebr2` are partition records,
+  on `mtk-*` flash modes. The scatter file is the source of truth for offsets and sizes; `boot`
+  and `recovery` often have no Linux block device, so fwup cannot write them from Linux. In
+  fastboot, `product` is the platform name, not the model. LK honours boot-mode bits in the PMIC
+  RTC (seen on MT6323: PDN1 bit 13 fastboot, bit 4 recovery), which gives both a key-free
+  `reboot-mode` from Linux and a boot-once guard (`uboot-chainload`); check it on the device. LK
+  arms the watchdog (up to about 31 s): the kernel, U-Boot and Nerves (`nerves_heart`) must feed it.
+  Scatter names to know: `uboot` is LK, `ebr1/ebr2` are partition records,
   `bmtpool`, `kb`/`dkb`, `pro_info` (all on the forbidden list).
 - **Qualcomm:** `fastboot flash` to `aboot`/`sbl1` = hard brick, and only EDL with a signed firehose
   programmer for this exact device saves it. `modemst1/2`, `fsg`, `fsc`, `persist` = IMEI/calibration.
@@ -109,6 +115,10 @@ partition, **add it to that file** (a commit in the kit) before going further.
 - Methods, safest first: root `dd if=/dev/block/by-name/X` over adb → a temporarily booted recovery
   (`fastboot boot twrp.img`, never flashed just for backups) → vendor tools in read mode
   (`edl r`, `mtk r`, `heimdall` cannot read partitions: use one of the others).
+- When a vendor partition has no Linux block device (common on MediaTek, where the MBR/EBR exposes
+  only some partitions), dump it from the port's own running Linux, read-only: the raw eMMC region
+  split by the scatter file's offsets, `mmcblk0boot0/1`, and the tail after the last partition.
+  Compute sha256 on the device and on the host; they must match.
 - When getting root (M5) must write a class D partition before it can be dumped, its backup is the
   matching image from the stock firmware downloaded in M3, copied to `backups/<name>.img` and
   added to `SHA256SUMS`.

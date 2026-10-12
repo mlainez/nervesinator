@@ -49,6 +49,9 @@ A good task can be picked up by someone who has never seen the conversation:
 
 ## Everyday commands
 
+Task ids carry the project prefix: `PORT-12`, not `12` (`backlog task edit 12` fails with "Task 12
+not found").
+
 ```bash
 backlog task list --plain                       # everything, grouped by status
 backlog task list --plain -m "M1"               # one milestone

@@ -95,6 +95,19 @@ vendor IDs (EDL/BROM). Then handle the result:
    pending, and the next task. Remind the user of one concept from the last lesson (spaced repetition).
 5. Go to the **work loop**.
 
+## 5b. Adopt the kit on a port already under way
+
+When the user has already done part of the work without the kit:
+
+1. `tools/new-port.sh <id> <serial>`, then backfill M0 to the milestone reached: each task Done
+   with a note "Backfilled <date>" pointing at the evidence (files, commits, logs); gate tasks get
+   a note that the user drove them before adoption.
+2. **Re-run the safety checks instead of trusting the history**: verify the backups against M5
+   (every class A/B partition, not only `boot`/`recovery`), the allowlist, the unbrick kit. Missing
+   backups are done now, before any new write (`device-safety`, Backups).
+3. Fill `port.yaml` from the existing dossier and re-check the facts that matter for writes
+   (product, partition sizes, flash mode, return mode).
+
 ## 6. The work loop
 
 Repeat until a gate is reached or the user wants to stop:

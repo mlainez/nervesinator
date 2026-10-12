@@ -142,6 +142,15 @@ CLI (`npm i -g backlog.md`). Later milestones need the Buildroot build dependenc
 + fwup, and device-specific tools (heimdall, mkbootimg…). `tools/check-host.sh` tells you what is
 missing and when it will be needed.
 
+## Installing and updating the kit
+
+The kit is this repository: clone it and run the agent from its root, with ports under `ports/`.
+To use it inside another project, copy the repository's top-level files (`AGENTS.md`, `CLAUDE.md`,
+`agents/`, `skills/`, `hooks/`, `tools/`, `templates/`, `tests/`, `.claude/`) to that project's
+root, never into a subdirectory such as `tools/` (`tools/check-host.sh` warns about a nested copy).
+To update a copied kit, compare each file with the kit's history first (`git hash-object` of the
+local file against the kit's blobs) so local changes are never overwritten.
+
 ## Extending the kit
 
 - A new vendor trap or partition name → `skills/device-safety/SKILL.md` and

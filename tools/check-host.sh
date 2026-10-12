@@ -8,6 +8,9 @@ case "${ID:-}${ID_LIKE:-}" in
   *arch*) PM="sudo pacman -S" ;; *suse*) PM="sudo zypper install" ;; *) PM="(your package manager) install" ;;
 esac
 [ -e /run/ostree-booted ] && echo "note: immutable OS detected: install build tools in a toolbox/distrobox container"
+KIT=$(cd "$(dirname "$0")/.." && pwd)
+[ -e "$KIT/tools/AGENTS.md" ] || [ -d "$KIT/tools/skills" ] && \
+  echo "warning: a copy of the kit sits inside tools/ (tools/AGENTS.md, tools/skills…): remove it, the kit belongs at the project root"
 missing_now=0
 chk() { # group tool package-hint
   if command -v "$2" >/dev/null 2>&1; then printf "  ✅ %-14s %s\n" "$2" "$(command -v "$2")"
@@ -36,6 +39,9 @@ echo "== Nerves (M11)"
 chk later elixir      "https://elixir-lang.org/install.html (asdf/mise recommended)"
 chk later mix         "comes with Elixir"
 chk later fwup        "https://github.com/fwup-home/fwup#installing"
+if command -v fwup >/dev/null && fwup --version 2>&1 | grep -q "No version is set"; then
+  echo "  ⚠️  fwup is managed by asdf with no version selected: add it to .tool-versions or set ASDF_FWUP_VERSION"
+fi
 chk later mksquashfs  "$PM squashfs-tools"
 chk later mcopy       "$PM mtools"
 echo "== USB permissions"

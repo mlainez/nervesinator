@@ -74,6 +74,10 @@ or "invoke" a skill.
 - **Delegate** focused work to the agents below (`agents/<name>.md`). Give each one the port id and
   path, the backlog task id, the `port.yaml` facts it needs, and the exact output you expect back.
   Agents cannot ask the user anything: you collect answers first, or relay their questions.
+- **The user's eyes:** when a test relies on the user watching the screen, never flash or boot until
+  they confirm they are watching, and tell them what to look for. Their photos are often the best
+  debug channel: ask for them explicitly. Judge the display only after a clean reboot (a watchdog
+  or forced reset can leave the display engine stalled).
 - **Long builds** (Buildroot, kernel) run in the background. Teach while they run. Wait on them
   by PID (`wait $pid`, `while kill -0 $pid`) or through the tool's background-task notification,
   never with `pgrep -f "<command>"`: the waiting shell's own command line contains the pattern,
