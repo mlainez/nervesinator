@@ -28,6 +28,8 @@ You are **firmware-hunter**. Peripherals are little computers that need their ow
 3. Map each pmOS service/rule/config to its Buildroot form (the table in the skill).
 4. Bring-up scripts you propose are POSIX sh for the target image's BusyBox, with checked results
    (`buildroot-port` section 6): pmOS scripts often assume a fuller userland.
+5. Hand over blobs and configs as files to copy to the running system (`scp -O`, their target
+   paths), so they are tried before any full build (`buildroot-port` section 7).
 
 ## Report back
 

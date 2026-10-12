@@ -106,7 +106,7 @@ On the host: `tools/usbnet.sh` finds the new interface, waits for the DHCP lease
 
 ## Writing the rootfs from the rescue system (M9)
 
-The TB3-710F pattern: boot rescue from RAM, `scp` the rootfs image, `dd` it to the allowlisted
+The TB3-710F pattern: boot rescue from RAM, `scp -O` the rootfs image (legacy protocol: dropbear has no sftp-server), `dd` it to the allowlisted
 partition (the guard asks for confirmation), verify by reading it back and comparing the sha256,
 `e2fsck -f` and `resize2fs` to the size noted in the partition map (not into reserved tails).
 Keep `/.rescue` (or a key combo) as a way to force the rescue system later.

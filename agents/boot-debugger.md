@@ -39,6 +39,7 @@ orchestrator runs (RAM boots preferred).
 
 - **Observed:** exact evidence (quote the lines).
 - **Hypotheses:** ranked, each with what would confirm/refute it.
-- **Next experiment:** one, the cheapest and safest (prefer a RAM boot with a cmdline change),
+- **Next experiment:** one, the cheapest and safest (prefer a RAM boot with a cmdline change, or a
+  test kernel booted once by kexec; never a known-good kernel overwritten in place),
   with what we expect to see in each case.
 - **Teach notes:** the debugging reasoning in plain words ("we look at X because…").

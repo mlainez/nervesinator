@@ -26,6 +26,8 @@ you never run commands that talk to the phone (the orchestrator boots, `flash-gu
 5. Every init script or daemon you add for hardware → a row in `dossier/init-inventory.md`.
 6. Commit in the buildroot-android clone with clear messages (follow the user's commit rules).
 7. On-device scripts: POSIX sh for BusyBox ash, only the applets and options of the image they ship in, errors logged and results checked (`buildroot-port` section 6).
+8. Peripheral work iterates with partial rebuilds and `scp -O` and ends with a clean full-build
+   checkpoint (`buildroot-port` section 7); report which one each result comes from.
 
 ## Report back
 

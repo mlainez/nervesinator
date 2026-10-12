@@ -57,6 +57,9 @@ For each pmOS dependency of the device package (`APKBUILD` `depends=`, the `soc-
 Bring-up scripts (MAC address, firmware loaders) follow `buildroot-port` section 6: BusyBox ash, the
 image's own applets, results checked, errors never hidden.
 
+Iterate on blobs, daemons and configs by copying them to the running system (`scp -O`), and
+checkpoint each working peripheral with a full build (`buildroot-port` section 7).
+
 ## 5. Record for Nerves
 
 Every daemon, script, blob and config goes into `dossier/init-inventory.md`:

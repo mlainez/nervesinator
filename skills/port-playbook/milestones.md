@@ -197,6 +197,11 @@ For each one: **firmware-hunter** finds blobs and the pmOS userspace (APKBUILD d
 services → Buildroot packages and `S??` scripts); **buildroot-engineer** packages them;
 **boot-debugger** reads the dmesg. **Write down every init script**, since each one becomes Elixir in M11.
 
+**Iterate with scp, checkpoint with a full build** (`buildroot-port` section 7): each try rebuilds only
+what changed and copies it over ssh (`scp -O`), with a test kernel booted once through a mechanism
+that falls back on its own; each working peripheral ends with a clean full build, a key-free
+install, a re-check and a tagged commit.
+
 | Task | Agent |
 |---|---|
 | Prioritise peripherals with the user | orchestrator |
@@ -218,7 +223,7 @@ services → Buildroot packages and `S??` scripts); **buildroot-engineer** packa
 | Design the A/B layout inside Android partitions | nerves-architect | Usually a sub-image in `userdata` (MBR + fwup env + rootfs A/B + app f2fs) mapped by an initramfs (kpartx/losetup), or using `boot`+`system`+`userdata`; ADR |
 | Bootstrap the Nerves system | nerves-architect | `nerves_system_bootstrap` from the Buildroot defconfig, then adapt: toolchain, kernel options (squashfs, f2fs, gadget built in), erlinit.config, fwup.conf, fwup-ops.conf |
 | Boot flow for slot switching | nerves-architect | How the bootloader (lk2nd extlinux / U-Boot env / initramfs) picks the active slot; how revert works |
-| Port init scripts to Elixir | nerves-architect | From init-inventory.md: VintageNet (WiFi/QMI), custom OTP apps for firmware loaders, rmtfs, etc. |
+| Port init scripts to Elixir | nerves-architect | From init-inventory.md: VintageNet (WiFi/QMI), custom OTP apps for firmware loaders, rmtfs, etc. Iterate on apps with `mix upload` (or `scp -O` of single files), checkpoint with a full `mix firmware` and a clean install |
 | Build firmware and first flash | nerves-architect + flash-guardian | `mix firmware`, `mix firmware.image`, flash to the allowlisted partition |
 | Test mix upload, revert and factory reset | orchestrator | Upload over USB networking; `Nerves.Runtime.revert`; check it boots the other slot |
 | GATE M11 | orchestrator | |

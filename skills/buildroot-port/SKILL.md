@@ -111,3 +111,44 @@ POSIX `sh` for BusyBox `ash`, and uses only what **that** image's BusyBox has:
   `sh -n` on the host checks syntax only, not applets or options.
 - In Nerves, work done after the BEAM starts belongs in Elixir (`File`, `:binary`, `System.cmd`
   with checked output), not in shell: Nerves keeps BusyBox minimal on purpose.
+
+## 7. Iterate with scp, checkpoint with a full build (M10, M11)
+
+Once a persistent system with ssh runs, peripheral work does not rebuild and reflash the whole
+system for each try.
+
+**Iterate.** Rebuild only what changed, copy it over the USB network, test over ssh:
+
+- DTS only: `make dtbs` (or the single `<vendor>/<board>.dtb` target) in the kernel tree or in
+  `output/<name>/build/linux-*`. Not `make linux-rebuild`: with `LINUX_OVERRIDE_SRCDIR` its rsync
+  touches every timestamp and recompiles the whole kernel (minutes per try).
+- Kernel code or config: `make linux-rebuild`, or a direct kernel build; modules with
+  `make modules_install INSTALL_MOD_PATH=<dir>`.
+- One package: `make <pkg>-rebuild`.
+- Copy with `scp -O` (the legacy protocol: dropbear has no `sftp-server`, which modern OpenSSH `scp`
+  needs by default) to where the system reads it: `/boot` (as `extlinux.conf` names them),
+  `/lib/modules/<version>` then `depmod`, `/lib/firmware`, `/etc`, single binaries.
+- Reload the module or reboot, test over ssh, and log the try in
+  `journal/peripherals/<peripheral>.md` (what changed, the result).
+
+**Keep a way back with nobody there.** Never overwrite the known-good kernel or DTB in place. A
+test kernel boots once, through a mechanism that falls back on its own:
+
+1. `kexec` from the running system (`kexec -l /boot/zImage-test --dtb=/boot/test.dtb
+   --reuse-cmdline && kexec -e`), when the SoC supports it: the next reboot is the good kernel.
+2. A RAM boot through the second stage's fastboot (`tools/return-to-flash.sh`, then
+   `tools/await-boot.sh` with a boot.img of the test kernel and `root=` on the installed rootfs),
+   when that fastboot is reachable by command (not on Samsung, where the return mode is download).
+3. A bootloader one-shot or boot counter, if the bootloader has one. An extlinux `default` switched
+   to the test label and switched back "after a good boot" is **not** a fallback: a test kernel
+   that never boots never switches it back, and the phone loops.
+
+With none of these, kernel tries are attended. Panic reboot (`panic=10`) and the watchdog cover
+crashes; an early hang with no watchdog still needs hands.
+
+**Checkpoint.** When a peripheral works, fold the changes into the tree (`linux-update-defconfig`,
+DTS patches in `board/<id>/linux-patches/`, packages, overlay files), run a full build of the
+defconfig from a clean output directory, install it the vendor's key-free way
+(`tools/return-to-flash.sh`, then fastboot or heimdall `userdata`), and verify again from the clean
+image: the peripheral, boot, ssh, reboot, and the return to the flash mode. Commit, tag
+`checkpoint/<id>/<peripheral>` in buildroot-android, and record the tag in the backlog task.
