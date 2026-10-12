@@ -62,6 +62,8 @@ path:
   dtb: ""
   bootloader: ""                    # stock | lk2nd | u-boot
   boot_method: ""                   # how we load our kernel (command)
+  after_buildroot: ""               # nerves | peripherals | subset (decided once Buildroot boots)
+  peripherals: []                   # the peripherals chosen for M10 (charging is always first)
   rootfs_placement: ""              # recommended: ext2-userdata (one ext2 image with /extlinux, lk2nd)
   nerves_layout: ""
 

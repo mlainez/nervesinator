@@ -68,6 +68,9 @@ Under the grant, work towards the goal without asking the user anything:
 - **Verify every write:** a verification boot right after it (`await-boot.sh --watch-only` after a
   reboot), and on failure restore the backup through the same key-free path. Log both to
   `journal/` and notify.
+- **Choices the playbook asks the user** (what comes after Buildroot, which peripherals) are made
+  from the goal, else from the kit's recommended default; record each one as a decision marked
+  "chosen under the full-autonomy grant" so the user can revisit it.
 - **Irreversible costs** (an unlock that trips a fuse, a wipe) only when already listed in
   `learner.accepted_costs`; otherwise queue.
 - **Stop** when the goal is reached, when the grant expires, or when nothing can progress without

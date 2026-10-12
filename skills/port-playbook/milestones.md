@@ -179,6 +179,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Build the full system | buildroot-engineer | |
 | Flash plan and first persistent flash | flash-guardian (user approves) | Only allowlisted partitions; keep the rescue path (RAM boot) available |
 | Boot, ssh in, check reflash cycle | orchestrator | Write a `reflash.sh` like tb3_710f's: talks only to this serial; it returns to the flash mode with `tools/return-to-flash.sh` (`reboot-mode <device.return_mode>`), flashes, and waits for ssh, with no keys |
+| Choose what comes next with the user | orchestrator + user | Once Buildroot boots, ask: (1) Nerves now (M11), (2) peripherals in Buildroot first (M10), or (3) a chosen subset (e.g. power, WiFi) then Nerves. Charging (the first M10 task) and the init inventory are done in every case. Record a decision and `path.after_buildroot` / `path.peripherals`; tasks for peripherals not chosen get the `deferred` label and stay in the backlog |
 | GATE M9 | orchestrator | |
 
 **Exit:** survives a reboot; ssh works; a documented key-free reflash cycle (`reboot-mode` from Linux lands in the flash mode); the rescue boot still works.
@@ -191,7 +192,9 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 **Goal:** make the peripherals the user cares about work. One child task per peripheral.
 
 **Charging comes first** (the first task below): a port that drains its battery stops everything and needs
-hands. It is never deferred, and long or unattended device work waits for it. Done means: the battery
+hands. It is never deferred, and long or unattended device work waits for it. When the M9 decision
+goes to Nerves early, M10 shrinks to charging, the chosen subset and the init inventory; the other
+peripheral tasks keep their `deferred` label for later. Done means: the battery
 voltage (PMIC ADC/VADC) and, when there is one, the fuel gauge's capacity are readable; the phone
 charges on every supply the user will use (a PC port **and** a wall supply); and it keeps charging
 across every reboot and flash path the port uses (warm and cold reset, the vendor flash mode, the

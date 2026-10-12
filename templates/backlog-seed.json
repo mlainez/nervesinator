@@ -108,6 +108,7 @@
         {"title": "Build the full system", "labels": "risk-green,agent-buildroot", "ac": ["<id>_defconfig builds; images fit their partitions"]},
         {"title": "Flash plan and first persistent flash", "labels": "risk-orange,agent-flash,needs-device", "ac": ["Approved plan executed", "Only allowlisted partitions written", "Read-back hash matches"]},
         {"title": "Boot, ssh in, check reflash cycle", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Survives a reboot", "reflash.sh works by serial", "Rescue RAM boot still works"]},
+        {"title": "Choose what comes next with the user", "labels": "risk-green,agent-orchestrator", "ac": ["User chose: Nerves now, peripherals first, or a subset then Nerves", "Decision recorded; path.after_buildroot and path.peripherals set", "Peripheral tasks not chosen labelled deferred (kept)"]},
         {"title": "GATE M9: Buildroot lives on the phone", "labels": "risk-green,gate", "ac": ["M9 lesson given", "User said go"]}
       ]
     },
