@@ -92,7 +92,9 @@ Whoever starts the kernel must know the Nerves active slot:
 - **Chainloaded U-Boot** (no lk2nd for the SoC): its env lives where fwup writes it (`fw_env.config`),
   `nerves_fw_active` picks the slot, and `sysboot` reads extlinux from the sub-image through `blkmap`
   (`uboot-chainload`). Its `ums` mode exposes only `userdata`, so the host writes the firmware with
-  `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` (or `mix burn`), and its own
+  `fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)`
+  (the firmware goes with `-i`; a bare `x.fw` argument fails with "unexpected parameter"), or
+  `mix burn`, and its own
   fastboot handles `flash boot` and RAM boots. The disk must not be mounted on the host (the
   desktop may mount the boot FAT or the app partition): `ums-target.sh` refuses then; finish with
   `sync` and `udisksctl power-off -b /dev/sdX` before leaving UMS.
@@ -140,6 +142,19 @@ follows `buildroot-port` section 6 and is checked against the Nerves system's ow
 which is smaller than the Buildroot board's.
 
 ## 7. First flash and tests (orange)
+
+The test app is generated with `mix nerves.new` (it brings `nerves_pack`: `nerves_runtime`, ssh,
+MOTD, VintageNet), then gets the device's bits. A hand-assembled app misses pieces the system
+expects (e.g. `iex.exs` calling `NervesMOTD.print` with no `nerves_motd`).
+
+The raw write to the phone's USB disk may be blocked by the host tool's permission rules (Claude
+Code's auto mode refuses it): expect the user to run it. Give them the exact command with the
+target check inline (`fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)`), or they add a permission rule for it.
+
+A clean console: vendor drivers that print debug at warning level (e.g. MediaTek CONSYS
+`[STP-PSM]`, `[wlan]`) flood `tty1` over the IEx prompt. Set their debug levels through
+`/etc/modprobe.d` in the Nerves system and pick a cmdline `loglevel`, so the panel shows the MOTD
+and a prompt.
 
 Check what the screen shows, not only the logs: stderr of early scripts and BEAM warnings go to the
 console. Over ssh, `File.cp!("/dev/fb0", "/tmp/fb.raw")`, fetch it (`scp -O` or sftp), and convert it to

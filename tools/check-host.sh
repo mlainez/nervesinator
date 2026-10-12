@@ -41,6 +41,8 @@ chk later mix         "comes with Elixir"
 chk later fwup        "https://github.com/fwup-home/fwup#installing"
 if command -v fwup >/dev/null && fwup --version 2>&1 | grep -q "No version is set"; then
   echo "  ⚠️  fwup is managed by asdf with no version selected: add it to .tool-versions or set ASDF_FWUP_VERSION"
+elif command -v fwup >/dev/null && ! fwup --version >/dev/null 2>&1; then
+  echo "  ⚠️  fwup does not run here (missing libraries?): run it where it was installed, e.g. inside the distrobox"
 fi
 chk later mksquashfs  "$PM squashfs-tools"
 chk later mcopy       "$PM mtools"

@@ -294,7 +294,8 @@ def check_fwup(args, v):
             target = args[i + 1]
         elif a.startswith("--device="):
             target = a.split("=", 1)[1]
-    if target is None or target.startswith("/dev/"):
+    # A computed target ($(...), `...`, $VAR) can be any disk: treat it like /dev/
+    if target is None or target.startswith("/dev/") or any(c in target for c in "$`"):
         v.add(ASK, "fwup writes a raw host block device (%s): check it is the phone's USB disk "
                    "(tools/ums-target.sh), not one of this computer's disks."
               % (target or "auto-detected"))

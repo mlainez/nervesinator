@@ -151,6 +151,13 @@ root, never into a subdirectory such as `tools/` (`tools/check-host.sh` warns ab
 To update a copied kit, compare each file with the kit's history first (`git hash-object` of the
 local file against the kit's blobs) so local changes are never overwritten.
 
+## Where to run the tools
+
+Run the kit where its tools were installed. On an immutable desktop (Bluefin, Silverblue) the
+build tools and an asdf-managed `fwup` usually live in a distrobox/toolbox, and the host's copy
+may not run there (e.g. `libconfuse.so.2` missing); `tools/check-host.sh` warns when `fwup` cannot
+start.
+
 ## Phones as USB disks
 
 When a port's second stage exposes `userdata` as a USB disk, keep the desktop from auto-mounting

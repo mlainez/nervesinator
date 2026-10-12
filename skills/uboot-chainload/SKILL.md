@@ -69,8 +69,9 @@ Shape that worked (MediaTek LK, mainline v2026.10):
   offset matching `fw_env.config`; `ENV_IS_NOWHERE` is fine while only Buildroot boots).
 - **Defconfig checklist:** the MMC driver, the partition table type (DOS for MTK MBR/EBR, EFI for
   GPT), ext4 and FAT, `BLKMAP`, `SYSBOOT`, `BOOTZ`/`BOOTI`, `SYSRESET_WATCHDOG`, `VIDEO_SIMPLE`,
-  `CONSOLE_MUX`, `SYS_DEVICE_NULLDEV`, `PANIC_HANG`, no network and no EFI unless needed, a short
-  `bootdelay`.
+  `CONSOLE_MUX`, `SYS_DEVICE_NULLDEV`, `PANIC_HANG`, `SUPPORT_RAW_INITRD` (a raw gzip cpio
+  initramfs, as Nerves uses, otherwise "Wrong Ramdisk Image Format" at the first real boot), no
+  network and no EFI unless needed, a short `bootdelay`.
 - **Fallback:** a `bootmode fastboot|recovery` command (set the boot-mode bit and reset) and a
   `bootcmd` that ends in it when extlinux fails, so a broken root lands in the flash mode.
 - **Nerves (M11):** `blkmap map <n> 0 <sectors> linear mmc 0 <partition start + sub-image offset>`,
@@ -108,6 +109,9 @@ USB disk. Both are part of the definition of done (section 8), not options.
   a full rebuild when the kernel uses `LINUX_OVERRIDE_SRCDIR`.
 - Bring U-Boot up against the **existing** single-root Buildroot system first (an M6/M9 re-run);
   Nerves comes after.
+- Host or QEMU tests of the boot path go as far as `bootz`/`booti` with the real kernel, DTB and
+  initramfs: proving that `sysboot` loads the files is not enough (a missing `SUPPORT_RAW_INITRD`
+  only shows at that step).
 - Run the exact binary in QEMU `virt` (e.g. `-M virt,highmem=off -m 3G`) at the same load address to debug the console and relocation
   without the device (it finds wiring bugs such as a missing nulldev). QEMU hides SoC clock
   gating, so hardware tests stay mandatory.
@@ -174,7 +178,7 @@ with the phone through it without keys, screen photos or the vendor's tools:
    too (MediaTek LK: Volume-Down = factory mode).
 6. **USB disk (`ums`) is the Nerves flashing path:** expose **only** `userdata` through a `blkmap`
    bounded to its vendor size (never a vendor tail or another partition), so the host runs
-   `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` or `mix burn` directly: no
+   `fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)` or `mix burn` directly: no
    `.img`, no sparse, no fastboot buffer limit. Offer `fastboot oem board:ums` to switch without keys.
    Fastboot stays for `flash boot` (self-update), RAM boot and diagnostics. Desktops auto-mount the
    disk read-write the moment it appears: install the udev rule
