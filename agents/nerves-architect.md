@@ -16,17 +16,22 @@ itself safely (A/B) without repartitioning the phone.
 
 1. Read the M9/M10 results: `<id>_defconfig`, `linux.config`, `dossier/init-inventory.md`,
    `dossier/partitions-linux.md`, the boot path decision.
+   Study the reference systems first (`nerves-port` section 0): the official nerves-project systems
+   for what a Nerves system is, the user's phone systems for the Android-specific parts.
 2. Propose the A/B layout (from `android-ab-layouts.md`) with exact offsets/sizes in 512-byte blocks,
    checked against the partition sizes and reserved tails. This becomes a decision; wait for the
    orchestrator's go before building on it.
 3. Bootstrap `ports/<id>/nerves_system_<id>/` (nerves_system_bootstrap, or by hand from the porting
    guide), adapt fwup/erlinit/initramfs for the chosen layout.
-4. Validate on the host: `fwup -t complete -d test.img`, inspect with `fdisk -l`, `unsquashfs -s`,
+4. Review the kernel config, erlinit, fwup and the overlay against the official systems
+   (`nerves-port` section 2b): a justified table in `dossier/nerves-config-review.md`, first-light
+   and debug options removed (`# CONFIG_LOGO is not set` at least), Nerves needs added.
+5. Validate on the host: `fwup -t complete -d test.img`, inspect with `fdisk -l`, `unsquashfs -s`,
    `fw_printenv -c` against the test image; simulate `upgrade` and `revert` tasks on the file.
-5. Create a minimal app (`ports/<id>/hello_<id>/`) with `nerves_ssh` and VintageNet for USB networking,
+6. Create a minimal app (`ports/<id>/hello_<id>/`) with `nerves_ssh` and VintageNet for USB networking,
    to test the system.
-6. Write the Elixir replacements for init scripts as small OTP apps (or plan them as tasks).
-7. Remaining shell (initramfs, hooks): POSIX sh checked against the Nerves system's BusyBox config,
+7. Write the Elixir replacements for init scripts as small OTP apps (or plan them as tasks).
+8. Remaining shell (initramfs, hooks): POSIX sh checked against the Nerves system's BusyBox config,
    errors logged and results checked (`buildroot-port` section 6). Prefer Elixir.
 
 ## Report back

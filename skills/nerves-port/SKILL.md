@@ -9,6 +9,21 @@ Prerequisites: M9 done (a persistent Buildroot system that boots), `dossier/init
 complete. Read the [porting guide](https://hexdocs.pm/nerves/porting-guide.html) sections that apply:
 this skill covers what is different on phones. Details on layouts: [android-ab-layouts.md](android-ab-layouts.md).
 
+## 0. Reference systems
+
+Start from the **official** systems and docs, which define what a Nerves system is:
+
+- [github.com/nerves-project](https://github.com/nerves-project): `nerves_system_rpi*`,
+  `nerves_system_bbb` (armv7), `nerves_system_x86_64`, `nerves_system_qemu_*`, and
+  `nerves_system_br` (its default Buildroot, BusyBox and kernel requirements);
+- hexdocs.pm/nerves: the porting guide and "Customizing your Nerves system".
+
+Use the user's phone systems only for what is specific to Android phones (lk2nd/extlinux boot, A/B
+inside `userdata`, firmware taken from vendor partitions): Spin42/nerves_system_fairphone2,
+mlainez/nerves_system_fp3, nerves_system_tickwatch_pro3, Spin42/nerves_system_grouper, and
+mlainez/nerves_system_bootstrap to generate the skeleton. Reuse their structure, fwup A/B layout,
+erlinit config and firmware handling rather than designing from scratch.
+
 ## 1. Bootstrap
 
 ```bash
@@ -20,7 +35,7 @@ git clone https://github.com/mlainez/nerves_system_bootstrap cache/nerves_system
 It produces `nerves_system_<id>/` (mix.exs, nerves_defconfig, linux config, fwup.conf, fwup-ops.conf,
 rootfs_overlay, post-build.sh). It knows standard SD-card boards; for a phone, adapt the generated
 fwup and boot pieces as below. If it can't handle the defconfig, build the system by hand from the
-porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 system.
+porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 official system.
 
 ## 2. nerves_defconfig
 
@@ -31,6 +46,26 @@ porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 system.
   expect patches or a custom toolchain (the Kobo lesson); warn the user.
 - Kernel: `SQUASHFS=y`, `SQUASHFS_LZ4=y`, `F2FS_FS=y`, `USB_GADGET=y`, `USB_ETH=y` (or configfs NCM
   via an Elixir gadget setup), `DM_*`/`BLK_DEV_LOOP=y` if the initramfs maps a sub-image.
+
+## 2b. Review against the official systems (and productize)
+
+The board's `linux.config` and overlay come from a Buildroot port with first-light and debug aids.
+Never copy them verbatim. Diff the kernel config against the official systems' defconfigs and the
+`nerves_system_br` requirements, and justify every difference in `dossier/nerves-config-review.md`:
+
+| Option | Buildroot port | Official Nerves | Chosen | Why |
+|---|---|---|---|---|
+
+- **Remove** what a Buildroot port carries but Nerves systems do not: first-light aids
+  (`# CONFIG_LOGO is not set`, as nerves_system_fp3 does; framebuffer console extras), a verbose
+  console (`loglevel=7/8`, `ignore_loglevel` on the cmdline), debug options (`DEBUG_INFO`,
+  `KALLSYMS_ALL` extras), unused filesystems, module signing or compression that conflicts with
+  Nerves.
+- **Add** what Nerves needs, as the official systems enable it: squashfs with the chosen compression,
+  f2fs or ext4 for `/root`, devtmpfs, the USB gadget, the watchdog, the RTC, cgroups and namespaces.
+- Put the cleanup in a fragment (`linux-nerves.fragment`) so the board's config stays the source.
+- Do the same for `erlinit.config`, `fwup.conf`, `fwup-ops.conf` and the rootfs overlay: compare with
+  the official templates first, then with the phone systems, and record each difference.
 
 ## 3. Pick the A/B layout (ADR)
 

@@ -233,7 +233,8 @@ install, a re-check and a tagged commit.
 | Task | Agent | Notes |
 |---|---|---|
 | Design the A/B layout inside Android partitions | nerves-architect | Usually a sub-image in `userdata` (MBR + fwup env + rootfs A/B + app f2fs) mapped by an initramfs (kpartx/losetup), or using `boot`+`system`+`userdata`; ADR |
-| Bootstrap the Nerves system | nerves-architect | `nerves_system_bootstrap` from the Buildroot defconfig, then adapt: toolchain, kernel options (squashfs, f2fs, gadget built in), erlinit.config, fwup.conf, fwup-ops.conf |
+| Bootstrap the Nerves system | nerves-architect | Study the official nerves-project systems, then the user's phone systems for the Android parts; `nerves_system_bootstrap` from the Buildroot defconfig, then adapt: toolchain, kernel options (squashfs, f2fs, gadget built in), erlinit.config, fwup.conf, fwup-ops.conf |
+| Review the system against official Nerves systems | nerves-architect | Diff `linux.config`, erlinit, fwup and the overlay against the nerves-project systems (`nerves-port` section 2b); remove first-light/debug options (`CONFIG_LOGO`, verbose loglevel, `DEBUG_INFO`), add what Nerves needs; table in `dossier/nerves-config-review.md` |
 | Boot flow for slot switching | nerves-architect | How the bootloader (lk2nd extlinux / U-Boot env / initramfs) picks the active slot; how revert works |
 | Port init scripts to Elixir | nerves-architect | From init-inventory.md: VintageNet (WiFi/QMI), custom OTP apps for firmware loaders, rmtfs, etc. Iterate on apps with `mix upload` (or `scp -O` of single files), checkpoint with a full `mix firmware` and a clean install |
 | Build firmware and first flash | nerves-architect + flash-guardian | `mix firmware`, `mix firmware.image`, flash to the allowlisted partition |
