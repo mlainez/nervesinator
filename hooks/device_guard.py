@@ -345,8 +345,9 @@ def analyse(cmd, v, depth=0):
     if depth > 3:
         return
     if depth == 0:
-        if autonomy_grant.GRANT_NAME in cmd:
-            v.add(DENY, "The autonomy grant is created only by the user typing /autonomous full.")
+        if any(n in cmd for n in autonomy_grant.PROTECTED_NAMES):
+            v.add(DENY, "The autonomy grant and the hands-off marker are set only by the user's own "
+                        "words (/autonomous full, hands off / hands on).")
         cmd = strip_file_heredocs(cmd)
     remote_whole = bool(REMOTE_RE.search(cmd))
     if remote_whole:
@@ -412,6 +413,17 @@ def log(decision, cmd, reasons):
         pass
 
 
+DEVICE_CMD_RE = re.compile(
+    r"\b(fastboot|adb|heimdall|odin4?|edl|mtk|fwup|safe-flash\.sh|await-boot\.sh|"
+    r"return-to-flash\.sh|backup-partitions\.sh)\b|\bssh\b[^|;&]*10\.0\.42\.1")
+
+
+def apply_hands_off(cmd, v, ports_dir):
+    """While the user has said "hands off", every device command is denied, grant or not."""
+    if autonomy_grant.hands_off_active(ports_dir) and (v.level or DEVICE_CMD_RE.search(cmd)):
+        v.add(DENY, "Hands off: the user is working on the device. Wait until they type \"hands on\".")
+
+
 def apply_grant(v, ports_dir):
     """ASK becomes ALLOW under a valid full-autonomy grant; returns the grant used, if any."""
     if v.level != ASK:
@@ -427,6 +439,7 @@ def apply_grant(v, ports_dir):
 def check_cli(cmd, ports_dir=PORTS_DIR):
     v = Verdict()
     analyse(cmd, v)
+    apply_hands_off(cmd, v, ports_dir)
     if apply_grant(v, ports_dir):
         log("allow-autonomy", cmd, v.reasons)
     label = {0: "ALLOW", ASK: "ASK", DENY: "DENY"}[v.level]
@@ -448,11 +461,11 @@ def main():
     if data.get("tool_name") in FILE_TOOLS:
         path = (data.get("tool_input") or {}).get("file_path") or \
             (data.get("tool_input") or {}).get("notebook_path") or ""
-        if os.path.basename(path) == autonomy_grant.GRANT_NAME:
+        if os.path.basename(path) in autonomy_grant.PROTECTED_NAMES:
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse", "permissionDecision": "deny",
-                "permissionDecisionReason": "[device-guard] The autonomy grant is created only by "
-                                            "the user typing /autonomous full."}}))
+                "permissionDecisionReason": "[device-guard] The autonomy grant and the hands-off "
+                                            "marker are set only by the user's own words."}}))
         return 0
     if data.get("tool_name") != "Bash":
         return 0
@@ -463,6 +476,7 @@ def main():
     except Exception as exc:  # never let a parser bug silently allow a device write
         if re.search(r"fastboot|heimdall|odin|edl|mtk|\bdd\b|/dev/block", cmd):
             v.add(ASK, "device_guard could not parse this command (%s); confirm manually." % exc)
+    apply_hands_off(cmd, v, PORTS_DIR)
     if apply_grant(v, PORTS_DIR):
         log("allow-autonomy", cmd, v.reasons)
     if v.level == 0:

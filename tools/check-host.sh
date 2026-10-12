@@ -46,6 +46,21 @@ elif command -v fwup >/dev/null && ! fwup --version >/dev/null 2>&1; then
 fi
 chk later mksquashfs  "$PM squashfs-tools"
 chk later mcopy       "$PM mtools"
+echo "== Kit adapter (Claude Code: agents, skills, the guard hook)"
+for l in agents skills; do
+  if [ -d "$KIT/.claude/$l" ] && [ "$(cd "$KIT/.claude/$l" && pwd -P)" = "$(cd "$KIT/$l" && pwd -P)" ]; then
+    echo "  ✅ .claude/$l -> $l/"
+  else
+    echo "  ❌ .claude/$l does not resolve to $l/: mkdir -p \"$KIT/.claude\" && ln -sfn ../$l \"$KIT/.claude/$l\""; missing_now=1
+  fi
+done
+for h in device_guard.py start_trigger.py; do
+  if grep -q "$h" "$KIT/.claude/settings.json" 2>/dev/null; then
+    echo "  ✅ .claude/settings.json runs hooks/$h"
+  else
+    echo "  ❌ .claude/settings.json does not run hooks/$h: copy .claude/settings.json from the kit"; missing_now=1
+  fi
+done
 echo "== USB permissions"
 if command -v adb >/dev/null && adb devices 2>/dev/null | grep -q "no permissions"; then
   echo "  ❌ adb reports 'no permissions': install udev rules ($PM android-udev-rules or systemd uaccess) and replug"

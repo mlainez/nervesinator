@@ -60,3 +60,38 @@ def valid_grant(ports_dir):
         return grant
     except (OSError, ValueError, KeyError, TypeError):
         return None
+
+
+# "hands off": the user is working on the device themselves (e.g. a write over USB mass storage).
+# Only the prompt hook creates or removes the marker; while it exists the guard denies every device
+# command, whatever the grant says.
+HANDS_OFF_NAME = ".hands-off"
+PROTECTED_NAMES = (GRANT_NAME, HANDS_OFF_NAME)
+
+
+def hands_off_path(ports_dir):
+    port = active_port(ports_dir)
+    return os.path.join(ports_dir, port, HANDS_OFF_NAME) if port else None
+
+
+def set_hands_off(ports_dir, prompt):
+    path = hands_off_path(ports_dir)
+    if not path or not os.path.isdir(os.path.dirname(path)):
+        return False
+    with open(path, "w") as f:
+        json.dump({"since": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                   "typed_by_user": prompt}, f)
+    return True
+
+
+def clear_hands_off(ports_dir):
+    path = hands_off_path(ports_dir)
+    if path and os.path.exists(path):
+        os.remove(path)
+        return True
+    return False
+
+
+def hands_off_active(ports_dir):
+    path = hands_off_path(ports_dir)
+    return bool(path) and os.path.exists(path)

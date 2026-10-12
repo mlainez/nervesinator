@@ -91,5 +91,11 @@ tg DENY  "fastboot -s X flash aboot x.img"
 tg DENY  "rm ports/x/.autonomy-grant"
 printf '{"mode": "full", "goal": "t", "expires_at": "2000-01-01T00:00:00+00:00"}' > "$P/x/.autonomy-grant"
 tg ASK   "tools/safe-flash.sh --port x --execute flash userdata u.img"
+# "hands off" (the user works on the device): every device command denied, host work allowed
+printf '{"since": "now"}' > "$P/x/.hands-off"
+tg DENY  "fastboot -s X getvar all"
+tg DENY  "ssh root@10.0.42.1 cat /proc/cmdline"
+tg ALLOW "make -C buildroot O=out"
+tg DENY  "rm ports/x/.hands-off"
 rm -r "$P"
 exit $fail

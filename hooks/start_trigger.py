@@ -44,6 +44,17 @@ def main():
         else:
             context("The user asked for full autonomy, but there is no active port (ports/.active): "
                     "no grant was created. Tell the user to start or resume a port first.")
+    elif prompt in ("hands off", "/hands off"):
+        if autonomy_grant.set_hands_off(PORTS, raw):
+            context("HANDS OFF: the user is working on the device. The guard now denies every device "
+                    "command from every session. Tell all agents to stop device work, do host work "
+                    "only, and wait until the user types \"hands on\".")
+        else:
+            context("The user said hands off, but there is no active port: nothing was set.")
+    elif prompt in ("hands on", "/hands on"):
+        cleared = autonomy_grant.clear_hands_off(PORTS)
+        context("HANDS ON: the user has finished with the device%s; device work may resume."
+                % ("" if cleared else " (no hands-off marker was set)"))
     elif prompt in TRIGGERS:
         context("The user wants to start or resume a port. Invoke the `start` skill now and follow "
                 "it exactly. If a gate is pending, 'go'/'continue' only counts as approval when it "
