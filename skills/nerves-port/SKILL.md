@@ -108,6 +108,18 @@ which is smaller than the Buildroot board's.
 
 ## 7. First flash and tests (orange)
 
+Check what the screen shows, not only the logs: stderr of early scripts and BEAM warnings go to the
+console. Over ssh, `File.cp!("/dev/fb0", "/tmp/fb.raw")`, fetch it (`scp -O` or sftp), and convert it to
+PNG with the bits per pixel and stride from `/sys/class/graphics/fb0/` (`bits_per_pixel`, `stride`,
+`virtual_size`).
+
+Logger on recent Elixir (1.20 warns that the `:backends` key of `:logger` is deprecated, which
+`nerves_bootstrap`-generated apps still use for RingLogger): add `{:logger_backends, "~> 1.0"}`, set
+`config :logger, :default_handler, false` in `target.exs`, and in `config/runtime.exs` under
+`if config_target() != :host`: `Application.ensure_all_started(:logger_backends)` then
+`LoggerBackends.add(RingLogger)` (RingLogger 0.11.7 changelog). RingLogger keeps the boot logs and the
+console stays clean.
+
 `mix firmware` → `mix firmware.image <id>.img` → `flash-guardian` flashes it to the allowlisted
 partition (fastboot/heimdall/`dd` from the rescue system) → boot → IEx over ssh on 10.0.42.1/USB →
 `mix upload` → reboot into the new slot → `Nerves.Runtime.revert()` → confirm it boots the old slot.

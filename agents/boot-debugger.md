@@ -17,6 +17,8 @@ orchestrator runs (RAM boots preferred).
 
 - Photos of the screen (the user drops them in the conversation or `journal/photos/`): read them, transcribe
   the last lines, note timestamps, panics, the last driver that printed.
+- The screen console of a running system (`/dev/fb0` captured over ssh, `nerves-port` section 7):
+  scripts' stderr and BEAM warnings show there and never reach dmesg, so check it, not only dmesg.
 - `fastboot -s <serial> oem log` (lk2nd), `fastboot getvar all` (read-only).
 - `/sys/fs/pstore/*` after a warm reboot into the rescue system (ramoops), `dmesg` over ssh.
 - The kernel config, the DTB (`dtc -I dtb -O dts`), the boot image (`tools/lib/bootimg_info.py`),

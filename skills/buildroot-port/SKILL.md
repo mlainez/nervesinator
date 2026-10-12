@@ -125,7 +125,12 @@ POSIX `sh` for BusyBox `ash`, and uses only what **that** image's BusyBox has:
 - Never hide the errors of a step whose result matters: log failures to `/dev/kmsg` and check the
   result (a MAC address must match its format before it is written anywhere).
 - Test in the exact image the script ships in (on the device, or in qemu with that BusyBox):
-  `sh -n` on the host checks syntax only, not applets or options.
+  `sh -n` on the host checks syntax only, not applets or options. To check an applet or option on
+  the host, run the image's own BusyBox: `qemu-arm-static -L <unpacked root> <unpacked root>/bin/busybox
+  <applet> --help` (`qemu-aarch64-static` on arm64), for the initramfs as well as the rootfs.
+- Read the **screen console** as well as dmesg: a script's stderr goes to the console, not the
+  kernel log (an unsupported `mdev -d` printed its usage on the screen at every boot and never
+  reached dmesg). On a running system, capture what the user sees (`nerves-port` section 7).
 - In Nerves, work done after the BEAM starts belongs in Elixir (`File`, `:binary`, `System.cmd`
   with checked output), not in shell: Nerves keeps BusyBox minimal on purpose.
 
