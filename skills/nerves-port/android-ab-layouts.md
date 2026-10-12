@@ -68,5 +68,7 @@ standard fwup one inside `userdata` (layout 1). The Android slot machinery is ne
 - [ ] Every offset is in 512-byte blocks and fits inside the partition minus reserved tails
 - [ ] `fw_env.config`, `NERVES_FW_DEVPATH`, `NERVES_FW_APPLICATION_PART0_DEVPATH`, erlinit `-m` agree
 - [ ] `fwup -t complete` tested on a file image, partitions inspected with `fdisk -l` / `unsquashfs -s`
+- [ ] `templates/nerves/host-check-fwup.sh` passes with this layout (copy it with its .conf)
+- [ ] With a vendor tail (BMT pool, encryption footer): fixed-size app partition, nothing written past it
 - [ ] Revert tested on the device
 - [ ] The rescue boot still works (RAM boot or a key combo), so a broken Nerves image is never a brick

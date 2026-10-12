@@ -63,6 +63,10 @@ Never copy them verbatim. Diff the kernel config against the official systems' d
   Nerves.
 - **Add** what Nerves needs, as the official systems enable it: squashfs with the chosen compression,
   f2fs or ext4 for `/root`, devtmpfs, the USB gadget, the watchdog, the RTC, cgroups and namespaces.
+- **Traps seen:** `CONFIG_CMDLINE_FORCE=y` in the board config silently ignores the bootloader's
+  and extlinux's `append`: remove it. `MEDIA_SUPPORT=m` builds a hundred-odd unused DVB modules:
+  select only what the hardware has. `mix firmware` rebuilds the squashfs with gzip, so
+  `SQUASHFS_ZLIB` is needed even when the Buildroot rootfs used LZ4.
 - Put the cleanup in a fragment (`linux-nerves.fragment`) so the board's config stays the source.
 - Do the same for `erlinit.config`, `fwup.conf`, `fwup-ops.conf` and the rootfs overlay: compare with
   the official templates first, then with the phone systems, and record each difference.
@@ -104,8 +108,23 @@ Whoever starts the kernel must know the Nerves active slot:
 - `fw_env.config`: the device + offset of the env region **inside** the sub-image path as seen by Linux.
 - `NERVES_FW_DEVPATH`: the partition (or loop device) holding the image, not the whole eMMC.
 - fwup `complete` writes the sub-image; `upgrade` writes the inactive slot and flips the env;
-  `fwup-ops.conf` revert flips it back. Test each task on a **file** first
-  (`fwup -a -i x.fw -t complete -d test.img`), then on the device.
+  `fwup-ops.conf` revert flips it back. Test each task on a **file** first with
+  `templates/nerves/host-check-fwup.sh` (complete, upgrade, revert twice, validate,
+  prevent-revert, factory-reset on a sparse file the size of the target partition, and nothing
+  written past the layout), then on the device. An asdf-managed fwup needs a version selected
+  (`.tool-versions` or `ASDF_FWUP_VERSION`), or every call fails with "No version is set".
+- With a vendor tail at the end of the partition (MediaTek BMT pool), the app partition has a fixed
+  size (no `expand`) and the host check asserts nothing lands past the layout.
+- Boot slots inside the sub-image can be FAT, filled with fwup `fat_write`, when U-Boot reads them;
+  ext2 is only needed for lk2nd.
+- Board packages can come from a pinned buildroot-android commit tarball rather than copied
+  sources; non-redistributable firmware lives in a git-ignored `firmware/` directory; an
+  unpublished kernel fork goes through `local.mk` `LINUX_OVERRIDE_SRCDIR`, documented in a
+  committed `local.mk.example`.
+- Package versions drift between the board's Buildroot and `nerves_system_br`'s: patches pinned
+  to one release (e.g. libcamera 0.5) may not apply to the next; check each board patch.
+- USB networking at the kit's fixed 10.0.42.1: `VintageNetEthernet` with a static address and a
+  DHCP server on `usb0` (`VintageNetDirect` cannot assign a fixed address).
 
 ## 6. Replace init scripts with Elixir
 
