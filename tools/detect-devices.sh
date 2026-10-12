@@ -37,6 +37,14 @@ else
   echo "  fastboot not installed"
 fi
 
+echo "== kit test images (first light / rescue / system)"
+. "$(dirname "$0")/lib/kit_gadget.sh"
+while read -r ser prod tty net; do
+  [ -z "$ser" ] && continue
+  found=1
+  printf "  %-20s %-24s console=%s net=%s (phone 10.0.42.1)\n" "$ser" "$prod" "$tty" "$net"
+done < <(kit_gadgets)
+
 echo "== USB (special modes)"
 if command -v lsusb >/dev/null; then
   lsusb | while read -r line; do
@@ -49,7 +57,7 @@ if command -v lsusb >/dev/null; then
       0e8d:0003) echo "  MediaTek BROM mode: $line" ;;
       0e8d:2000) echo "  MediaTek preloader mode: $line" ;;
       18d1:4ee0|18d1:d00d) echo "  Android fastboot: $line" ;;
-      18d1:d001) echo "  USB networking gadget (rescue initramfs?): $line" ;;
+      18d1:d001) echo "  USB networking gadget (older rescue initramfs?): $line" ;;
     esac
   done
   lsusb | grep -qE '04e8:685d|05c6:9008|0e8d:0003|0e8d:2000' && found=1

@@ -1,44 +1,46 @@
 #!/bin/sh
-# Bring up USB networking on the phone.
-# - If the kernel has the legacy g_ether built in, usb0 already exists: just configure it.
-# - Otherwise build an NCM + RNDIS gadget through configfs and bind it to the first UDC.
-# Then serve exactly one DHCP lease with unudhcpd: phone 10.0.42.1, computer 10.0.42.2.
-IP=${IP:-10.0.42.1}
-CLIENT=${CLIENT:-10.0.42.2}
+# USB gadget of the kit's test images, through configfs: ACM serial (ttyGS0) + NCM network (usb0).
+# Identity (see tools/lib/kit_gadget.sh): 1d6b:0104, manufacturer "porting-kit",
+# product "<port id>-<image>", serial = device.serial, so the host tells it apart from fastboot
+# (18d1:d00d) and finds the right phone. Phone 10.0.42.1, the host gets 10.0.42.2 by DHCP.
+[ -f /etc/kit-image ] && . /etc/kit-image
 G=/sys/kernel/config/usb_gadget/g1
+IP=10.0.42.1
+CLIENT=10.0.42.2
 
-wait_for() { i=0; while [ ! -e "$1" ] && [ $i -lt 50 ]; do sleep 0.1; i=$((i+1)); done; }
+wait_for() { i=0; while [ ! -e "$1" ] && [ $i -lt "$2" ]; do sleep 0.5; i=$((i+1)); done; [ -e "$1" ]; }
 
-if ! ip link show usb0 >/dev/null 2>&1; then
-  if [ ! -d /sys/kernel/config/usb_gadget ]; then
-    echo "usb-gadget: no configfs usb_gadget and no usb0 (enable CONFIG_USB_CONFIGFS_NCM or CONFIG_USB_ETH)"
-    exit 1
-  fi
-  wait_for /sys/class/udc
-  UDC=$(ls /sys/class/udc 2>/dev/null | head -1)
-  [ -n "$UDC" ] || { echo "usb-gadget: no UDC found (USB controller/PHY driver missing?)"; exit 1; }
-  mkdir -p $G
-  echo 0x18d1 > $G/idVendor
-  echo 0xd001 > $G/idProduct
-  mkdir -p $G/strings/0x409
-  echo "porting-kit" > $G/strings/0x409/manufacturer
-  echo "Rescue initramfs" > $G/strings/0x409/product
-  echo "$(cat /proc/sys/kernel/random/boot_id | cut -c1-8)" > $G/strings/0x409/serialnumber
-  mkdir -p $G/configs/c.1/strings/0x409
-  echo "NCM+RNDIS" > $G/configs/c.1/strings/0x409/configuration
-  if mkdir -p $G/functions/ncm.usb0 2>/dev/null; then
-    ln -s $G/functions/ncm.usb0 $G/configs/c.1/
-  fi
-  if mkdir -p $G/functions/rndis.usb1 2>/dev/null; then
-    ln -s $G/functions/rndis.usb1 $G/configs/c.1/
-  fi
-  echo "$UDC" > $G/UDC
-  wait_for /sys/class/net/usb0
-fi
+mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config
+wait_for /sys/kernel/config/usb_gadget 20 || { echo "usb-gadget: no configfs usb_gadget (CONFIG_USB_CONFIGFS)"; exit 1; }
 
-ip addr add $IP/24 dev usb0 2>/dev/null
+# The UDC appears once the USB controller, its PHY and their regulators/extcon have probed
+i=0
+while [ -z "$(ls /sys/class/udc 2>/dev/null)" ] && [ $i -lt 60 ]; do sleep 0.5; i=$((i+1)); done
+UDC=$(ls /sys/class/udc 2>/dev/null | head -1)
+[ -n "$UDC" ] || { echo "usb-gadget: no UDC after 30 s (USB controller, PHY or extcon did not probe)"; exit 1; }
+
+mkdir -p $G
+echo 0x1d6b > $G/idVendor
+echo 0x0104 > $G/idProduct
+echo 0x0100 > $G/bcdDevice
+echo 0x0200 > $G/bcdUSB
+mkdir -p $G/strings/0x409
+echo "porting-kit" > $G/strings/0x409/manufacturer
+echo "${KIT_PORT:-port}-${KIT_IMAGE:-test}" > $G/strings/0x409/product
+echo "${KIT_SERIAL:-0}" > $G/strings/0x409/serialnumber
+mkdir -p $G/configs/c.1/strings/0x409
+echo "ACM+NCM" > $G/configs/c.1/strings/0x409/configuration
+echo 250 > $G/configs/c.1/MaxPower
+mkdir -p $G/functions/acm.usb0 && ln -s $G/functions/acm.usb0 $G/configs/c.1/
+mkdir -p $G/functions/ncm.usb0 && ln -s $G/functions/ncm.usb0 $G/configs/c.1/
+echo "$UDC" > $G/UDC || { echo "usb-gadget: binding to $UDC failed"; exit 1; }
+
+wait_for /sys/class/net/usb0 20 || { echo "usb-gadget: usb0 did not appear"; exit 1; }
+ip addr add $IP/24 dev usb0
 ip link set usb0 up
 if command -v unudhcpd >/dev/null; then
-  unudhcpd -i usb0 -s $IP -c $CLIENT >/dev/null 2>&1 &
+	unudhcpd -i usb0 -s $IP -c $CLIENT >/dev/null 2>&1 &
+else
+	udhcpd -S /etc/udhcpd.conf
 fi
-echo "usb-gadget: usb0 up at $IP (computer gets $CLIENT)"
+echo "usb-gadget: $UDC bound, 1d6b:0104 ${KIT_PORT:-port}-${KIT_IMAGE:-test}, usb0 at $IP, host gets $CLIENT"

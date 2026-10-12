@@ -6,6 +6,7 @@ BR2_TARGET_ROOTFS_CPIO=y
 BR2_TARGET_ROOTFS_CPIO_GZIP=y
 BR2_PACKAGE_DROPBEAR=y
 BR2_PACKAGE_UNUDHCPD=y
+BR2_PACKAGE_REBOOT_MODE=y
 BR2_PACKAGE_E2FSPROGS=y
 BR2_PACKAGE_E2FSPROGS_RESIZE2FS=y
 BR2_PACKAGE_I2C_TOOLS=y
@@ -13,5 +14,8 @@ BR2_PACKAGE_EVTEST=y
 BR2_PACKAGE_USBUTILS=y
 BR2_PACKAGE_UTIL_LINUX=y
 BR2_PACKAGE_UTIL_LINUX_BINARIES=y
-# Overlay with /init and usb-gadget.sh (copy templates/rescue into board/<id>/rescue-overlay)
+# Overlay: /init (init-rescue), /usr/lib/kit-common.sh, /usr/sbin/usb-gadget.sh, /etc/kit-image
+# (KIT_IMAGE=rescue), /etc/udhcpd.conf, copied from templates/rescue into board/<id>/rescue-overlay.
+# The first-light overlay is the same with init-firstlight as /init and KIT_IMAGE=firstlight;
+# both defconfigs need busybox telnetd and watchdog, and BR2_PACKAGE_REBOOT_MODE=y.
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_ANDROID_PATH)/board/<id>/rescue-overlay"
