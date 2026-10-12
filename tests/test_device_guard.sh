@@ -28,6 +28,11 @@ t ASK   "ssh root@10.0.42.1 'dd if=/tmp/rootfs.ext4 of=/dev/mmcblk0p7 bs=1M'"
 t ASK   "adb -s X shell su -c 'dd if=/sdcard/b.img of=/dev/block/by-name/boot'"
 t ASK   "tools/safe-flash.sh --port samsung-x --execute flash boot boot.img"
 t ASK   "tools/safe-flash.sh --port samsung-x --resume --execute flash recovery twrp.img"
+t ALLOW "tools/safe-flash.sh --port samsung-x --execute boot first-light.img"
+t ASK   "tools/safe-flash.sh --port boot --mode fastboot --execute flash boot boot.img"
+t ASK   "tools/safe-flash.sh --port samsung-x --execute unlock"
+t ALLOW "tools/await-boot.sh --port samsung-x --image first-light.img --timeout 120"
+t ASK   "tools/await-boot.sh --port samsung-x --image a.img; fastboot -s X flash boot a.img"
 t ASK   "mtk da seccfg unlock"
 t DENY  "fastboot flash boot boot.img"
 t DENY  "fastboot -s X flash aboot lk2nd.img"
@@ -50,4 +55,10 @@ t DENY  "ssh root@10.0.42.1 sgdisk -Z /dev/mmcblk0"
 t DENY  "ssh root@10.0.42.1 'echo 0 > /sys/block/mmcblk0boot0/force_ro'"
 t DENY  "bash -c 'fastboot -s X flash tz tz.img'"
 t DENY  "echo ZmFzdGJvb3Q= | base64 -d | sh # fastboot"
+# heredoc bodies written to a file are text; bodies fed to a shell are commands
+t ALLOW $'cat > notes.md <<\'EOF\'\nroot shell over telnet; mmcblk0boot0 force_ro=1\nEOF'
+t ALLOW $'tee notes.md <<EOF\nfastboot -s X flash aboot x.img\nEOF'
+t DENY  $'cat <<\'EOF\' | ssh root@10.0.42.1 sh\necho 0 > /sys/block/mmcblk0boot0/force_ro\nEOF'
+t DENY  $'ssh root@10.0.42.1 sh <<\'EOF\'\nsgdisk -Z /dev/mmcblk0\nEOF'
+t DENY  $'bash <<EOF\nfastboot -s X flash tz tz.img\nEOF'
 exit $fail

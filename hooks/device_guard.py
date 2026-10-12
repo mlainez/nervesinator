@@ -262,9 +262,51 @@ REMOTE_DENY_RE = re.compile(
 REMOTE_ASK_RE = re.compile(r"\b(mkfs(\.\w+)?|mke2fs|mkfs\.f2fs|resize2fs|wipefs|tune2fs)\b")
 
 
+def safe_flash_op(args):
+    """The operation of a safe-flash.sh command line (its first non-option word)."""
+    i = 0
+    while i < len(args):
+        if args[i] in ("--port", "--mode"):
+            i += 2
+        elif args[i].startswith("-"):
+            i += 1
+        else:
+            return args[i]
+    return ""
+
+
+HEREDOC_RE = re.compile(r"^(?P<head>.*?)<<-?\s*(?P<q>['\"]?)(?P<tag>[A-Za-z_][A-Za-z0-9_]*)(?P=q)(?P<tail>.*)$")
+
+
+def writes_heredoc_to_file(head, tail):
+    """True for `cat > f <<EOF` / `tee f <<EOF`: the body is text for a file, never run."""
+    last = SPLIT_RE.split(head)[-1]
+    toks = tokens_of(last.strip())
+    if not toks or os.path.basename(toks[0]) not in ("cat", "tee") or "|" in tail:
+        return False
+    return os.path.basename(toks[0]) == "tee" or ">" in last + tail
+
+
+def strip_file_heredocs(cmd):
+    lines, out, i = cmd.split("\n"), [], 0
+    while i < len(lines):
+        m = HEREDOC_RE.match(lines[i])
+        if m and writes_heredoc_to_file(m.group("head"), m.group("tail")):
+            end = next((j for j in range(i + 1, len(lines)) if lines[j].strip("\t") == m.group("tag")), None)
+            if end is not None:
+                out += [lines[i], lines[end]]
+                i = end + 1
+                continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
 def analyse(cmd, v, depth=0):
     if depth > 3:
         return
+    if depth == 0:
+        cmd = strip_file_heredocs(cmd)
     remote_whole = bool(REMOTE_RE.search(cmd))
     if remote_whole:
         if REMOTE_DENY_RE.search(cmd):
@@ -300,8 +342,12 @@ def analyse(cmd, v, depth=0):
         elif prog in ("edl", "edl.py", "mtk", "mtk.py", "mtkclient"):
             check_edl(prog, args, v)
         elif prog == "safe-flash.sh":
-            if "--execute" in args:
+            # "boot" is a RAM-only fastboot boot, allowed like a plain `fastboot boot`;
+            # every other operation writes to the device
+            if "--execute" in args and safe_flash_op(args) != "boot":
                 v.add(ASK, "safe-flash.sh --execute will write to the device: " + " ".join(args))
+        elif prog == "await-boot.sh":
+            pass  # runs only `safe-flash.sh --execute boot` (RAM) and read-only USB/fastboot/adb probes
 
     if re.search(r"base64\s+(-d|--decode)[^|]*\|\s*(ba|z|da)?sh\b", cmd) and \
             re.search(r"fastboot|heimdall|edl|mtk|dd\b", cmd):
