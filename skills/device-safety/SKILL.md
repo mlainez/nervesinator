@@ -84,8 +84,10 @@ partition, **add it to that file** (a commit in the kit) before going further.
   the SoC board name (e.g. `lk2nd-msm8916`): `safe-flash.sh` then matches `getvar lk2nd:compatible`
   against `device.lk2nd_compatible`. On some SoCs (seen on msm8226), holding Vol Up + Vol Down while
   lk2nd starts reboots into EDL (`05c6:9008`); a battery pull (or a long power-key hold) gets out of it.
-- **A/B devices:** know the active slot (`getvar current-slot`). Flash the inactive slot's
-  `boot_x` only on purpose; never `set_active` to an empty slot.
+- **A/B devices:** know the active slot (`getvar current-slot`). Flash the kit's images to the
+  active slot only; never `set_active` to an empty slot. The running system must mark the slot
+  successful at every boot (qbootctl or the vendor equivalent), or the retry counter drains and
+  the phone falls back to fastboot (`nerves-port`, android-ab-layouts.md).
 - **AVB / dm-verity:** on Android 8+ devices, booting a custom kernel may need a `vbmeta` with
   verification disabled (`--disable-verity --disable-verification`). That is a write to class C:
   treat it as orange, back up `vbmeta` first.

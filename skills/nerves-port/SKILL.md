@@ -79,7 +79,12 @@ Record the choice, the offsets and the device paths in the decision and in `port
 
 ## 4. Boot flow and slot switching
 
-Whoever starts the kernel must know the active slot:
+If the phone already has Android A/B slots (`device.android_ab`), Nerves does not use them:
+neutralise them (active slot only, mark it successful on every boot with qbootctl or the vendor
+equivalent, as nerves_system_fp3 and ex_qbootctl do). See android-ab-layouts.md, "Existing
+Android A/B".
+
+Whoever starts the kernel must know the Nerves active slot:
 - **lk2nd + extlinux:** the fwup `on-finish` rewrites `extlinux.conf` (or two labels `nerves_a`/`nerves_b`
   with `default` switched) on a small FAT/ext partition inside the sub-image.
 - **Stock LK + boot.img:** a single boot.img with an initramfs that reads the fwup env
@@ -145,6 +150,7 @@ safely, in one command:
    - the second-stage bootloader and the latest Nerves release image from GitHub, written to the
      port's allowlisted partitions only (`boot`, `userdata` by default), through the port's proven
      key-free path (on a Samsung, for example: `adb reboot download`, heimdall, `adb reboot recovery`);
+     on an Android A/B phone, `set_active a` first and slot-a partitions only (android-ab-layouts.md);
    - every downloaded asset verified (the release's `SHA256SUMS`; upstream signatures or checksums
      for third-party images such as TWRP) before use;
    - the kit's rules built in, since the kit's guard does not run on the user's computer: the

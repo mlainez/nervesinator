@@ -23,6 +23,8 @@ device:
   bootimg: {}              # header_version, pagesize, base, offsets, dtb (appended|qcdt|v2), cmdline, footer
   partition_sizes: {}      # name -> bytes, when dossier/raw cannot give it (safe-flash size check)
   pmos_name: ""            # <vendor>-<codename> as named in pmaports, if any
+  android_ab: unknown      # true when the phone has Android A/B slots (boot_a/boot_b): they get neutralised
+  active_slot: ""          # _a | _b (getprop ro.boot.slot_suffix, fastboot getvar current-slot)
 
 learner:
   level: ""                # beginner | intermediate | expert

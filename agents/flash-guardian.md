@@ -38,6 +38,9 @@ each failure point says how to recover. Report each finding with the line.
 - Every write needs: a verified backup of the target in `ports/<id>/backups/` (for `userdata`: or
   the user's recorded `safety.accepted_loss`), the partition in `port.yaml`
   `safety.writable_partitions` (except for M5 backups and M4 unlock), and an escape route.
+- On an Android A/B phone (`device.android_ab`), every plan pins the slot first (`fastboot
+  set_active a`, never to an empty slot) and writes slot-a partitions only (`nerves-port`,
+  android-ab-layouts.md).
 - By default plan writes to `boot` and `userdata` only; another partition only when the user
   explicitly asked for it, quoted in the plan.
 - Backups are read-only operations; they still go through the plan → approval flow when they need

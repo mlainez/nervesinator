@@ -78,6 +78,10 @@ image's own applets, results checked, errors never hidden.
 Iterate on blobs, daemons and configs by copying them to the running system (`scp -O`), and
 checkpoint each working peripheral with a full build (`buildroot-port` section 7).
 
+On an Android A/B phone, the slot-marking tool (`qbootctl` on Qualcomm, as nerves_system_fp3
+packages it, or the vendor's boot_control equivalent) and its init script go into
+`init-inventory.md` too.
+
 ## 5. Record for Nerves
 
 Every daemon, script, blob and config goes into `dossier/init-inventory.md`:

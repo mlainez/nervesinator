@@ -32,7 +32,7 @@ full firmware lists. Missing files are fine: note what could not be read and why
 | Board / model | `ro.product.device`, `ro.product.model`, `ro.product.board`, `ro.boot.hwrev`/`ro.revision`; the DT `model` string |
 | RAM / storage | meminfo `MemTotal`; `partitions.txt` (mmcblk0 = eMMC, sda = UFS); `emmc.txt` (eMMC name, CID, manufacturer) |
 | Partition map | `by-name.txt` (`/dev/block/by-name` or `/dev/block/platform/*/by-name`), `partnames-sysfs.txt` (`mmcblk0pN` ↔ name from sysfs) + `partitions.txt` sizes (1 KiB blocks) |
-| A/B slots | `ro.boot.slot_suffix`, `ro.build.ab_update`; `_a/_b` names in by-name |
+| A/B slots | `ro.boot.slot_suffix`, `ro.build.ab_update`; `_a/_b` names in by-name. Record `device.android_ab` and `device.active_slot`: an A/B phone needs its slots neutralised later (`nerves-port`, android-ab-layouts.md) |
 | Dynamic partitions | `ro.boot.dynamic_partitions`, a `super` partition |
 | Bootloader / lock | `ro.boot.verifiedbootstate` (green=locked, orange=unlocked), `ro.boot.flash.locked`, `ro.oem_unlock_supported`, `ro.boot.warranty_bit` + `ro.warranty_bit` (Samsung KNOX), `ro.bootloader` (Samsung BL version), `ro.boot.bootloader` |
 | Flash mode | Samsung → download mode + heimdall; MediaTek (`ro.board.platform` mtXXXX) → fastboot from LK and BROM; Qualcomm → fastboot (most) or Samsung download mode |
