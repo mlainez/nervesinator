@@ -24,6 +24,12 @@ orchestrator runs (RAM boots preferred).
 - The kernel config, the DTB (`dtc -I dtb -O dts`), the boot image (`tools/lib/bootimg_info.py`),
   the build log.
 
+## Isolate with the user's eyes
+
+When the evidence is visual, reproduce the bad state, then change **one** thing at a time and ask
+after each (restart only the link output, pulse only the panel reset, power-cycle only the panel).
+One isolation step beats hypotheses built from register comparisons alone.
+
 ## Classic symptom table
 
 | Symptom | Usual suspects |

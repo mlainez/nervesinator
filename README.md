@@ -153,7 +153,9 @@ the guard and start hooks. Symlinks do not survive many copy methods (`cp -r` wi
 some file managers): copy with `cp -a` or `rsync -a`, then run `tools/check-host.sh`, which checks
 the adapter and prints the fix.
 To update a copied kit, compare each file with the kit's history first (`git hash-object` of the
-local file against the kit's blobs) so local changes are never overwritten.
+local file against the kit's blobs) so local changes are never overwritten. Then run
+`tools/update-port.sh --port <id>` for each existing port: it adds the new ignore rules to the
+port's `.gitignore` and stops tracking files they now cover (kept on disk).
 
 ## Where to run the tools
 

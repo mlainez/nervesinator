@@ -33,7 +33,11 @@ mkdir -p $G/configs/c.1/strings/0x409
 echo "ACM+NCM" > $G/configs/c.1/strings/0x409/configuration
 echo 250 > $G/configs/c.1/MaxPower
 mkdir -p $G/functions/acm.usb0 && ln -s $G/functions/acm.usb0 $G/configs/c.1/
-mkdir -p $G/functions/ncm.usb0 && ln -s $G/functions/ncm.usb0 $G/configs/c.1/
+mkdir -p $G/functions/ncm.usb0
+# Fixed MAC addresses: random ones per boot make the host take a minute to reconnect after reboots
+echo "${KIT_DEV_ADDR:-02:4b:49:54:00:01}" > $G/functions/ncm.usb0/dev_addr
+echo "${KIT_HOST_ADDR:-02:4b:49:54:00:02}" > $G/functions/ncm.usb0/host_addr
+ln -s $G/functions/ncm.usb0 $G/configs/c.1/
 echo "$UDC" > $G/UDC || { echo "usb-gadget: binding to $UDC failed"; exit 1; }
 
 wait_for /sys/class/net/usb0 10 || { echo "usb-gadget: usb0 did not appear"; exit 1; }

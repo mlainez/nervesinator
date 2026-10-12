@@ -9,3 +9,7 @@ KIT_SERIAL=@SERIAL@
 KIT_RETURN_MODE=bootloader
 # Seconds before an image without USB returns to the flash mode on its own (0: never)
 KIT_FAIL_REBOOT=120
+# Fixed USB network MAC addresses (phone side, host side), so the host reconnects at once after a
+# reboot; change them when two phones run kit images on the same computer
+KIT_DEV_ADDR=02:4b:49:54:00:01
+KIT_HOST_ADDR=02:4b:49:54:00:02

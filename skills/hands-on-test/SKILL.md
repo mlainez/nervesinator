@@ -19,4 +19,6 @@ description: Running a test that needs the user at the device (keys, cables, wat
    than trusting the screen alone.
 6. **While the user works on the device** (a write they run, a cable swap): they type "hands off"
    and every agent's device commands are denied until "hands on".
-7. **Record** the test, the instructions given, the photos and the host evidence in the backlog task.
+7. **Diagnose by isolation:** with the bad state on screen, change one thing at a time and ask the
+   user after each; never several changes in one step.
+8. **Record** the test, the instructions given, the photos and the host evidence in the backlog task.

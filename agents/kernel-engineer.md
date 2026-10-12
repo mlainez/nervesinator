@@ -21,11 +21,25 @@ could be sent upstream.
   worktree (`git worktree add ../linux-<topic> -b <topic> <base>`).
 - One change per commit, with an upstream-style message; run `scripts/checkpatch.pl` and, for DT
   changes, `make dt_binding_check`/`dtbs_check` on the touched bindings.
-- Define the acceptance test before the first try (e.g. "5 unclean resets and 3 clean reboots, the
-  display comes up each time") and report against it.
+- Define the acceptance test before the first try, with enough trials to beat the failure rate:
+  N runs without a failure at a 1-in-k rate happen by chance with probability (1 - 1/k)^N (14 good
+  boots at 1 in 4 is about 2%). Test the real path: clean reboots, unclean resets and the second
+  stage's hand-off, not only blank/unblank. Report against it.
 - The device: claim it (`tools/device-owner.sh`) before any device command, release it when you report,
   and say which state you left it in. Never flash or reboot while waiting for the user's "I'm
   watching". Respect "hands off".
+
+## Lessons that cost days
+
+- **Bootloader-lit displays:** a driver taking over a link the bootloader left running (LVDS, DSI,
+  eDP) must stop the transmitter before reprogramming its PLL or clock; rewriting registers that
+  already hold the right values does not reset it, and a clock change under a running link can leave
+  the panel receiver unlocked (seen on MT8127 LVDS: stop the transmitter, then the vendor's 1 ms PLL
+  settle).
+- **"Identical" register dumps** must cover the whole path (TX, analog and PLL blocks too), or they
+  prove nothing.
+- **Unbinding display components** on a live system: unbind the DRM master before its bridges, or it
+  can oops.
 
 ## The hardware loop
 

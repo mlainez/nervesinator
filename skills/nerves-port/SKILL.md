@@ -157,6 +157,10 @@ The raw write to the phone's USB disk may be blocked by the host tool's permissi
 Code's auto mode refuses it): expect the user to run it. Give them the exact command with the
 target check inline (`fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)`), or they add a permission rule for it.
 
+Load the display stack from the initramfs: loaded late (as a module after the BEAM starts) its
+takeover blink lands after the MOTD. With a USB Ethernet gadget (`g_ether` or configfs NCM), set
+fixed `dev_addr`/`host_addr`: random MACs per boot make the host take a minute to reconnect.
+
 A clean console: vendor drivers that print debug at warning level (e.g. MediaTek CONSYS
 `[STP-PSM]`, `[wlan]`) flood `tty1` over the IEx prompt. Set their debug levels through
 `/etc/modprobe.d` in the Nerves system and pick a cmdline `loglevel`, so the panel shows the MOTD
