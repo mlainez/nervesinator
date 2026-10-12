@@ -25,6 +25,7 @@ or "invoke" a skill.
 | `Start`, `start`, `/start`, `Resume`, `continue` | Load `skills/start/SKILL.md` and follow it exactly |
 | `/status`, `where are we?` | Load `skills/status/SKILL.md` |
 | `/explain <topic>`, `why…?`, `what is…?` | Load `skills/explain/SKILL.md` (a short answer inline, or a full lesson from the `tutor` agent) |
+| `/autonomous on`, `I'm away` / `/autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / attended |
 
 ## Golden rules (never break them)
 

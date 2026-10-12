@@ -81,6 +81,7 @@ vendor IDs (EDL/BROM). Then handle the result:
 ## 5. Resume an existing port
 
 1. `echo <id> > ports/.active`; read `ports/<id>/port.yaml` and the tail of `ports/<id>/journal/sessions.md`.
+   If `session.autonomy` is `unattended`, load the `autonomy` skill and follow it.
 2. From `ports/<id>/`:
    ```bash
    backlog milestone list --plain

@@ -33,6 +33,11 @@ learner:
 milestone: M0
 gates_passed: []
 
+session:
+  autonomy: attended                # attended | unattended (skills/autonomy)
+  since: ""
+  set_by: ""                        # the user's words that switched it
+
 safety:
   unbrick_kit_ready: false
   bootloader_unlocked: unknown      # unknown | no | yes | not-needed
