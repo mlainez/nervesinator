@@ -142,11 +142,11 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Fork or clone buildroot-android | buildroot-engineer | Ask the user for their fork of Spin42/buildroot-android; clone into `$P/buildroot-android`, branch `port/<id>`; the first-light and rescue defconfigs live there (see `buildroot-port`) |
 | Prepare the kernel source and config | buildroot-engineer | From the chosen fork; config from pmaports (`config-*`) or `qcom_defconfig`/`multi_v7_defconfig` + the device fragment; enable `FB_SIMPLE`/`DRM_SIMPLEDRM`, `FRAMEBUFFER_CONSOLE`, `PSTORE_RAM`, `USB_GADGET`/`USB_CONFIGFS_*` |
 | Build the first-light defconfig | buildroot-engineer | `<id>_firstlight_defconfig` in buildroot-android: kernel + a tiny initramfs whose init prints and sleeps; the boot image packed for this bootloader |
-| Boot it temporarily | orchestrator | `fastboot boot` / lk2nd / experiment partition; ask the user for a photo of the screen |
-| Analyse the result | boot-debugger | No output: check simplefb/panel, `earlycon`, ramoops after a warm reboot, lk2nd log. Loop until there is text |
-| GATE M7 | orchestrator | Proof: the user's photo of the boot log |
+| Boot it temporarily | orchestrator | `tools/await-boot.sh --port <id> --image <boot.img> --stage firstlight` (RAM boot through safe-flash, then watches USB): PASS when the kit gadget's console says `KIT-READY`. A photo of the screen is optional. Without a RAM boot: flash to the experiment partition, reboot, `await-boot.sh --watch-only` |
+| Analyse the result | boot-debugger | From `journal/boots/<run>/`: FAIL (back in the flash mode: lk2nd log, ramoops on the next good boot), HUNG (no watchdog fired: needs a human), screen only (USB controller/PHY not probing). Loop until PASS |
+| GATE M7 | orchestrator | Proof: the `await-boot` PASS record (banner and dmesg over USB), or the user's photo of the boot log |
 
-**Exit:** a photo of the kernel log on screen; the recipe is reproducible from the defconfig.
+**Exit:** the banner observed by the host over USB (`await-boot` PASS; a photo is optional); the recipe is reproducible from the defconfig.
 **Lesson:** "What the kernel does in its first second", "Framebuffer and console: printing without a GPU".
 
 ---
@@ -158,7 +158,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Task | Agent | Notes |
 |---|---|---|
 | Build the rescue initramfs defconfig | buildroot-engineer | `<id>_rescue_defconfig`: busybox, dropbear (or telnetd), unudhcpd, a configfs USB gadget (NCM/RNDIS), the rootfs as initramfs; templates in `templates/rescue/` |
-| Boot rescue and connect over USB networking | orchestrator | `tools/usbnet.sh`: host gets 10.0.42.2, phone 10.0.42.1; `ssh root@10.0.42.1` |
+| Boot rescue and connect over USB networking | orchestrator | `tools/await-boot.sh --stage rescue`, then `tools/usbnet.sh`: host gets 10.0.42.2, phone 10.0.42.1; `ssh root@10.0.42.1`. Check the way back: `reboot-mode <bootloader or download>` from the shell lands in the flash mode without keys (on Qualcomm the restart reason survives only a warm reset) |
 | Linux hardware inventory | device-recon (over ssh) | `dmesg`, `/sys/bus/*/devices`, `/proc/device-tree`, eMMC partitions as Linux sees them, failed probes, firmware requests |
 | Map Android partitions to Linux block devices | device-recon | `mmcblk0pN` ↔ name table in `dossier/partitions-linux.md` |
 | GATE M8 | orchestrator | |

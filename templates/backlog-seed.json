@@ -85,16 +85,16 @@
         {"title": "Fork or clone buildroot-android", "labels": "risk-green,agent-buildroot", "ac": ["ports/<id>/buildroot-android cloned from the user's fork, on branch port/<id>", "repos.buildroot_android set in port.yaml"]},
         {"title": "Prepare the kernel source and config", "labels": "risk-green,agent-buildroot", "ac": ["Kernel repo/ref pinned", "Config with the first-light options"]},
         {"title": "Build the first-light defconfig", "labels": "risk-green,agent-buildroot", "ac": ["<id>_firstlight_defconfig builds", "boot.img produced, fits the partition"]},
-        {"title": "Boot it temporarily", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Booted with path.boot_method", "Photo of the screen saved in journal/photos"]},
-        {"title": "Analyse the result", "labels": "risk-green,agent-debug", "ac": ["Kernel log visible on screen, or a diagnosis with the next experiment"]},
-        {"title": "GATE M7: first light", "labels": "risk-green,gate", "ac": ["Photo shows the kernel log and the init banner", "M7 lesson given", "User said go"]}
+        {"title": "Boot it temporarily", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Booted with tools/await-boot.sh (or path.boot_method + --watch-only)", "Result recorded in journal/boots/ (photo in journal/photos optional)"]},
+        {"title": "Analyse the result", "labels": "risk-green,agent-debug", "ac": ["await-boot PASS, or a diagnosis with the next experiment"]},
+        {"title": "GATE M7: first light", "labels": "risk-green,gate", "ac": ["await-boot PASS record (KIT-READY over USB) or a photo of the kernel log and the init banner", "M7 lesson given", "User said go"]}
       ]
     },
     {
       "id": "M8", "title": "M8 Rescue shell", "description": "A RAM-only Buildroot system with USB networking and ssh. Risk: yellow.",
       "tasks": [
         {"title": "Build the rescue initramfs defconfig", "labels": "risk-green,agent-buildroot", "ac": ["<id>_rescue_defconfig builds with dropbear, unudhcpd and the gadget script"]},
-        {"title": "Boot rescue and connect over USB networking", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["ssh root@10.0.42.1 works"]},
+        {"title": "Boot rescue and connect over USB networking", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["ssh root@10.0.42.1 works", "reboot-mode from the shell returns to the flash mode without keys"]},
         {"title": "Linux hardware inventory", "labels": "risk-green,agent-recon", "ac": ["Linux dmesg saved", "Working/failing devices listed with the reasons"]},
         {"title": "Map Android partitions to Linux block devices", "labels": "risk-green,agent-recon", "ac": ["dossier/partitions-linux.md maps mmcblk0pN to names and classes"]},
         {"title": "GATE M8: shell into Linux", "labels": "risk-green,gate", "ac": ["M8 lesson given", "User said go"]}
