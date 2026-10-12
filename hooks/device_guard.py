@@ -15,7 +15,7 @@ Decisions:
   (none)- everything else; normal permission rules apply.
 
 A full-autonomy grant (hooks/autonomy_grant.py), created only from the user's own typed
-`/autonomous full <goal>`, turns ask into allow for the active port until it is revoked or expires.
+`autonomous full <goal>` (or tools/user-mode.sh, run by the user), turns ask into allow for the active port until it is revoked or expires.
 Agents can never create or edit that grant: any command or file tool touching it is denied.
 
 This is a seatbelt, not a sandbox: it parses commands heuristically. The agents are instructed
@@ -39,6 +39,7 @@ _spec = importlib.util.spec_from_file_location(
 autonomy_grant = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(autonomy_grant)
 FILE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
+USER_TOOL = "user-mode.sh"  # the user's own switch tool; an agent never runs it
 
 DENY, ASK = 2, 1
 
@@ -347,9 +348,10 @@ def analyse(cmd, v, depth=0):
     if depth > 3:
         return
     if depth == 0:
-        if any(n in cmd for n in autonomy_grant.PROTECTED_NAMES):
+        if any(n in cmd for n in autonomy_grant.PROTECTED_NAMES + (USER_TOOL,)):
             v.add(DENY, "The autonomy grant, the hands-off marker and user overrides are set only by "
-                        "the user's own words (/autonomous full, hands off / hands on, /override).")
+                        "the user: their own words (autonomous full, hands off / hands on, override) "
+                        "or tools/user-mode.sh run by them.")
             v.hard = True
         cmd = strip_file_heredocs(cmd)
     remote_whole = bool(REMOTE_RE.search(cmd))
@@ -430,7 +432,7 @@ def apply_hands_off(cmd, v, ports_dir):
 
 
 def apply_override(cmd, v, ports_dir):
-    """DENY becomes ASK, with the consequences, when the user's /override names this command's target."""
+    """DENY becomes ASK, with the consequences, when the user's override names this command's target."""
     if v.level != DENY or v.hard:
         return None
     override = autonomy_grant.valid_override(ports_dir)

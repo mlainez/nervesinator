@@ -15,10 +15,13 @@ _spec.loader.exec_module(autonomy_grant)
 PORTS = os.path.join(KIT, "ports")
 
 TRIGGERS = {"start", "/start", "resume", "continue", "let's start", "lets start"}
-AUTONOMY = {"/autonomous on": "unattended", "i'm away": "unattended", "im away": "unattended",
-            "/autonomous off": "attended", "i'm back": "attended", "im back": "attended"}
-OVERRIDE_RE = re.compile(r"^/override\s+(?P<targets>.+?)(?:\s+for\s+(?P<minutes>\d+)\s*m)?$", re.I | re.S)
-FULL_RE = re.compile(r"^/autonomous\s+full\b\s*(?P<goal>.*?)(?:\s+for\s+(?P<hours>\d+)\s*h)?$", re.I | re.S)
+# Plain words: CLIs (Claude Code, Codex) treat a leading "/" as their own command, so the slash is
+# optional. Tools without a prompt hook use tools/user-mode.sh, run by the user.
+AUTONOMY = {"autonomous on": "unattended", "/autonomous on": "unattended", "i'm away": "unattended",
+            "im away": "unattended", "autonomous off": "attended", "/autonomous off": "attended",
+            "i'm back": "attended", "im back": "attended"}
+OVERRIDE_RE = re.compile(r"^/?override\s+(?P<targets>.+?)(?:\s+for\s+(?P<minutes>\d+)\s*m)?$", re.I | re.S)
+FULL_RE = re.compile(r"^/?autonomous\s+full\b\s*(?P<goal>.*?)(?:\s+for\s+(?P<hours>\d+)\s*h)?$", re.I | re.S)
 
 
 def context(text):
@@ -45,7 +48,7 @@ def main():
         else:
             context("The user asked for full autonomy, but there is no active port (ports/.active): "
                     "no grant was created. Tell the user to start or resume a port first.")
-    elif prompt in ("/override off", "/override clear"):
+    elif prompt in ("override off", "override clear", "/override off", "/override clear"):
         cleared = autonomy_grant.clear_override(PORTS)
         context("The user ended their override%s: the guard denies the safety invariants again."
                 % ("" if cleared else " (none was active)"))
@@ -55,7 +58,8 @@ def main():
         minutes = int(m.group("minutes") or autonomy_grant.DEFAULT_OVERRIDE_MINUTES)
         override = autonomy_grant.write_override(PORTS, targets, minutes, raw)
         if override:
-            context("The user OVERRIDES a safety invariant for: %s (until %s). Commands naming these "
+            context("The user OVERRIDES a safety invariant for: %s (until %s). Tell the user exactly "
+                    "which targets were set, so an accidental override is noticed. Commands naming these "
                     "targets are now asked, not denied; each still needs the user's yes, even under "
                     "the full-autonomy grant. Before each one, state its consequences plainly (what can "
                     "be lost, whether it can be undone, how), record the user's decision as a backlog "
@@ -64,7 +68,7 @@ def main():
                     % (", ".join(targets), override["expires_at"]))
         else:
             context("The user asked for an override, but there is no active port or no target: "
-                    "nothing was set. The form is /override <target…> [for <N>m].")
+                    "nothing was set. The form is: override <target…> [for <N>m].")
     elif prompt in ("hands off", "/hands off"):
         if autonomy_grant.set_hands_off(PORTS, raw):
             context("HANDS OFF: the user is working on the device. The guard now denies every device "

@@ -1,6 +1,6 @@
 ---
 name: autonomy
-description: Attended, unattended and full-autonomy work - what the orchestrator may do on its own while the user is away (host work, read-only device commands, key-free mode reboots, RAM test boots judged by await-boot), what it queues for the user, the full-autonomy grant the user types (/autonomous full <goal>) under which it asks nothing until the goal, the battery guard rails, and how it notifies. Load it when the user switches mode ("/autonomous on|off|full", "I'm away", "I'm back") and when resuming a port whose session.autonomy is not attended.
+description: Attended, unattended and full-autonomy work - what the orchestrator may do on its own while the user is away (host work, read-only device commands, key-free mode reboots, RAM test boots judged by await-boot), what it queues for the user, the full-autonomy grant the user types (autonomous full <goal>) under which it asks nothing until the goal, the battery guard rails, and how it notifies. Load it when the user switches mode ("autonomous on|off|full", "I'm away", "I'm back", or tools/user-mode.sh) and when resuming a port whose session.autonomy is not attended.
 ---
 
 # Attended and unattended work
@@ -15,8 +15,9 @@ session:
   set_by: ""                # the user's words that switched it
 ```
 
-The user switches it at any moment: `/autonomous on` or "I'm away" → `unattended`;
-`/autonomous full <goal> [for <N>h]` → `full`; `/autonomous off` or "I'm back" → `attended`.
+The user switches it at any moment: `autonomous on` or "I'm away" → `unattended`;
+`autonomous full <goal> [for <N>h]` → `full`; `autonomous off` or "I'm back" → `attended`
+(plain words; without a prompt hook, as in Codex, the user runs `tools/user-mode.sh autonomous …`).
 Record the switch in `port.yaml` and in `journal/sessions.md`, then say in one line what will and
 will not happen from now on.
 
@@ -48,7 +49,8 @@ one: queue it instead.
 
 ## Full autonomy
 
-When the user types `/autonomous full <goal>`, the prompt hook writes `ports/<id>/.autonomy-grant`
+When the user types `autonomous full <goal>` (or runs `tools/user-mode.sh autonomous full <goal>`),
+the prompt hook (or the tool) writes `ports/<id>/.autonomy-grant`
 (goal, expiry, the exact words typed; 7 days unless `for <N>h`). Only that hook can create it: the
 guard denies any command or file tool touching it, so a grant always comes from the user's own
 keyboard. While it is valid, the guard **allows what it would otherwise ask about** and still

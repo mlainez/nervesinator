@@ -120,6 +120,7 @@ The content is tool-neutral; the tool-specific glue is thin:
 |---|---|
 | Claude Code | `CLAUDE.md` imports `AGENTS.md`; `.claude/skills` → `skills/`, `.claude/agents` → `agents/`; `.claude/settings.json` wires the guard and the "Start" hook |
 | Agents reading `AGENTS.md` + `.agents/skills` (Codex, opencode, …) | `AGENTS.md` at the root, `.agents/skills` → `skills/` |
+| Without a prompt hook (Codex…) | The user's switches (`autonomous …`, `override …`, `hands off/on`) go through `tools/user-mode.sh`, run by the user in their own terminal; the guard only runs where hooks exist, elsewhere `AGENTS.md` requires `--check` |
 | Anything else | Point it at `AGENTS.md`. If it has no subagents, it reads `agents/<name>.md` and plays that role itself. If it has no hook system, `AGENTS.md` requires running `hooks/device_guard.py --check "<cmd>"` before device commands, and `safe-flash.sh` enforces the same checks |
 
 ## A port's workspace

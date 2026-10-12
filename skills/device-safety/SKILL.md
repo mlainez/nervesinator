@@ -29,7 +29,8 @@ Two invariants, whatever happens:
 **These are the kit's defaults, not a cage.** The user may overrule any of them for their device:
 explain the consequences plainly (what can be lost, whether and how it can be undone, e.g. a
 written `aboot` that does not boot means EDL with a signed programmer or a repair shop), then, if
-they confirm by typing `/override <target…>`, the guard asks for each such command instead of
+they confirm by typing `override <target…>` (or running `tools/user-mode.sh override <target…>`),
+the guard asks for each such command instead of
 refusing and `safe-flash.sh` warns instead of refusing. Record the decision; do not block it.
 
 Android does not need to stay bootable during the work: `boot`, `recovery`, `system` and `userdata`

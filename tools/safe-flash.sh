@@ -165,7 +165,7 @@ check_lk2nd_dtb() { # image
   esac
 }
 
-# Is this partition named in the user's valid /override? (hooks/autonomy_grant.py)
+# Is this partition named in the user's valid override? (hooks/autonomy_grant.py)
 overridden() {
   python3 -I - "$KIT/hooks" "$KIT/ports" "$1" <<'EOF'
 import importlib.util, os, sys
@@ -182,7 +182,7 @@ check_partition() { # partition
   local fail=bad
   if overridden "$part"; then
     fail=warn_override
-    echo "  ⚠️  '$part' is named in the user's /override: the checks below warn instead of refusing"
+    echo "  ⚠️  '$part' is named in the user's override: the checks below warn instead of refusing"
   fi
   forbidden "$part" && $fail "'$part' is on the forbidden list (tools/lib/forbidden-partitions.txt)" || ok "'$part' is not forbidden"
   cfg safety.writable_partitions | grep -qix "$part" && ok "'$part' is in safety.writable_partitions" \

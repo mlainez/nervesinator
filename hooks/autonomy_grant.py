@@ -1,6 +1,7 @@
 """The full-autonomy grant of the active port: ports/<id>/.autonomy-grant (JSON).
 
-Only hooks/start_trigger.py writes it, from a prompt the user typed (`/autonomous full <goal>`);
+Only the user sets it: hooks/start_trigger.py from a prompt they typed (`autonomous full <goal>`), or
+tools/user-mode.sh run by them;
 device_guard.py reads it and denies any agent command or file tool that touches it. While it is
 valid, the guard turns its ASK decisions into ALLOW. DENY decisions never change.
 """
@@ -96,9 +97,9 @@ def hands_off_active(ports_dir):
     return bool(path) and os.path.exists(path)
 
 
-# A user override of a safety invariant: `/override <target…> [for <N>m]` names what the user,
+# A user override of a safety invariant: `override <target…> [for <N>m]` names what the user,
 # informed of the consequences, decides to do anyway (a partition, `lock`, `repartition`…). Only the
-# prompt hook writes it. The guard then asks, with the consequences, instead of denying commands that
+# prompt hook or tools/user-mode.sh (run by the user) writes it. The guard then asks, with the consequences, instead of denying commands that
 # name a target; it never allows them silently, even under the full-autonomy grant.
 OVERRIDE_NAME = ".override"
 DEFAULT_OVERRIDE_MINUTES = 60

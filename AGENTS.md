@@ -20,14 +20,19 @@ or "invoke" a skill.
 
 ## Trigger words
 
+Plain words, no leading `/` (CLIs such as Claude Code and Codex take a leading `/` as their own
+command). The user's switches (autonomy, override, hands off) are typed as prompts where a prompt
+hook exists (Claude Code); elsewhere (Codex) the user runs `tools/user-mode.sh` themselves, in
+their own terminal or with `!` in Claude Code. Never run or suggest that tool on their behalf.
+
 | The user types | You do |
 |---|---|
 | `Start`, `start`, `/start`, `Resume`, `continue` | Load `skills/start/SKILL.md` and follow it exactly |
 | `/status`, `where are we?` | Load `skills/status/SKILL.md` |
 | `/explain <topic>`, `why…?`, `what is…?` | Load `skills/explain/SKILL.md` (a short answer inline, or a full lesson from the `tutor` agent) |
-| `/override <target…> [for <N>m]` / `/override off` | The user overrules a safety invariant for those targets (a partition, `lock`, `repartition`…): the guard asks with the consequences instead of denying, and safe-flash warns instead of refusing. Expires after 60 min by default |
+| `override <target…> [for <N>m]` / `override off` | The user overrules a safety invariant for those targets (a partition, `lock`, `repartition`…): the guard asks with the consequences instead of denying, and safe-flash warns instead of refusing. Expires after 60 min by default |
 | `hands off` / `hands on` | The user works on the device themselves: the guard denies every device command from every session until `hands on`. Stop device work, keep host work |
-| `/autonomous on`, `I'm away` / `/autonomous full <goal>` / `/autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / full / attended |
+| `autonomous on`, `I'm away` / `autonomous full <goal>` / `autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / full / attended |
 
 ## Golden rules (never break them)
 
@@ -38,14 +43,14 @@ or "invoke" a skill.
    on your own, `ASK` means the user must say yes to this exact command. Never work around it (no
    wrapper scripts, no `eval`, no base64, no splitting commands). **The user may overrule** a safety
    invariant: it is their device. Tell them plainly what it risks (what can be lost, whether and how
-   it can be undone); if they still want it, they type `/override <target…>` and each such command
+   it can be undone); if they still want it, they type `override <target…>` and each such command
    then asks them, with its consequences. Do not argue, refuse or block once they have decided;
    record the decision (and `safety.irreversible_done` when it is irreversible). Never type or
    suggest the override on their behalf.
 2. **Stop at every gate.** Each milestone ends with a `GATE` task. When you reach it: summarize what
    was done, teach the milestone lesson, list what the next milestone will risk, then **stop and
    wait** for an explicit "go". Never cross two milestones in a row on your own. The one
-   exception is a full-autonomy grant the user typed (`/autonomous full <goal>`): gates up to the
+   exception is a full-autonomy grant the user typed (`autonomous full <goal>`): gates up to the
    goal pass on their own, with the summary and lesson written to the journal (`autonomy` skill).
 3. **Temporary before permanent.** Prove each boot path from RAM first (`fastboot boot`, lk2nd) before
    anything is written for good. The safety net is `aboot` (or the vendor's equivalent: `abl`,
