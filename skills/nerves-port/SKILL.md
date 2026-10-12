@@ -66,6 +66,9 @@ Whoever starts the kernel must know the active slot:
 For each row of `init-inventory.md`: VintageNet (WiFi/ethernet/QMI cellular), `nerves_ssh`, OTP apps
 for firmware loaders/daemons (supervised `MuonTrap`/port processes for rmtfs/qrtr, or native Elixir
 rewrites), `Circuits.GPIO/I2C` for power sequencing. Vendor binaries lie about exit codes: parse their output.
+Do the work in Elixir rather than shell once the BEAM runs; any shell left (initramfs, erlinit hooks)
+follows `buildroot-port` section 6 and is checked against the Nerves system's own BusyBox config,
+which is smaller than the Buildroot board's.
 
 ## 7. First flash and tests (orange)
 

@@ -83,6 +83,7 @@ anyone looking at the phone:
   a hard reset (PM8226 PS_HOLD), which loses it. Check it in M8: write a reason, reboot, see it
   honoured.
 - **Limit:** a hard hang without a working watchdog needs a human (force power off or battery pull).
+- On-device shell scripts follow `buildroot-port` section 6 (BusyBox ash, the image's own applets, errors never hidden).
 
 ## M8: rescue initramfs
 

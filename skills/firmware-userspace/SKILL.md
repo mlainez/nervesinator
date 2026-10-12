@@ -54,6 +54,9 @@ For each pmOS dependency of the device package (`APKBUILD` `depends=`, the `soc-
 - **MediaTek CONSYS (WMT/WiFi/BT):** out-of-tree stack + `WMT_SOC.cfg`, `mt6xxx_patch_*` + a launcher
   that exits non-zero on success: parse its output (the Kobo/TB3 lessons).
 
+Bring-up scripts (MAC address, firmware loaders) follow `buildroot-port` section 6: BusyBox ash, the
+image's own applets, results checked, errors never hidden.
+
 ## 5. Record for Nerves
 
 Every daemon, script, blob and config goes into `dossier/init-inventory.md`:

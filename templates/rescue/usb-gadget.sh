@@ -8,14 +8,15 @@ G=/sys/kernel/config/usb_gadget/g1
 IP=10.0.42.1
 CLIENT=10.0.42.2
 
-wait_for() { i=0; while [ ! -e "$1" ] && [ $i -lt "$2" ]; do sleep 0.5; i=$((i+1)); done; [ -e "$1" ]; }
+# Whole seconds and /proc/mounts: fractional sleep and mountpoint are optional BusyBox features
+wait_for() { i=0; while [ ! -e "$1" ] && [ $i -lt "$2" ]; do sleep 1; i=$((i+1)); done; [ -e "$1" ]; }
 
-mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config
-wait_for /sys/kernel/config/usb_gadget 20 || { echo "usb-gadget: no configfs usb_gadget (CONFIG_USB_CONFIGFS)"; exit 1; }
+grep -q " /sys/kernel/config " /proc/mounts || mount -t configfs configfs /sys/kernel/config
+wait_for /sys/kernel/config/usb_gadget 10 || { echo "usb-gadget: no configfs usb_gadget (CONFIG_USB_CONFIGFS)"; exit 1; }
 
 # The UDC appears once the USB controller, its PHY and their regulators/extcon have probed
 i=0
-while [ -z "$(ls /sys/class/udc 2>/dev/null)" ] && [ $i -lt 60 ]; do sleep 0.5; i=$((i+1)); done
+while [ -z "$(ls /sys/class/udc 2>/dev/null)" ] && [ $i -lt 30 ]; do sleep 1; i=$((i+1)); done
 UDC=$(ls /sys/class/udc 2>/dev/null | head -1)
 [ -n "$UDC" ] || { echo "usb-gadget: no UDC after 30 s (USB controller, PHY or extcon did not probe)"; exit 1; }
 
@@ -35,7 +36,7 @@ mkdir -p $G/functions/acm.usb0 && ln -s $G/functions/acm.usb0 $G/configs/c.1/
 mkdir -p $G/functions/ncm.usb0 && ln -s $G/functions/ncm.usb0 $G/configs/c.1/
 echo "$UDC" > $G/UDC || { echo "usb-gadget: binding to $UDC failed"; exit 1; }
 
-wait_for /sys/class/net/usb0 20 || { echo "usb-gadget: usb0 did not appear"; exit 1; }
+wait_for /sys/class/net/usb0 10 || { echo "usb-gadget: usb0 did not appear"; exit 1; }
 ip addr add $IP/24 dev usb0
 ip link set usb0 up
 if command -v unudhcpd >/dev/null; then

@@ -16,7 +16,7 @@ import time
 import tty
 
 # The shell echoes what we type: split the markers so the echo never matches them
-PROBE = 'echo KIT-""PROBE; uname -a; cat /proc/cmdline; ip -4 addr show usb0; echo KIT-""END\n'
+PROBE = 'echo KIT-""PROBE; uname -a; cat /proc/cmdline; ip addr show usb0; echo KIT-""END\n'
 RETURN = '. /etc/kit-image; sync; reboot-mode "$KIT_RETURN_MODE"; reboot -f\n'
 
 

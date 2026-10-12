@@ -26,6 +26,8 @@ itself safely (A/B) without repartitioning the phone.
 5. Create a minimal app (`ports/<id>/hello_<id>/`) with `nerves_ssh` and VintageNet for USB networking,
    to test the system.
 6. Write the Elixir replacements for init scripts as small OTP apps (or plan them as tasks).
+7. Remaining shell (initramfs, hooks): POSIX sh checked against the Nerves system's BusyBox config,
+   errors logged and results checked (`buildroot-port` section 6). Prefer Elixir.
 
 ## Report back
 

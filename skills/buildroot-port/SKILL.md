@@ -84,3 +84,25 @@ Copy the style of the existing packages in `buildroot-external/package/` (`Confi
 - The flash scripts address the device by serial and refuse if the product doesn't match.
 - Commit in the buildroot-android clone with clear messages; the port repo records the commit SHA in
   task notes.
+
+## 6. Shell scripts that run on the device
+
+Every script that runs on the phone (init scripts, overlays, bring-up helpers, test images) is
+POSIX `sh` for BusyBox `ash`, and uses only what **that** image's BusyBox has:
+
+- No bashisms: no `[[ ]]`, arrays, `$'...'`, process substitution, `function`, `source`.
+- Check the applet and the option before using them: `busybox --list` on the device, or the image's
+  BusyBox config (Buildroot: `output/<name>/build/busybox-*/.config`; Nerves: the system's busybox
+  fragment over `nerves_system_br`'s default). Images differ: the Nerves BusyBox has no `od`,
+  `timeout` or `mountpoint`, and no `head -c` (FEATURE_FANCY_HEAD), while a Buildroot board's
+  BusyBox may have them; the Android 4.4 toolbox has none of `head`/`tail`/`tr`/`basename`/`which`.
+- Portable forms: `dd bs=N count=1 2>/dev/null` instead of `head -c`/`tail -c`; a `sleep 1` loop
+  instead of `timeout`; `grep -q " $dir " /proc/mounts` instead of `mountpoint`; whole seconds for
+  `sleep`; `hexdump`/`xxd` only when listed. No GNU-only options (`grep -P`, `sed -E` unchecked,
+  `stat -c` formats, `date -d`, `readlink -e`, `sort -V`, `xargs -d`).
+- Never hide the errors of a step whose result matters: log failures to `/dev/kmsg` and check the
+  result (a MAC address must match its format before it is written anywhere).
+- Test in the exact image the script ships in (on the device, or in qemu with that BusyBox):
+  `sh -n` on the host checks syntax only, not applets or options.
+- In Nerves, work done after the BEAM starts belongs in Elixir (`File`, `:binary`, `System.cmd`
+  with checked output), not in shell: Nerves keeps BusyBox minimal on purpose.
