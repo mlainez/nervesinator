@@ -123,6 +123,10 @@ check_image() { # image partition
 check_fastboot_size() { # partition image: the size the running bootloader reports (under lk2nd,
   # boot is the space after lk2nd itself, smaller than Android's partition)
   local hex isize
+  # An explicit device.partition_sizes entry wins; MediaTek LK reports wrong sizes (and repeated
+  # names), so there the scatter file or Linux sysfs, through partition_size(), is the source
+  cfg device.partition_sizes 2>/dev/null | grep -qi "^$1=" && return
+  case "$STOCK_MODE" in mtk-*) echo "  ℹ️  MediaTek LK's partition-size is not trusted: size from port.yaml/recon only"; return ;; esac
   hex=$(fastboot -s "$SER" getvar "partition-size:$1" 2>&1 | sed -n "s/^partition-size:$1:[[:space:]]*\(0x[0-9a-fA-F]*\).*/\1/p")
   [ -n "$hex" ] || return
   isize=$(stat -c %s "$2")

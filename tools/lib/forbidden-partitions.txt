@@ -128,9 +128,20 @@ tee1
 tee2
 gz1
 gz2
+# MediaTek scatter names: partition records, LK (uboot), bad-block pool, key blocks, boot logo
+pro_info
+ebr1
+ebr2
+uboot
+bmtpool
+kb
+dkb
+logo
 # Sony
 ta
 # Generic / other vendors
+# misc: the bootloader message and, on some A/B devices, slot metadata (written only by boot-control tools)
+misc
 bl
 bootloader2
 mbr

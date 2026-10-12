@@ -76,7 +76,12 @@ partition, **add it to that file** (a commit in the kit) before going further.
 - **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;
   SP Flash Tool "Format All + Download" erases calibration: never use it. mtkclient reads are fine.
   Many MTK devices reserve a tail of `userdata` (BMT pool/encryption footer): do not grow
-  filesystems into it.
+  filesystems into it. Mainline's last partition can even extend over the BMT pool (seen: 21 MiB
+  past the scatter's USRDATA), so size and resize filesystems to the **scatter** size. MTK LK's
+  `fastboot getvar partition-size:*` can be wrong (and list a name several times): take sizes from
+  the scatter file or Linux sysfs into `device.partition_sizes`; `safe-flash.sh` ignores LK's value
+  on `mtk-*` flash modes. Scatter names to know: `uboot` is LK, `ebr1/ebr2` are partition records,
+  `bmtpool`, `kb`/`dkb`, `pro_info` (all on the forbidden list).
 - **Qualcomm:** `fastboot flash` to `aboot`/`sbl1` = hard brick, and only EDL with a signed firehose
   programmer for this exact device saves it. `modemst1/2`, `fsg`, `fsc`, `persist` = IMEI/calibration.
   Anti-rollback (`ro.boot.anti_rollback`, Pixel/OnePlus ARB): flashing an *older* stock bootloader
