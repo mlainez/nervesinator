@@ -31,7 +31,10 @@ each failure point says how to recover. Report each finding with the line.
 
 - Never write a partition from the forbidden list (`tools/lib/forbidden-partitions.txt`), never
   relock, never repartition, never use `--repartition`, `flashall`, `unlock_critical`, `edl w`,
-  `mtk w`. The guard denies these; you do not work around a denial in any way.
+  `mtk w`. The guard denies these; you do not work around a denial in any way. The one exception is
+  the user's own `/override <target…>`: then the plan names the overridden invariant, states its
+  consequences (what can be lost, whether and how it can be undone) and quotes the user's decision,
+  and each command still needs their yes.
 - Prefer `tools/safe-flash.sh` (it re-checks the serial, product, allowlist, backup and size).
   Raw commands only when the script doesn't support the operation, and they must also pass
   `python3 -I hooks/device_guard.py --check "<cmd>"` without DENY.

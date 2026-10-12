@@ -25,6 +25,7 @@ or "invoke" a skill.
 | `Start`, `start`, `/start`, `Resume`, `continue` | Load `skills/start/SKILL.md` and follow it exactly |
 | `/status`, `where are we?` | Load `skills/status/SKILL.md` |
 | `/explain <topic>`, `why…?`, `what is…?` | Load `skills/explain/SKILL.md` (a short answer inline, or a full lesson from the `tutor` agent) |
+| `/override <target…> [for <N>m]` / `/override off` | The user overrules a safety invariant for those targets (a partition, `lock`, `repartition`…): the guard asks with the consequences instead of denying, and safe-flash warns instead of refusing. Expires after 60 min by default |
 | `hands off` / `hands on` | The user works on the device themselves: the guard denies every device command from every session until `hands on`. Stop device work, keep host work |
 | `/autonomous on`, `I'm away` / `/autonomous full <goal>` / `/autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / full / attended |
 
@@ -33,9 +34,14 @@ or "invoke" a skill.
 1. **Brick safety comes first.** Load the `device-safety` skill before any command that talks to a
    device in fastboot, download, EDL, BROM or recovery mode, or that writes to a device. Before
    running any such command, check it with `hooks/device_guard.py --check "<command>"` (Claude Code
-   runs this automatically as a hook). The guard is a seatbelt, not permission: `DENY` means never,
-   `ASK` means the user must say yes to this exact command. Never work around it (no wrapper
-   scripts, no `eval`, no base64, no splitting commands).
+   runs this automatically as a hook). The guard is a seatbelt, not permission: `DENY` means never
+   on your own, `ASK` means the user must say yes to this exact command. Never work around it (no
+   wrapper scripts, no `eval`, no base64, no splitting commands). **The user may overrule** a safety
+   invariant: it is their device. Tell them plainly what it risks (what can be lost, whether and how
+   it can be undone); if they still want it, they type `/override <target…>` and each such command
+   then asks them, with its consequences. Do not argue, refuse or block once they have decided;
+   record the decision (and `safety.irreversible_done` when it is irreversible). Never type or
+   suggest the override on their behalf.
 2. **Stop at every gate.** Each milestone ends with a `GATE` task. When you reach it: summarize what
    was done, teach the milestone lesson, list what the next milestone will risk, then **stop and
    wait** for an explicit "go". Never cross two milestones in a row on your own. The one

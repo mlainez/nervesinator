@@ -40,7 +40,7 @@
     {
       "id": "M3", "title": "M3 Unbrick kit", "description": "Prove we can always return to stock before changing anything. Risk: green/yellow.",
       "tasks": [
-        {"title": "Locate and download stock firmware", "labels": "risk-green,agent-bootloader", "ac": ["Stock firmware matching the build fingerprint (or newer) in backups/stock with sha256", "Source URL recorded"]},
+        {"title": "Locate and download stock firmware", "labels": "risk-green,agent-bootloader", "ac": ["Stock firmware matching the build fingerprint (or newer) in backups/stock with sha256, and its source URL recorded", "Or, when none can be found or the user declines to pay: a full dump of every partition planned for M5 (before the first partition write) and the decision recorded"]},
         {"title": "Install and test the flash tool", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Tool installed", "A read-only command (getvar / print-pit / printgpt) works against the device"]},
         {"title": "Test every boot mode entry", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["Bootloader/download, recovery and force-power-off combos tested by the user", "device.modes in port.yaml filled"]},
         {"title": "Document the emergency recovery procedure", "labels": "risk-green,agent-bootloader", "ac": ["dossier/unbrick.md covers soft brick, bootloop, stock reflash, EDL/BROM"]},
@@ -63,7 +63,7 @@
       "tasks": [
         {"title": "Get a root shell", "labels": "risk-orange,agent-flash,needs-device,needs-root", "ac": ["N/A if safety.root is declined, already or not-possible", "RAM-only method (fastboot boot of a recovery or patched boot image) used when the bootloader allows it", "If a write is needed: the target is class D, its stock image from backups/stock/ is copied to backups/<name>.img and added to SHA256SUMS, and the partition is allowlisted with the user's agreement", "Flash plan approved by the user and run through flash-guardian", "Root adb shell confirmed (id shows uid=0)", "Root-enhanced recon re-run and the M1 gaps filled"]},
         {"title": "Choose the backup method", "labels": "risk-green,agent-flash", "ac": ["Method chosen (root dd / temporary recovery / vendor read tool) and recorded"]},
-        {"title": "Dump all partitions except userdata and system", "labels": "risk-yellow,agent-flash,needs-device", "ac": ["backups/<name>.img for every partition except userdata/system/super", "Class B partitions dumped first"]},
+        {"title": "Dump all partitions except userdata and system", "labels": "risk-yellow,agent-flash,needs-device", "ac": ["backups/<name>.img for every partition except userdata/system/super (those too when no stock firmware is available)", "Class B partitions dumped first"]},
         {"title": "Verify backups and store a copy off the machine", "labels": "risk-green,agent-flash", "ac": ["sha256sum -c backups/SHA256SUMS passes", "User confirmed an off-machine copy"]},
         {"title": "Set the writable partitions allowlist", "labels": "risk-green,agent-orchestrator", "ac": ["safety.writable_partitions set with the user's agreement (default boot + userdata)", "Every listed partition has a verified backup, or its loss is recorded in safety.accepted_loss after the user confirmed (userdata)"]},
         {"title": "GATE M5: safety net in place", "labels": "risk-green,gate", "ac": ["safety.backups_verified true", "M5 lesson given", "User said go"]}

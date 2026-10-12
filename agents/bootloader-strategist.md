@@ -26,7 +26,8 @@ commands that write to a device.
 
 ## Deliverables (depending on the task)
 
-- `dossier/unbrick.md`: modes and key combos, stock firmware (file, version, sha256, source), the
+- `dossier/unbrick.md`: modes and key combos, stock firmware (file, version, sha256, source) or,
+  when none is available or the user declines to pay, the full-dump plan that replaces it, the
   restore procedures per brick level.
 - `dossier/unlock.md`: the procedure, the irreversible effects (KNOX, TA, data), the sources.
 - `dossier/boot-path.md`: second stage yes/no and why, the image format (`mkbootimg` args), the

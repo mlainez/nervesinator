@@ -69,7 +69,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 | Task | Agent | Notes |
 |---|---|---|
-| Locate and download stock firmware | bootloader-strategist | The exact build matching `ro.build.fingerprint` (or newer); checksum it; store under `$P/backups/stock/` |
+| Locate and download stock firmware | bootloader-strategist | The exact build matching `ro.build.fingerprint` (or newer); checksum it; store under `$P/backups/stock/`. If it cannot be found, or only behind a payment the user declines: propose a full dump of every partition instead (M5, before the first partition write, including `system`/`vendor`/`super`), with its limits (`device-safety`), and record the choice |
 | Install and test the flash tool | bootloader-strategist + orchestrator | fastboot / heimdall (`heimdall print-pit` reads only) / mtkclient (`printgpt` reads only); check it sees the device |
 | Test every boot mode entry | orchestrator | adb reboot bootloader/recovery/download; the key combos; how to force power off. Record them in `port.yaml` `device.modes` |
 | Document the emergency recovery procedure | bootloader-strategist | `$P/dossier/unbrick.md`: soft-brick → reflash stock boot; bootloop → recovery/download mode; hard-brick → EDL/BROM/Odin options and what they need |
@@ -106,7 +106,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 |---|---|---|
 | Get a root shell | flash-guardian (user approves) | Only if `safety.root: wanted` and a method was found. RAM first: `fastboot boot` of a recovery or patched boot image when the bootloader allows it. If a write is needed (Samsung download mode), the target is class D and its backup is the matching image from the stock firmware: copy it to `backups/<name>.img`, add it to `SHA256SUMS`, allowlist the partition with the user, and check the new image against the partition size in `dossier/partitions.md`. Flash plan, the user's yes, `safety.root: done`. Then re-run root-enhanced recon to fill the M1 gaps |
 | Choose the backup method | flash-guardian | Root `dd` over adb, or a temporarily booted recovery (TWRP via `fastboot boot`), or `heimdall`/`edl`/`mtkclient` reads; never a method that writes |
-| Dump all partitions except userdata and system | flash-guardian | `tools/backup-partitions.sh`: per partition `.img` + `SHA256SUMS`; radio calibration (`efs`, `modemst*`, `fsg`, `persist`, `nvram`, `nvdata`, `TA`) first |
+| Dump all partitions except userdata and system | flash-guardian | `tools/backup-partitions.sh`: per partition `.img` + `SHA256SUMS`; radio calibration (`efs`, `modemst*`, `fsg`, `persist`, `nvram`, `nvdata`, `TA`) first; without stock firmware, `system`/`vendor`/`super` too |
 | Verify backups and store a copy off the machine | flash-guardian + user | Re-read and compare hashes; the user copies `backups/` to a second place |
 | Set the writable partitions allowlist | orchestrator + user | Default `boot` + `userdata`; any other partition only when the user explicitly asks. Record in `port.yaml` `safety.writable_partitions`; for `userdata`, either a backup or the user's confirmed `safety.accepted_loss` |
 | GATE M5 | orchestrator | Set `safety.backups_verified: true` |

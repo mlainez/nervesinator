@@ -14,3 +14,5 @@ nerves_system_*/deps/
 # Markers set by the user's words (hands off) and the device-owner record
 .hands-off
 .device-owner
+# The user's override of a safety invariant (set by their own words)
+.override

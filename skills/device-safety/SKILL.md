@@ -19,7 +19,18 @@ Two invariants, whatever happens:
    the rest of class A are never written, so the phone can always be put back into it.
 2. **A return to stock is never made impossible.** Class B is never written and is backed up, the
    kit never relocks or repartitions, never flashes an older stock bootloader (anti-rollback), and
-   the stock firmware for this exact model is downloaded in M3 before the first write.
+   the stock firmware for this exact model is downloaded in M3 before the first write. When it
+   cannot be found online, or only behind a payment the user declines, a **full dump of every
+   partition** (including `system`, `vendor`/`super` this time) taken before the first partition
+   write replaces it. Its limits, told to the user: it restores only what the flash tools can
+   write, it is this phone's software version (no newer stock to update to), and a calibration
+   dump never moves to another phone.
+
+**These are the kit's defaults, not a cage.** The user may overrule any of them for their device:
+explain the consequences plainly (what can be lost, whether and how it can be undone, e.g. a
+written `aboot` that does not boot means EDL with a signed programmer or a repair shop), then, if
+they confirm by typing `/override <target…>`, the guard asks for each such command instead of
+refusing and `safe-flash.sh` warns instead of refusing. Record the decision; do not block it.
 
 Android does not need to stay bootable during the work: `boot`, `recovery`, `system` and `userdata`
 are ours once backed up.
@@ -115,7 +126,7 @@ partition, **add it to that file** (a commit in the kit) before going further.
 ## Backups (M5)
 
 - Dump every partition **except** `userdata` (huge, personal) and `system`/`super` (downloadable as
-  stock). Class B first, then class A (for reference and forensics, never to restore by us), then
+  stock; dump them too when no stock firmware is available). Class B first, then class A (for reference and forensics, never to restore by us), then
   class D.
 - Methods, safest first: root `dd if=/dev/block/by-name/X` over adb → a temporarily booted recovery
   (`fastboot boot twrp.img`, never flashed just for backups) → vendor tools in read mode
