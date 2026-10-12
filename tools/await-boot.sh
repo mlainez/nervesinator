@@ -40,13 +40,18 @@ finish() { # result exit-code detail
   python3 -I - "$OUT" "$1" "$3" "$STAGE" "${IMG:-}" "$SECONDS" "$tty_log" <<'EOF'
 import json, sys
 out, result, detail, stage, img, secs, console = sys.argv[1:8]
+lines = open(out + "/" + console, errors="replace").read().splitlines() if console else []
+battery = [l.split(" ", 1)[1] for l in lines if l.startswith("KIT-BATTERY-NOW ")] or \
+          [l.split(" ", 1)[1] for l in lines if l.startswith("KIT-BATTERY ")]
 r = {"result": result, "detail": detail, "stage": stage, "image": img, "seconds": int(secs),
-     "console": console or None}
+     "console": console or None, "battery": battery}
 json.dump(r, open(out + "/result.json", "w"), indent=2)
 with open(out + "/result.md", "w") as f:
     f.write("# Boot %s: %s\n\n%s\n\nImage: `%s`, %s s.%s\n" % (
         stage, result, detail, img or "(watch only)", secs,
         "\nConsole transcript: `console.txt`." if console else ""))
+    if battery:
+        f.write("\nPower supplies:\n\n" + "".join("- `%s`\n" % b for b in battery))
 EOF
   echo "$1: $3"
   echo "record: $OUT/result.md"

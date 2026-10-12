@@ -16,7 +16,11 @@ import time
 import tty
 
 # The shell echoes what we type: split the markers so the echo never matches them
-PROBE = 'echo KIT-""PROBE; uname -a; cat /proc/cmdline; ip addr show usb0; echo KIT-""END\n'
+PROBE = ('echo KIT-""PROBE; uname -a; cat /proc/cmdline; ip addr show usb0; '
+         'for p in /sys/class/power_supply/*; do [ -d "$p" ] && echo "KIT-""BATTERY-NOW ${p##*/} '
+         'status=$(cat $p/status 2>/dev/null) online=$(cat $p/online 2>/dev/null) '
+         'voltage_uv=$(cat $p/voltage_now 2>/dev/null) capacity=$(cat $p/capacity 2>/dev/null)"; done; '
+         'echo KIT-""END\n')
 RETURN = '. /etc/kit-image; sync; reboot-mode "$KIT_RETURN_MODE"; reboot -f\n'
 
 

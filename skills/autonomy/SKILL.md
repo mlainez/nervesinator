@@ -84,8 +84,10 @@ battery` from Android, the `await-boot` console transcript):
   mode or fastboot, when the stock bootloader charges there; or power-off when the device charges
   off-mode) and notify.
 
-Before any long unattended device work, charging must be proven on this port (see M10 in the
-playbook): on the supplies the user will use, across every reboot and flash path the port uses.
+Before any long unattended device work, charging must be proven on this port (the first M10 task):
+on the supplies the user will use, across every reboot and flash path the port uses. Until then,
+unattended device sessions stay short, and between them the phone waits where the stock
+bootloader charges it (the vendor flash mode), not in a kit image.
 
 ## The queue and notifications
 

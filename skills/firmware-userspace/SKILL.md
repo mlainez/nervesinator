@@ -45,6 +45,20 @@ For each pmOS dependency of the device package (`APKBUILD` `depends=`, the `soc-
 
 ## 4. Recipes by family
 
+- **Charging (do it first; Qualcomm PMIC chargers in detail).** Symptoms like "charger online but not
+  charging", `Discharging` on every supply, or VALID/CHG_GONE flapping every few seconds:
+  - Compare with the vendor driver (downstream `qpnp-charger`, `pm8921-charger`, `smb*`) and with what
+    the stock bootloader programs: list every register the vendor writes at charger insertion, and
+    check each one under mainline.
+  - On PM8226/PM8941 (SMBB, mainline `qcom_smbb`): BAT_IF `0x1293` (BATFET_CTRL4) bits 7:6 = 01 is
+    BATFET low-power mode. The vendor driver clears it on every insertion and never allows it under a
+    charger; mainline leaves it, and the input stays "present but not qualified". Leave LPM whenever
+    a supply is present, set it only with no input (fixed this way on samsung-s3ve3g, upstreamable).
+  - Check the input current limit (USB_IMAX) is not stuck at 100 mA after an input-arbiter reset.
+  - Test the trickle/ATC path at low battery, and test on a wall supply as well as a PC port: do not
+    conclude "weak PC port" without a wall supply test.
+  - Dump all charger registers, including the ranges behind the SEC_ACCESS override, before and
+    after insertion, and diff them.
 - **Qualcomm modem / DSP (remoteproc):** firmware `modem.mdt/.bNN` or `.mbn`; daemons `qrtr`
   (QRTR ns), `rmtfs` (gives the modem its EFS from `modemst1/2`/`fsg`: **read the backup, never write
   those partitions from our system unless rmtfs is configured exactly as on pmOS**), `tqftpserv`,

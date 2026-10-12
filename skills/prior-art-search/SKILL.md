@@ -46,6 +46,8 @@ or the tarball URL (= our kernel source), and `config-*` is a working kernel con
 The device page (`https://wiki.postmarketos.org/wiki/<Vendor>_<Model>_(<vendor>-<codename>)`), the
 SoC page (`Qualcomm_Snapdragon_…`, `MediaTek_…`), and the feature table: what works, how to flash, quirks
 (volume keys to enter modes, lk2nd notes). Use WebFetch; quote the relevant lines into the dossier.
+A "works" for battery or charging (here or on Nura-style status pages) often refers to the
+downstream kernel: check the kernel version the page describes before assuming mainline support.
 
 ## 3. Mainline Linux and SoC communities
 

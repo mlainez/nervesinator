@@ -61,5 +61,7 @@ Every task carries one `risk-*` label. The level of a milestone is that of its r
      the matching image from the stock firmware, and the user allowlists it for that task.
    - M9 needs M8 (never make a persistent system you cannot get a shell into).
    - M11 needs M9 and a working list of everything the Buildroot init scripts do.
+   - Long or unattended device work needs charging proven (the first M10 task); until then device
+     sessions stay short and the battery guard rails of the `autonomy` skill apply.
 6. **Every boot experiment keeps an escape route.** Before a boot test, write down how we get back:
    which key combo, which command, which backup image.

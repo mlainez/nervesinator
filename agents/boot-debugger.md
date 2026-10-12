@@ -33,6 +33,7 @@ orchestrator runs (RAM boots preferred).
 | `VFS: Unable to mount root` | initramfs not packed or not decompressed (`RD_GZIP`), wrong `root=` |
 | `Kernel panic - not syncing: No working init found` | `/init` not executable, wrong arch busybox, missing interpreter (`#!/bin/sh` absent) |
 | No USB network | no UDC (USB PHY/controller driver), gadget not bound, the host interface not configured (`tools/usbnet.sh`) |
+| Charger online but `Discharging`, or charging stops after a flash/reboot | a register the vendor driver sets at insertion and mainline does not (on SMBB: BATFET LPM in BAT_IF `0x1293`), an input limit stuck at 100 mA; test a wall supply too (`firmware-userspace` section 4, Charging) |
 | `deferred probe pending` | a missing supplier: regulator, clock, power domain, interconnect |
 
 ## Report back

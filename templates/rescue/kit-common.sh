@@ -39,6 +39,14 @@ kit_say() {
 	echo "$KIT_IMAGE: $*" > /dev/kmsg
 }
 
+# Every power supply (battery, charger, USB): state, voltage (µV) and capacity (%), for the host
+kit_battery() {
+	for p in /sys/class/power_supply/*; do
+		[ -d "$p" ] || continue
+		echo "KIT-BATTERY ${p##*/} type=$(cat "$p/type" 2>/dev/null) status=$(cat "$p/status" 2>/dev/null) online=$(cat "$p/online" 2>/dev/null) voltage_uv=$(cat "$p/voltage_now" 2>/dev/null) capacity=$(cat "$p/capacity" 2>/dev/null)"
+	done
+}
+
 kit_banner() {
 	echo "=========================================="
 	echo "  ${KIT_PORT:-?} $KIT_IMAGE"
@@ -48,6 +56,7 @@ kit_banner() {
 	echo "fb0: $(cat /sys/class/graphics/fb0/name 2>/dev/null) $(cat /sys/class/graphics/fb0/virtual_size 2>/dev/null)"
 	echo "watchdog: $([ -e /dev/watchdog ] && echo fed || echo absent)"
 	echo "cmdline: $(cat /proc/cmdline)"
+	kit_battery
 	# One machine-readable line for tools/await-boot.sh
 	echo "KIT-READY port=${KIT_PORT:-?} image=$KIT_IMAGE kernel=$(uname -r)"
 }

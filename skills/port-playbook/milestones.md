@@ -159,7 +159,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 |---|---|---|
 | Build the rescue initramfs defconfig | buildroot-engineer | `<id>_rescue_defconfig`: busybox, dropbear (or telnetd), unudhcpd, a configfs USB gadget (NCM/RNDIS), the rootfs as initramfs; templates in `templates/rescue/` |
 | Boot rescue and connect over USB networking | orchestrator | `tools/await-boot.sh --stage rescue`, then `tools/usbnet.sh`: host gets 10.0.42.2, phone 10.0.42.1; `ssh root@10.0.42.1`. Check the way back: `reboot-mode <bootloader or download>` from the shell lands in the flash mode without keys (on Qualcomm the restart reason survives only a warm reset) |
-| Linux hardware inventory | device-recon (over ssh) | `dmesg`, `/sys/bus/*/devices`, `/proc/device-tree`, eMMC partitions as Linux sees them, failed probes, firmware requests |
+| Linux hardware inventory | device-recon (over ssh) | `dmesg`, `/sys/bus/*/devices`, `/proc/device-tree`, eMMC partitions as Linux sees them, failed probes, firmware requests, and the battery: voltage and charger state from `/sys/class/power_supply/*` (from now on every `await-boot` record logs them) |
 | Map Android partitions to Linux block devices | device-recon | `mmcblk0pN` ↔ name table in `dossier/partitions-linux.md` |
 | GATE M8 | orchestrator | |
 
@@ -190,6 +190,14 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 
 **Goal:** make the peripherals the user cares about work. One child task per peripheral.
 
+**Charging comes first** (the first task below): a port that drains its battery stops everything and needs
+hands. It is never deferred, and long or unattended device work waits for it. Done means: the battery
+voltage (PMIC ADC/VADC) and, when there is one, the fuel gauge's capacity are readable; the phone
+charges on every supply the user will use (a PC port **and** a wall supply); and it keeps charging
+across every reboot and flash path the port uses (warm and cold reset, the vendor flash mode, the
+second-stage bootloader), re-checked after each flash path is first used. Checklist:
+`firmware-userspace` section 4, Charging.
+
 Create child tasks (`-p <M10 parent>`) from the M8 inventory and the user's priorities: display/backlight,
 touch, WiFi, Bluetooth, modem/SMS/data, audio, battery/charger, sensors, camera, GPU.
 
@@ -204,6 +212,7 @@ install, a re-check and a tagged commit.
 
 | Task | Agent |
 |---|---|
+| Make charging work and read the battery | firmware-hunter, buildroot-engineer |
 | Prioritise peripherals with the user | orchestrator |
 | (child tasks per peripheral) | firmware-hunter, buildroot-engineer |
 | Write the init-scripts inventory for Nerves | buildroot-engineer → `$P/dossier/init-inventory.md` |

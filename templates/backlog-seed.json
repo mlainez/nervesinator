@@ -95,7 +95,7 @@
       "tasks": [
         {"title": "Build the rescue initramfs defconfig", "labels": "risk-green,agent-buildroot", "ac": ["<id>_rescue_defconfig builds with dropbear, unudhcpd and the gadget script"]},
         {"title": "Boot rescue and connect over USB networking", "labels": "risk-yellow,agent-orchestrator,needs-device", "ac": ["ssh root@10.0.42.1 works", "reboot-mode from the shell returns to the flash mode without keys"]},
-        {"title": "Linux hardware inventory", "labels": "risk-green,agent-recon", "ac": ["Linux dmesg saved", "Working/failing devices listed with the reasons"]},
+        {"title": "Linux hardware inventory", "labels": "risk-green,agent-recon", "ac": ["Linux dmesg saved", "Working/failing devices listed with the reasons", "Battery voltage and charger state read from /sys/class/power_supply"]},
         {"title": "Map Android partitions to Linux block devices", "labels": "risk-green,agent-recon", "ac": ["dossier/partitions-linux.md maps mmcblk0pN to names and classes"]},
         {"title": "GATE M8: shell into Linux", "labels": "risk-green,gate", "ac": ["M8 lesson given", "User said go"]}
       ]
@@ -114,6 +114,7 @@
     {
       "id": "M10", "title": "M10 Hardware", "description": "Peripherals the user cares about, one child task each. Risk: orange.",
       "tasks": [
+        {"title": "Make charging work and read the battery", "labels": "risk-yellow,agent-firmware,needs-device,peripheral", "ac": ["Battery voltage readable (PMIC ADC or fuel gauge), and capacity when a fuel gauge exists", "Charges on a PC port and on a wall supply", "Keeps charging across every reboot and flash path the port uses (warm/cold reset, vendor flash mode, second-stage bootloader)", "Re-checked after each flash path was first used"]},
         {"title": "Prioritise peripherals with the user", "labels": "risk-green,agent-orchestrator", "ac": ["Child tasks created per peripheral with ACs"]},
         {"title": "Write the init-scripts inventory for Nerves", "labels": "risk-green,agent-buildroot", "ac": ["dossier/init-inventory.md lists every script, daemon, blob and config"]},
         {"title": "GATE M10: hardware enabled", "labels": "risk-green,gate", "ac": ["Chosen peripherals work or are documented as deferred", "M10 lesson given", "User said go"]}
