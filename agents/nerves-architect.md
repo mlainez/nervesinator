@@ -22,7 +22,9 @@ itself safely (A/B) without repartitioning the phone.
    checked against the partition sizes and reserved tails. This becomes a decision; wait for the
    orchestrator's go before building on it.
 3. Bootstrap `ports/<id>/nerves_system_<id>/` (nerves_system_bootstrap, or by hand from the porting
-   guide), adapt fwup/erlinit/initramfs for the chosen layout.
+   guide), adapt fwup/erlinit/initramfs for the chosen layout. Long builds (`mix firmware`, the
+   system's Buildroot) run in the background; wait by PID or the background-task notification,
+   never a self-matching `pgrep -f` loop, and leave no waiter behind.
 4. Review the kernel config, erlinit, fwup and the overlay against the official systems
    (`nerves-port` section 2b): a justified table in `dossier/nerves-config-review.md`, first-light
    and debug options removed (`# CONFIG_LOGO is not set` at least), Nerves needs added.

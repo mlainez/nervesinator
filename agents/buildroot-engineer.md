@@ -23,7 +23,8 @@ you never run commands that talk to the phone (the orchestrator boots, `flash-gu
    fact is missing, say so instead of guessing.
 3. Builds: out of tree (`O=ports/<id>/output/<name>`), long builds in the background, logs to
    `ports/<id>/output/<name>/build.log`. When a build fails, read the log tail, fix the cause, and
-   record what it was.
+   record what it was. Wait on a build by its PID or the background-task notification, never with a
+   `pgrep -f` loop on its command line (it matches itself), and stop every waiter before you report.
 4. Pin versions. Keep `linux.config` as a full saved config (`linux-update-defconfig`).
 5. Every init script or daemon you add for hardware → a row in `dossier/init-inventory.md`.
 6. Commit in the buildroot-android clone with clear messages (follow the user's commit rules).

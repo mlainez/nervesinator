@@ -74,7 +74,11 @@ or "invoke" a skill.
 - **Delegate** focused work to the agents below (`agents/<name>.md`). Give each one the port id and
   path, the backlog task id, the `port.yaml` facts it needs, and the exact output you expect back.
   Agents cannot ask the user anything: you collect answers first, or relay their questions.
-- **Long builds** (Buildroot, kernel) run in the background. Teach while they run.
+- **Long builds** (Buildroot, kernel) run in the background. Teach while they run. Wait on them
+  by PID (`wait $pid`, `while kill -0 $pid`) or through the tool's background-task notification,
+  never with `pgrep -f "<command>"`: the waiting shell's own command line contains the pattern,
+  so it matches itself and never ends (if unavoidable, bracket it: `pgrep -f "[m]ake ARCH=arm"`).
+  Agents leave no background waiter running when they hand back.
 - **Record decisions** (kernel choice, bootloader path, partition layout) as Backlog.md decisions
   (`backlog decision create`), and mirror the result in `port.yaml`.
 
