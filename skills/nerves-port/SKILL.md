@@ -44,8 +44,10 @@ porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 official 
 - Toolchain: `BR2_arm=y` + Cortex-A7/A9/A15 → `nerves_toolchain_armv7_nerves_linux_gnueabihf`;
   `BR2_aarch64=y` → `nerves_toolchain_aarch64_nerves_linux_gnu`. Downstream kernel < 5.4 headers →
   expect patches or a custom toolchain (the Kobo lesson); warn the user.
-- Kernel: `SQUASHFS=y`, `SQUASHFS_LZ4=y`, `F2FS_FS=y`, `USB_GADGET=y`, `USB_ETH=y` (or configfs NCM
-  via an Elixir gadget setup), `DM_*`/`BLK_DEV_LOOP=y` if the initramfs maps a sub-image.
+- Kernel: `SQUASHFS=y` with gzip (as the official systems; `mix firmware` rebuilds the squashfs with
+  gzip), `F2FS_FS=y`, `USB_GADGET=y` with the built-in legacy `g_ether` (`USB_ETH=y`, RNDIS) as the
+  official device-port systems use, no ACM serial (rpi0 dropped `g_cdc` for stability),
+  `DM_*`/`BLK_DEV_LOOP=y` if the initramfs maps a sub-image.
 
 ## 2b. Review against the official systems (and productize)
 
@@ -70,8 +72,20 @@ Never copy them verbatim. Diff the kernel config against the official systems' d
   console (`loglevel=7/8`, `ignore_loglevel` on the cmdline), debug options (`DEBUG_INFO`,
   `KALLSYMS_ALL` extras), unused filesystems, module signing or compression that conflicts with
   Nerves.
-- **Add** what Nerves needs, as the official systems enable it: squashfs with the chosen compression,
-  f2fs or ext4 for `/root`, devtmpfs, the USB gadget, the watchdog, the RTC, cgroups and namespaces.
+- **Add** what Nerves needs, as the official systems enable it: gzip squashfs, f2fs or ext4 for
+  `/root`, devtmpfs, the USB gadget, the watchdog, the RTC, cgroups and namespaces (`MEMCG`,
+  `BLK_CGROUP`, `CGROUP_PIDS`), `PSTORE_PMSG`.
+- **Common carry-overs from a Buildroot board** (remove unless the hardware needs them): an LZ4
+  squashfs; Buildroot debug tools in the rootfs (`iw`, `i2c-tools`, `evtest`, libgpiod tools,
+  `usbutils`); a configfs NCM/ACM gadget instead of `g_ether`; a static address and DHCP server;
+  fixed gadget MACs; a build-time Wi-Fi secrets file; erlinit mounting debugfs. Also check what
+  the official systems have that a board lacks: the memory cgroup mounted by erlinit, `libp11` and
+  `unixODBC`, `wpa_supplicant` options as rpi0/bbb, the `Toolchain` `:env` with the CPU flags in
+  `mix.exs`.
+- **Justified differences** look like: the console on `tty1` when there is no UART or ACM; an
+  initramfs recovery shell keeping a rescue address (it is not Nerves); a nested-firmware
+  initramfs (kpartx, or `losetup -P` to drop multipath-tools/eudev); `kmod` for `modprobe.d`
+  remove rules; `STRICT_DEVMEM` off only for a documented tool.
 - **Traps seen:** `CONFIG_CMDLINE_FORCE=y` in the board config silently ignores the bootloader's
   and extlinux's `append`: remove it. `MEDIA_SUPPORT=m` builds a hundred-odd unused DVB modules:
   select only what the hardware has. `mix firmware` rebuilds the squashfs with gzip, so
@@ -117,7 +131,8 @@ Whoever starts the kernel must know the Nerves active slot:
 
 ## 5. erlinit.config and fwup
 
-- `--ctty tty1` (screen) or the gadget's serial ACM; `--hostname-pattern nerves-%s`;
+- `--ctty tty1` (screen) when there is no UART (official device-port systems have no ACM console);
+  `--hostname-pattern nerves-%s`;
   `-m` mounts for `/root` (the f2fs app partition at its real device path, e.g. `/dev/loop0p4` or
   `/dev/mmcblk0pNN`).
 - `fw_env.config`: the device + offset of the env region **inside** the sub-image path as seen by Linux.
@@ -164,8 +179,15 @@ Code's auto mode refuses it): expect the user to run it. Give them the exact com
 target check inline (`fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)`), or they add a permission rule for it.
 
 Load the display stack from the initramfs: loaded late (as a module after the BEAM starts) its
-takeover blink lands after the MOTD. With a USB Ethernet gadget (`g_ether` or configfs NCM), set
-fixed `dev_addr`/`host_addr`: random MACs per boot make the host take a minute to reconnect.
+takeover blink lands after the MOTD. Loading modules from the initramfs needs `modules.dep`
+generated at build time (`depmod` for the initramfs tree); an initramfs package that empties its
+module list or ships no `modules.dep` cannot load them. Gadget MACs stay random as in the
+official systems; fixed `dev_addr`/`host_addr` only after measuring a real reconnect problem on
+the user's host, and recorded as a justified difference.
+
+Wi-Fi: no build-time secrets file; `VintageNetWiFi.quick_configure/2` at runtime (VintageNet
+persists it). Before changing networking through `mix upload`, check for persisted VintageNet
+configuration (`/root/vintage_net`, `VintageNet.get_configuration/1`): it overrides new defaults.
 
 A clean console: vendor drivers that print debug at warning level (e.g. MediaTek CONSYS
 `[STP-PSM]`, `[wlan]`) flood `tty1` over the IEx prompt. Set their debug levels through

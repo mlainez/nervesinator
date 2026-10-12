@@ -67,6 +67,8 @@ That is the M7 proof; a photo is optional. If neither shows up, hand over to `bo
 The templates make each image report and recover on its own, so a boot can be judged without
 anyone looking at the phone:
 
+- **Scope:** these conventions (the gadget identity, ACM, 10.0.42.1, fixed MACs) are for the kit's
+  own first-light, rescue and Buildroot images. Nerves uses the official systems' choices.
 - **Identity:** the USB gadget is `1d6b:0104`, manufacturer `porting-kit`, product
   `<id>-<image>`, serial `device.serial` (`tools/lib/kit_gadget.sh`; `tools/detect-devices.sh`
   lists it). Functions: ACM (`ttyGS0`: banner, dmesg, then a shell) and NCM (10.0.42.1, telnetd or
