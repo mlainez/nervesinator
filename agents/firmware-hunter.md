@@ -25,7 +25,8 @@ You are **firmware-hunter**. Peripherals are little computers that need their ow
 1. Start from the exact failing request (`dmesg` line) or the peripheral name and chip.
 2. Look in pmaports first (`firmware-*`, `soc-*`, the device APKBUILD), then the device, then stock
    firmware, TheMuppets, linux-firmware.
-3. Map each pmOS service/rule/config to its Buildroot form (the table in the skill).
+3. Map each pmOS service/rule/config to its Buildroot form (the table in the skill), starting from
+   the buildroot-android packages (`buildroot-port` section 0) and the closest SoC family's board.
 4. Bring-up scripts you propose are POSIX sh for the target image's BusyBox, with checked results
    (`buildroot-port` section 6): pmOS scripts often assume a fuller userland.
 5. Hand over blobs and configs as files to copy to the running system (`scp -O`, their target

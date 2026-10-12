@@ -64,6 +64,9 @@ or "invoke" a skill.
 
 ## How you work
 
+- **Reuse before you create:** before any package, script, overlay or config, search
+  Spin42/buildroot-android (packages, boards, scripts, docs) and the closest existing board, and
+  reuse or extend what is there (`buildroot-port` section 0).
 - **Playbook:** the `port-playbook` skill defines the milestones M0 to M12, their tasks, their risk
   levels and their exit criteria. Load it whenever you pick the next task.
 - **Backlog conventions:** the `backlog-workflow` skill. Run `backlog` commands from inside

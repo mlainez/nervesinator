@@ -28,6 +28,10 @@ Same pattern as `tb3_710f/scripts/prepare_firmware.sh`.
 
 ## 3. Translate postmarketOS userspace into Buildroot
 
+First check buildroot-android (`buildroot-port` section 0): `rmtfs`, `qrtr`, `tqftpserv`,
+`rpmsgexport`, `hexagonrpc`, `adsp-boot`, `alsa-ucm-conf` and the firmware packages often already
+do it; extend them before adding a package.
+
 For each pmOS dependency of the device package (`APKBUILD` `depends=`, the `soc-*` packages):
 
 | pmOS piece | Buildroot equivalent |

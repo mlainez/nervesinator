@@ -33,7 +33,7 @@
         {"title": "Search mainline Linux and SoC forks", "labels": "risk-green,agent-scout", "ac": ["DTS for the board/SoC located or confirmed absent", "SoC community forks listed with activity dates"]},
         {"title": "Check second-stage bootloader support", "labels": "risk-green,agent-scout", "ac": ["lk2nd/U-Boot support for SoC and device checked"]},
         {"title": "Search downstream sources (LineageOS, vendor)", "labels": "risk-green,agent-scout", "ac": ["Device/kernel trees and blob repos listed"]},
-        {"title": "Feasibility verdict and kernel path decision", "labels": "risk-green,agent-scout", "ac": ["dossier/prior-art.md written", "Decision recorded (kernel repo + ref + config + DTB, boot path)", "path section of port.yaml filled"]},
+        {"title": "Feasibility verdict and kernel path decision", "labels": "risk-green,agent-scout", "ac": ["dossier/prior-art.md written", "Reusable buildroot-android pieces listed (closest board, packages)", "Decision recorded (kernel repo + ref + config + DTB, boot path)", "path section of port.yaml filled"]},
         {"title": "GATE M2: go or no-go", "labels": "risk-green,gate", "ac": ["Scenario and confidence explained to the user", "M2 lesson given", "User said go (or chose to stop)"]}
       ]
     },

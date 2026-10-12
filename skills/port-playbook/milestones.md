@@ -55,7 +55,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Search mainline Linux and SoC forks | prior-art-scout | `arch/arm*/boot/dts/<vendor>/` for the board/SoC; msm8916-mainline, msm8974-mainline, sdm845-mainline, linux-sunxi, mainline-for-mediatek… |
 | Check second-stage bootloader support | prior-art-scout | lk2nd device list and the SoC (Qualcomm), mainline U-Boot board list, Samsung/Exynos U-Boot work |
 | Search downstream sources (LineageOS, vendor) | prior-art-scout | `LineageOS/android_device_<vendor>_<codename>`, `android_kernel_*`, TheMuppets blobs, the vendor's open-source release |
-| Feasibility verdict and kernel path decision | prior-art-scout → orchestrator | Write `$P/dossier/prior-art.md` with the scenario (A: mainline/pmOS-mainline device, B: mainline SoC without the board, C: downstream only) and a confidence level; record a decision |
+| Feasibility verdict and kernel path decision | prior-art-scout → orchestrator | Write `$P/dossier/prior-art.md` with the scenario (A: mainline/pmOS-mainline device, B: mainline SoC without the board, C: downstream only) and a confidence level, plus the reusable buildroot-android pieces (closest board, packages); record a decision |
 | GATE M2 | orchestrator | Go / no-go with the user |
 
 **Exit:** a decision records the kernel source (repo + branch/commit + DTB name) and the bootloader path; `port.yaml` `path:` is filled.

@@ -5,6 +5,23 @@ description: Building the device's Buildroot systems in the Spin42/buildroot-and
 
 # Buildroot port (buildroot-android style)
 
+## 0. Reuse before you create
+
+Before writing a package, script, overlay file or config, look for it in
+[Spin42/buildroot-android](https://github.com/Spin42/buildroot-android) and reuse or extend it. Add
+something new only when nothing fits, and then in the same style.
+
+- **Packages** (`buildroot-external/package/`): `rmtfs`, `qrtr`, `tqftpserv`, `rpmsgexport`,
+  `hexagonrpc`, `adsp-boot` (Qualcomm remote processors and their services), `reboot-mode`,
+  `unudhcpd`, `first-boot-resize`, `sim-selector`, `alsa-ucm-conf`, `citros-initramfs`, the firmware
+  packages (`fp2-firmware`, `fp3-firmware`, `grate-firmware`, `tb3-firmware`) and the MediaTek
+  `mt8127-*` connectivity stack.
+- **Boards** (`buildroot-external/board/`): `fairphone2` (msm8974), `fairphone3` (sdm632),
+  `grouper` (Tegra 3), `tb3_710f` (mt8127), with their scripts (`create_boot_image.sh`, `flash.sh`,
+  `reflash.sh`, `install_rootfs.sh`, `prepare_firmware.sh`, `mkrescue_image.sh`) and `docs/tb3_710f.md`.
+- **Closest board first:** copy patterns from the board of the same SoC family (FP2's msm8974 for an
+  msm8226 phone's WCNSS, modem and remoteproc), then from any board with the same boot path.
+
 ## 1. The tree
 
 Work in `ports/<id>/buildroot-android/`, a clone of the user's fork of

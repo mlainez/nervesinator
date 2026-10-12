@@ -17,6 +17,8 @@ you never run commands that talk to the phone (the orchestrator boots, `flash-gu
 
 1. Work inside `ports/<id>/buildroot-android/` on branch `port/<id>`, following the existing boards'
    conventions (look at `fairphone2`, `fairphone3`, `grouper`, `tb3_710f` before inventing anything).
+   Reuse or extend the existing packages and scripts (`buildroot-port` section 0); a new piece needs
+   a line in your report saying why nothing existing fits.
 2. Use the facts in `port.yaml` (`device.bootimg`, `path.kernel`, DTB name) and the dossier; when a
    fact is missing, say so instead of guessing.
 3. Builds: out of tree (`O=ports/<id>/output/<name>`), long builds in the background, logs to

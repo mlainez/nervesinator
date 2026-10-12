@@ -78,7 +78,12 @@ Then the SoC forks (`msm8916-mainline/linux`, `msm8226-mainline`, `msm8953-mainl
 - TheMuppets: `github.com/TheMuppets/proprietary_vendor_<vendor>` for the blobs themselves.
 - The vendor's open-source release portal (Samsung opensource.samsung.com, …).
 
-## 6. Grade and decide
+## 6. Reusable buildroot-android pieces
+
+List what the port can take from Spin42/buildroot-android (`buildroot-port` section 0): the board of
+the closest SoC family, the packages the device's peripherals will need, the scripts to copy.
+
+## 7. Grade and decide
 
 Write `dossier/prior-art.md` with:
 
