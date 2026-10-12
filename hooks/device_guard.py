@@ -14,6 +14,10 @@ Decisions:
           unlock, wipe); forces a human confirmation.
   (none)- everything else; normal permission rules apply.
 
+A full-autonomy grant (hooks/autonomy_grant.py), created only from the user's own typed
+`/autonomous full <goal>`, turns ask into allow for the active port until it is revoked or expires.
+Agents can never create or edit that grant: any command or file tool touching it is denied.
+
 This is a seatbelt, not a sandbox: it parses commands heuristically. The agents are instructed
 never to work around it.
 """
@@ -22,10 +26,19 @@ import os
 import re
 import shlex
 import sys
+import importlib.util
 from datetime import datetime, timezone
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 FORBIDDEN_FILE = os.path.join(PROJECT_DIR, "tools", "lib", "forbidden-partitions.txt")
+PORTS_DIR = os.path.join(PROJECT_DIR, "ports")
+
+# python3 -I leaves the script directory off sys.path: load the sibling module by path
+_spec = importlib.util.spec_from_file_location(
+    "autonomy_grant", os.path.join(os.path.dirname(os.path.realpath(__file__)), "autonomy_grant.py"))
+autonomy_grant = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(autonomy_grant)
+FILE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 
 DENY, ASK = 2, 1
 
@@ -306,6 +319,8 @@ def analyse(cmd, v, depth=0):
     if depth > 3:
         return
     if depth == 0:
+        if autonomy_grant.GRANT_NAME in cmd:
+            v.add(DENY, "The autonomy grant is created only by the user typing /autonomous full.")
         cmd = strip_file_heredocs(cmd)
     remote_whole = bool(REMOTE_RE.search(cmd))
     if remote_whole:
@@ -366,9 +381,23 @@ def log(decision, cmd, reasons):
         pass
 
 
-def check_cli(cmd):
+def apply_grant(v, ports_dir):
+    """ASK becomes ALLOW under a valid full-autonomy grant; returns the grant used, if any."""
+    if v.level != ASK:
+        return None
+    grant = autonomy_grant.valid_grant(ports_dir)
+    if grant:
+        v.level = 0
+        v.reasons.append("allowed by the full-autonomy grant (goal: %s, until %s)"
+                         % (grant.get("goal") or "?", grant.get("expires_at")))
+    return grant
+
+
+def check_cli(cmd, ports_dir=PORTS_DIR):
     v = Verdict()
     analyse(cmd, v)
+    if apply_grant(v, ports_dir):
+        log("allow-autonomy", cmd, v.reasons)
     label = {0: "ALLOW", ASK: "ASK", DENY: "DENY"}[v.level]
     print(label + ("" if not v.reasons else ": " + " ".join(dict.fromkeys(v.reasons))))
     if v.level:
@@ -377,11 +406,22 @@ def check_cli(cmd):
 
 
 def main():
+    if len(sys.argv) >= 5 and sys.argv[1] == "--ports" and sys.argv[3] == "--check":
+        return check_cli(" ".join(sys.argv[4:]), sys.argv[2])
     if len(sys.argv) >= 3 and sys.argv[1] == "--check":
         return check_cli(" ".join(sys.argv[2:]))
     try:
         data = json.load(sys.stdin)
     except ValueError:
+        return 0
+    if data.get("tool_name") in FILE_TOOLS:
+        path = (data.get("tool_input") or {}).get("file_path") or \
+            (data.get("tool_input") or {}).get("notebook_path") or ""
+        if os.path.basename(path) == autonomy_grant.GRANT_NAME:
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse", "permissionDecision": "deny",
+                "permissionDecisionReason": "[device-guard] The autonomy grant is created only by "
+                                            "the user typing /autonomous full."}}))
         return 0
     if data.get("tool_name") != "Bash":
         return 0
@@ -392,6 +432,8 @@ def main():
     except Exception as exc:  # never let a parser bug silently allow a device write
         if re.search(r"fastboot|heimdall|odin|edl|mtk|\bdd\b|/dev/block", cmd):
             v.add(ASK, "device_guard could not parse this command (%s); confirm manually." % exc)
+    if apply_grant(v, PORTS_DIR):
+        log("allow-autonomy", cmd, v.reasons)
     if v.level == 0:
         return 0
     decision = "deny" if v.level == DENY else "ask"

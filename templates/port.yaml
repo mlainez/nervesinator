@@ -34,7 +34,8 @@ milestone: M0
 gates_passed: []
 
 session:
-  autonomy: attended                # attended | unattended (skills/autonomy)
+  autonomy: attended                # attended | unattended | full (skills/autonomy)
+  goal: ""                          # full autonomy: what "done" means
   since: ""
   set_by: ""                        # the user's words that switched it
 

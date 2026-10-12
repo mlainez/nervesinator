@@ -1,6 +1,6 @@
 ---
 name: autonomy
-description: Attended vs unattended work - what the orchestrator may do on its own while the user is away (host work, read-only device commands, key-free mode reboots, RAM test boots judged by await-boot), what it must queue for the user (writes, gates, keys, irreversible costs), and how it notifies. Load it when the user switches mode ("/autonomous on|off", "I'm away", "I'm back") and when resuming a port whose session.autonomy is unattended.
+description: Attended, unattended and full-autonomy work - what the orchestrator may do on its own while the user is away (host work, read-only device commands, key-free mode reboots, RAM test boots judged by await-boot), what it queues for the user, the full-autonomy grant the user types (/autonomous full <goal>) under which it asks nothing until the goal, the battery guard rails, and how it notifies. Load it when the user switches mode ("/autonomous on|off|full", "I'm away", "I'm back") and when resuming a port whose session.autonomy is not attended.
 ---
 
 # Attended and unattended work
@@ -9,14 +9,16 @@ The mode lives in `port.yaml`:
 
 ```yaml
 session:
-  autonomy: attended        # attended | unattended
+  autonomy: attended        # attended | unattended | full
+  goal: ""                  # full: what "done" means
   since: ""                 # ISO time of the last switch
   set_by: ""                # the user's words that switched it
 ```
 
 The user switches it at any moment: `/autonomous on` or "I'm away" → `unattended`;
-`/autonomous off` or "I'm back" → `attended`. Record the switch in `port.yaml` and in
-`journal/sessions.md`, then say in one line what will and will not happen while they are away.
+`/autonomous full <goal> [for <N>h]` → `full`; `/autonomous off` or "I'm back" → `attended`.
+Record the switch in `port.yaml` and in `journal/sessions.md`, then say in one line what will and
+will not happen from now on.
 
 ## Attended (default)
 
@@ -43,6 +45,47 @@ a `GATE`, anything that needs keys or a battery pull, accepting an irreversible 
 still asks for every write; while the user is away that prompt would just wait, so do not start
 one: queue it instead.
 
+## Full autonomy
+
+When the user types `/autonomous full <goal>`, the prompt hook writes `ports/<id>/.autonomy-grant`
+(goal, expiry, the exact words typed; 7 days unless `for <N>h`). Only that hook can create it: the
+guard denies any command or file tool touching it, so a grant always comes from the user's own
+keyboard. While it is valid, the guard **allows what it would otherwise ask about** and still
+**denies what it always denies** (class A/B/C partitions, relocking, repartitioning, raw host disks).
+
+Under the grant, work towards the goal without asking the user anything:
+
+- **Gates up to the goal pass on their own.** Write the gate summary, the proof and the lesson to
+  `journal/sessions.md` (and the lesson file), note "passed under the full-autonomy grant" in the
+  gate task, add it to `gates_passed`, notify, and go on. The gate at the goal stops.
+- **Device writes** go through `safe-flash.sh --execute` with every dry-run check green: the target
+  allowlisted, a verified backup or a recorded `safety.accepted_loss`, size, magic, the lk2nd DTB
+  check, serial and product.
+- **Keep the key-free way back.** Write only what the running bootloader path can undo by command
+  (under lk2nd: `--mode fastboot flash boot|userdata`). Overwriting the partition that holds the
+  second-stage bootloader, or any write whose undo needs keys, is queued, not done.
+- **Verify every write:** a verification boot right after it (`await-boot.sh --watch-only` after a
+  reboot), and on failure restore the backup through the same key-free path. Log both to
+  `journal/` and notify.
+- **Irreversible costs** (an unlock that trips a fuse, a wipe) only when already listed in
+  `learner.accepted_costs`; otherwise queue.
+- **Stop** when the goal is reached, when the grant expires, or when nothing can progress without
+  hands: write the session entry, notify, and switch `session.autonomy` back to `attended`.
+
+## Battery guard rails (unattended and full)
+
+A drained battery stops everything and needs hands. Before each device step, read the battery
+(`/sys/class/power_supply/*/voltage_now` and `capacity` from a kit image or Linux, `dumpsys
+battery` from Android, the `await-boot` console transcript):
+
+- below 3.6 V or 20 %: pause device work, do host work only, notify;
+- at 3.45 V or 5 %: park the phone where it charges (the vendor flash mode, e.g. Samsung download
+  mode or fastboot, when the stock bootloader charges there; or power-off when the device charges
+  off-mode) and notify.
+
+Before any long unattended device work, charging must be proven on this port (see M10 in the
+playbook): on the supplies the user will use, across every reboot and flash path the port uses.
+
 ## The queue and notifications
 
 For each item that needs the user: set its backlog task to `Needs User` with a note (what, why,
@@ -67,6 +110,6 @@ fallback, not the plan.
 
 ## Harness permissions
 
-The kit cannot answer the host tool's own permission prompts. Before leaving, the user picks a
-permission mode that lets the allowed actions above run (in Claude Code, auto mode or allow rules;
-never bypassPermissions, which would also silence the guard's questions).
+The guard's grant covers only the guard. The host tool may still ask its own permission questions;
+before leaving, the user picks a permission mode that lets the work run (in Claude Code, auto mode
+or allow rules; never bypassPermissions, which would also silence the guard).

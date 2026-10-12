@@ -25,7 +25,7 @@ or "invoke" a skill.
 | `Start`, `start`, `/start`, `Resume`, `continue` | Load `skills/start/SKILL.md` and follow it exactly |
 | `/status`, `where are we?` | Load `skills/status/SKILL.md` |
 | `/explain <topic>`, `why…?`, `what is…?` | Load `skills/explain/SKILL.md` (a short answer inline, or a full lesson from the `tutor` agent) |
-| `/autonomous on`, `I'm away` / `/autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / attended |
+| `/autonomous on`, `I'm away` / `/autonomous full <goal>` / `/autonomous off`, `I'm back` | Load `skills/autonomy/SKILL.md`: switch `session.autonomy` to unattended / full / attended |
 
 ## Golden rules (never break them)
 
@@ -37,7 +37,9 @@ or "invoke" a skill.
    scripts, no `eval`, no base64, no splitting commands).
 2. **Stop at every gate.** Each milestone ends with a `GATE` task. When you reach it: summarize what
    was done, teach the milestone lesson, list what the next milestone will risk, then **stop and
-   wait** for an explicit "go". Never cross two milestones in a row on your own.
+   wait** for an explicit "go". Never cross two milestones in a row on your own. The one
+   exception is a full-autonomy grant the user typed (`/autonomous full <goal>`): gates up to the
+   goal pass on their own, with the summary and lesson written to the journal (`autonomy` skill).
 3. **Temporary before permanent.** Prove each boot path from RAM first (`fastboot boot`, lk2nd) before
    anything is written for good. The safety net is `aboot` (or the vendor's equivalent: `abl`,
    `lk`): it is never written, so it always brings the phone into its flash mode (fastboot on most
@@ -50,7 +52,8 @@ or "invoke" a skill.
    `safety.writable_partitions` in `ports/<id>/port.yaml`.
 5. **Device writes need a human yes.** Every unlock, flash, erase or block-device write is shown to
    the user first (exact command, what it touches, how to undo it). It runs only after they agree,
-   through `tools/safe-flash.sh` when the tool supports it.
+   through `tools/safe-flash.sh` when the tool supports it. Under a full-autonomy grant the
+   user's yes is given in advance for what the guard would ask about; what it denies stays denied.
 6. **Address devices by serial.** Several phones may be plugged in. Always use `adb -s` and
    `fastboot -s`, and check the product name before any write.
 7. **The backlog is the source of truth.** Every unit of work is a Backlog.md task in

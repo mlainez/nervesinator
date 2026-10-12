@@ -61,4 +61,18 @@ t ALLOW $'tee notes.md <<EOF\nfastboot -s X flash aboot x.img\nEOF'
 t DENY  $'cat <<\'EOF\' | ssh root@10.0.42.1 sh\necho 0 > /sys/block/mmcblk0boot0/force_ro\nEOF'
 t DENY  $'ssh root@10.0.42.1 sh <<\'EOF\'\nsgdisk -Z /dev/mmcblk0\nEOF'
 t DENY  $'bash <<EOF\nfastboot -s X flash tz tz.img\nEOF'
+
+# Full-autonomy grant: ask becomes allow, deny stays deny, agents cannot touch the grant
+P=$(mktemp -d); mkdir -p "$P/x"; echo x > "$P/.active"
+tg() { # expected-label command
+  out=$(python3 -I "$G" --ports "$P" --check "$2" 2>&1); got=${out%%:*}
+  if [ "$got" != "$1" ]; then echo "FAIL want=$1 got=$out :: [grant] $2"; fail=1; else echo "ok   $1  [grant] $2"; fi
+}
+printf '{"mode": "full", "goal": "t", "expires_at": "2999-01-01T00:00:00+00:00"}' > "$P/x/.autonomy-grant"
+tg ALLOW "tools/safe-flash.sh --port x --execute flash userdata u.img"
+tg DENY  "fastboot -s X flash aboot x.img"
+tg DENY  "rm ports/x/.autonomy-grant"
+printf '{"mode": "full", "goal": "t", "expires_at": "2000-01-01T00:00:00+00:00"}' > "$P/x/.autonomy-grant"
+tg ASK   "tools/safe-flash.sh --port x --execute flash userdata u.img"
+rm -r "$P"
 exit $fail

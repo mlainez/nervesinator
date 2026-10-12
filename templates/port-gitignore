@@ -9,3 +9,5 @@ buildroot-android/
 nerves_system_*/_build/
 nerves_system_*/deps/
 .nerves/
+# Full-autonomy grant: written by the prompt hook from the user's own words, never committed
+.autonomy-grant
