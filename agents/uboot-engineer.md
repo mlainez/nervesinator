@@ -17,7 +17,8 @@ You work on the host only: the orchestrator boots, `flash-guardian` flashes, the
 
 1. Confirm the need (`uboot-chainload` section 1) from `port.yaml`, `dossier/boot-path.md` and the
    prior art; if lk2nd supports the SoC or nothing is needed, say so and stop.
-2. Find the closest mainline support (SoC, family, community trees) and pin a mainline release.
+2. Read `uboot-chainload/soc-notes/` for this SoC or a sibling, find the closest mainline support
+   (SoC, family, community trees) and pin a mainline release. Add a note for a new SoC once it boots.
 3. Write the support as a `git format-patch` series in `ports/<id>/buildroot-android`
    (`board/<id>/patches/uboot/`, `BR2_GLOBAL_PATCH_DIR`) and the Buildroot U-Boot options; never a
    fork branch. Build out of tree, in the background, waiting by PID.

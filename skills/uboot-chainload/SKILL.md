@@ -43,18 +43,39 @@ Shape that worked (MediaTek LK, mainline v2026.10):
   (`CONFIG_SKIP_LOWLEVEL_INIT` on arm32; on arm64 boot as a kernel-image payload).
 - **Load address:** `CONFIG_TEXT_BASE` = the address where the stock bootloader puts the boot image's
   kernel (`device.bootimg` base + kernel offset), or position-independent where supported.
+- **Memory map:** pre-relocation stack and pre-console buffer in low RAM nothing else uses;
+  relocation below the usable top of RAM, under any carve-out the vendor reserves (firmware areas
+  listed in the vendor DT's `reserved-memory`); `kernel_addr_r`, `fdt_addr_r`, `ramdisk_addr_r`,
+  `scriptaddr` spaced so none overlaps; `bootm_size` rather than `fdt_high=~0`. Per-SoC values:
+  `soc-notes/`.
 - **Packing:** U-Boot (with its DTB appended when the bootloader expects zImage-dtb) becomes the
   "kernel" of an Android boot image built with the stock `mkbootimg` arguments, plus any vendor
   header or footer (`boot-images`).
 - **DT:** a board DTS for U-Boot, ideally the same file the kernel uses.
 - **Console:** a UART if one is reachable; otherwise the framebuffer the stock bootloader leaves
-  (a `simple-framebuffer` node, video console), so the screen shows U-Boot's output.
-- **Watchdog:** keep the vendor watchdog fed (its driver in U-Boot), or the phone resets mid-boot.
-- **Storage:** the SoC's MMC driver; find `userdata` by name. Buildroot: `sysboot`/distro boot of
+  (a `simple-framebuffer` node, video console, mapped write-through), so the screen shows U-Boot's
+  output. Add `memlog` to stdout (`stdout=vidconsole,memlog`) in a RAM area no firmware or vendor
+  kernel touches; read it from Linux with busybox `devmem` after a good boot (`dd` on `/dev/mem`
+  fails). A stock bootloader may clear it on reset, so it explains good boots only.
+- **Watchdog:** keep the vendor watchdog fed (its driver in U-Boot, autostart, `cyclic` feeding),
+  or the phone resets mid-boot. Feeding is timer-driven: a stopped timer means no feeding.
+- **Storage:** the SoC's MMC driver at conservative settings first (8-bit SDR, no DDR/HS modes until
+  writes are verified: DDR corrupted writes on one eMMC); check that U-Boot numbers partitions like
+  Linux (`mmc 0:N` = `mmcblk0pN`); find `userdata` by name. Buildroot: `sysboot`/distro boot of
   `/extlinux/extlinux.conf` on the single root. Nerves (M11): partition 1 of the sub-image MBR inside
   `userdata`, exposed with `blkmap` over the `userdata` slice.
 - **Environment:** where Nerves fwup can write it too: a region inside the sub-image that
-  `fw_env.config` describes, so `nerves_fw_active` selects the slot.
+  `fw_env.config` describes, so `nerves_fw_active` selects the slot (`ENV_IS_IN_MMC` at a fixed raw
+  offset matching `fw_env.config`; `ENV_IS_NOWHERE` is fine while only Buildroot boots).
+- **Defconfig checklist:** the MMC driver, the partition table type (DOS for MTK MBR/EBR, EFI for
+  GPT), ext4 and FAT, `BLKMAP`, `SYSBOOT`, `BOOTZ`/`BOOTI`, `SYSRESET_WATCHDOG`, `VIDEO_SIMPLE`,
+  `CONSOLE_MUX`, `SYS_DEVICE_NULLDEV`, `PANIC_HANG`, no network and no EFI unless needed, a short
+  `bootdelay`.
+- **Fallback:** a `bootmode fastboot|recovery` command (set the boot-mode bit and reset) and a
+  `bootcmd` that ends in it when extlinux fails, so a broken root lands in the flash mode.
+- **Nerves (M11):** `blkmap map <n> 0 <sectors> linear mmc 0 <partition start + sub-image offset>`,
+  then `sysboot blkmap <n>:1`; a USB gadget (ACM console or fastboot) needs the SoC's USB glue and
+  PHY init in U-Boot.
 
 ## 4. Boot-once guard
 
@@ -63,6 +84,8 @@ reboot-reason word, as the vendor's `reboot-mode` values give) to recovery or it
 it just before handing over to Linux. A hang followed by a watchdog reset then lands in the
 flash/recovery mode instead of a boot loop. Find the register and values from the vendor kernel's
 reboot driver or the device tree's `reboot-mode` node, and test that the bit survives the reset.
+Check which bits the stock bootloader clears itself: a bit it leaves set must be cleared by U-Boot
+before Linux, or every later reset lands in that mode.
 
 ## 5. Optional: U-Boot fastboot
 
@@ -79,9 +102,13 @@ unattended work. It also needs the guard's rules: only allowlisted partitions.
   lines), the timer runs (the countdown moves), the watchdog does not fire, MMC lists the partitions, `sysboot` finds extlinux, Linux starts with the expected cmdline,
   the boot-once guard turns a deliberate hang into the flash mode.
 - Each image goes through `safe-flash.sh` and `await-boot.sh` like any other.
+- Buildroot gotchas: a brand-new release may have no tarball yet (use `BR2_TARGET_UBOOT_CUSTOM_GIT`
+  with the tag); an older Buildroot's U-Boot license-file handling may not match a newer U-Boot
+  (override it in the external tree's `external.mk`); `make uboot` plus the packing script avoids
+  a full rebuild when the kernel uses `LINUX_OVERRIDE_SRCDIR`.
 - Bring U-Boot up against the **existing** single-root Buildroot system first (an M6/M9 re-run);
   Nerves comes after.
-- Run the exact binary in QEMU `virt` at the same load address to debug the console and relocation
+- Run the exact binary in QEMU `virt` (e.g. `-M virt,highmem=off -m 3G`) at the same load address to debug the console and relocation
   without the device (it finds wiring bugs such as a missing nulldev). QEMU hides SoC clock
   gating, so hardware tests stay mandatory.
 - One change per flash, each with a predicted screen transcript the user compares against
