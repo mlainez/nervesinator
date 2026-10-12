@@ -8,15 +8,17 @@
 # check first). --watch-only judges a boot started otherwise (after a flash and a reboot).
 # Then it watches USB until one of:
 #   PASS     the kit gadget with this port's serial shows up and its console says KIT-READY  (exit 0)
+#            or, with --host <name> (Nerves images: nerves.local), the name resolves and ssh answers
 #   FAIL     the phone is back in fastboot / download mode, or in Android/recovery            (exit 1)
 #   HUNG     nothing within the timeout: needs a human (force power off, battery pull)        (exit 2)
 #   REFUSED  safe-flash refused the image in its dry run                                      (exit 3)
 # --return sends a passing image back to its flash mode over the console (reboot-mode).
+# --host <name> is for images that do not carry the kit gadget (Nerves: `--host nerves.local`).
 # Results: ports/<id>/journal/boots/<time>-<stage>/ (result.json, result.md, logs).
 set -uo pipefail
 KIT=$(cd "$(dirname "$0")/.." && pwd)
 . "$KIT/tools/lib/kit_gadget.sh"
-PORT=""; IMG=""; STAGE=test; TIMEOUT=120; WATCH=0; RETURN=0
+PORT=""; IMG=""; STAGE=test; TIMEOUT=120; WATCH=0; RETURN=0; HOST=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --port) PORT=$2; shift 2 ;;
@@ -25,10 +27,11 @@ while [ $# -gt 0 ]; do
     --timeout) TIMEOUT=$2; shift 2 ;;
     --watch-only) WATCH=1; shift ;;
     --return) RETURN=1; shift ;;
-    *) sed -n '2,16p' "$0"; exit 3 ;;
+    --host) HOST=$2; shift 2 ;;
+    *) sed -n '2,18p' "$0"; exit 3 ;;
   esac
 done
-[ -n "$PORT" ] && { [ -n "$IMG" ] || [ $WATCH = 1 ]; } || { sed -n '2,16p' "$0"; exit 3; }
+[ -n "$PORT" ] && { [ -n "$IMG" ] || [ $WATCH = 1 ]; } || { sed -n '2,18p' "$0"; exit 3; }
 P="$KIT/ports/$PORT"; Y="$P/port.yaml"
 [ -f "$Y" ] || { echo "no such port: $P"; exit 3; }
 SER=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.serial)
@@ -67,6 +70,14 @@ lk2nd_log() { # read-only: lk2nd's own log, when lk2nd is running
 }
 
 # The vendor fastboot, or the second stage's own (e.g. U-Boot, with its own serial)
+# The name resolves (mDNS for nerves.local) and something listens on port 22
+host_answers() {
+  python3 -I -c 'import socket, sys
+try:
+    socket.create_connection((sys.argv[1], 22), timeout=3).close()
+except OSError:
+    sys.exit(1)' "$1"
+}
 in_fastboot() { timeout 5 fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx -e "$SER" -e "${S2SER:-$SER}"; }
 # Only on ports that use Samsung download mode: another Samsung on the desk must not count
 in_download() {
@@ -86,6 +97,9 @@ fi
 # The phone leaves the flash mode after the boot command; only a later return counts as a failure
 left=$WATCH; ready_wait=0
 while [ $SECONDS -lt "$TIMEOUT" ]; do
+  if [ -n "$HOST" ] && host_answers "$HOST"; then
+    finish PASS 0 "$HOST resolves to $(getent hosts "$HOST" | awk '{print $1; exit}') and answers on ssh (port 22)"
+  fi
   gadget=$(kit_gadgets | awk -v s="$SER" '$1==s' | head -1)
   if [ -n "$gadget" ]; then
     left=1

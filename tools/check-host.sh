@@ -36,6 +36,12 @@ chk later lz4       "$PM lz4"
 echo "== Buildroot (M7-M10)"
 for t in make gcc g++ patch perl rsync bc bison flex unzip file wget which tar xz; do chk later "$t" "$PM $t"; done
 echo "== Nerves (M11)"
+if grep -qE "^hosts:.*mdns" /etc/nsswitch.conf 2>/dev/null; then
+  echo "  ✅ mDNS name resolution (nss-mdns) for nerves.local"
+else
+  echo "  ⏳ no mDNS in /etc/nsswitch.conf: ssh nerves.local will not resolve ($PM nss-mdns avahi;"
+  echo "     in a distrobox the container's nsswitch.conf is the one that counts)"
+fi
 chk later elixir      "https://elixir-lang.org/install.html (asdf/mise recommended)"
 chk later mix         "comes with Elixir"
 chk later fwup        "https://github.com/fwup-home/fwup#installing"

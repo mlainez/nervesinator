@@ -415,7 +415,8 @@ def log(decision, cmd, reasons):
 
 DEVICE_CMD_RE = re.compile(
     r"\b(fastboot|adb|heimdall|odin4?|edl|mtk|fwup|safe-flash\.sh|await-boot\.sh|"
-    r"return-to-flash\.sh|backup-partitions\.sh)\b|\bssh\b[^|;&]*10\.0\.42\.1")
+    r"return-to-flash\.sh|backup-partitions\.sh)\b|\bmix\s+(upload|burn)\b|"
+    r"\b(ssh|scp)\b[^|;&]*(10\.0\.42\.1|[\w-]+\.local\b)")
 
 
 def apply_hands_off(cmd, v, ports_dir):

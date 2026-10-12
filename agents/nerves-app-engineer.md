@@ -14,6 +14,9 @@ in Elixir.
 
 ## Rules
 
+- Networking stays `nerves_pack`'s: `usb0` through `VintageNetDirect`, `mdns_lite`, `nerves.local`.
+  The kit's 10.0.42.1 convention is for its rescue and Buildroot images only: never carry it, a
+  static address or a DHCP server into the app.
 - Start from `mix nerves.new <app>` (it brings `nerves_pack`: `nerves_runtime`, ssh, MOTD,
   VintageNet), then add the device's pieces. Never hand-assemble an app: compare yours with a fresh
   generator output (mix.exs deps, config/target.exs, rel/vm.args.eex, iex.exs) and explain each

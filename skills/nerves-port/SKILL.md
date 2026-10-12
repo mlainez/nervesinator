@@ -52,8 +52,11 @@ porting guide, starting from `nerves_system_bbb` (armv7) or an aarch64 official 
 **Compliance checklist**, against an official system built on the **same `nerves_system_br`
 version**: `erlinit.config`; `fw_env.config`, the board-id and provisioning setup; the fwup metadata
 and every `nerves_fw_*` variable `nerves_runtime` expects; the `nerves_defconfig` must-haves; the
-`nerves_package` fields of `mix.exs`. The app is checked against a fresh `mix nerves.new`
-(`nerves-app-engineer`). Results go into `dossier/nerves-config-review.md`.
+`nerves_package` fields of `mix.exs`; the USB gadget and console against an official system with a
+device port (rpi0, bbb); networking as `nerves_pack` sets it (no static 10.0.42.x, no DHCP server).
+The app is checked against a fresh `mix nerves.new` (`nerves-app-engineer`). Compliance means no
+carry-over from the Buildroot board unless the hardware requires it, each one justified. Results
+go into `dossier/nerves-config-review.md`.
 
 The board's `linux.config` and overlay come from a Buildroot port with first-light and debug aids.
 Never copy them verbatim. Diff the kernel config against the official systems' defconfigs and the
@@ -135,8 +138,11 @@ Whoever starts the kernel must know the Nerves active slot:
   committed `local.mk.example`.
 - Package versions drift between the board's Buildroot and `nerves_system_br`'s: patches pinned
   to one release (e.g. libcamera 0.5) may not apply to the next; check each board patch.
-- USB networking at the kit's fixed 10.0.42.1: `VintageNetEthernet` with a static address and a
-  DHCP server on `usb0` (`VintageNetDirect` cannot assign a fixed address).
+- **Networking is official Nerves, unchanged.** The kit's 10.0.42.1/10.0.42.2 convention belongs to
+  its first-light, rescue and Buildroot images only. A Nerves system and app use `nerves_pack`'s
+  defaults: `usb0` through `VintageNetDirect`, `mdns_lite` with the hostname and `nerves.local`,
+  `ssh nerves.local`, `mix upload nerves.local`. The USB gadget follows an official system with a
+  device port (rpi0, bbb): compare their kernel gadget config and console.
 
 ## 6. Replace init scripts with Elixir
 
@@ -179,8 +185,9 @@ Logger on recent Elixir (1.20 warns that the `:backends` key of `:logger` is dep
 console stays clean.
 
 `mix firmware` → `mix firmware.image <id>.img` → `flash-guardian` flashes it to the allowlisted
-partition (fastboot/heimdall/`dd` from the rescue system) → boot → IEx over ssh on 10.0.42.1/USB →
-`mix upload` → reboot into the new slot → `Nerves.Runtime.revert()` → confirm it boots the old slot.
+partition (fastboot/heimdall/`dd` from the rescue system, or the second stage's USB disk) → boot →
+`tools/await-boot.sh --watch-only --host nerves.local` → IEx over `ssh nerves.local` →
+`mix upload nerves.local` → reboot into the new slot → `Nerves.Runtime.revert()` → confirm it boots the old slot.
 
 ## 8. Ship it: dependencies, a one-command installer, releases (M12)
 

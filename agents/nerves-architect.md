@@ -25,7 +25,9 @@ itself safely (A/B) without repartitioning the phone.
    guide), adapt fwup/erlinit/initramfs for the chosen layout. Long builds (`mix firmware`, the
    system's Buildroot) run in the background; wait by PID or the background-task notification,
    never a self-matching `pgrep -f` loop, and leave no waiter behind.
-4. Review the kernel config, erlinit, fwup and the overlay against the official systems
+4. Nothing from the Buildroot board carries over without a hardware reason (networking above all:
+   Nerves uses `nerves_pack`'s, not the kit's 10.0.42.1). Review the kernel config, erlinit, fwup,
+   the USB gadget and the overlay against the official systems
    (`nerves-port` section 2b): a justified table in `dossier/nerves-config-review.md`, first-light
    and debug options removed (`# CONFIG_LOGO is not set` at least), Nerves needs added.
 5. Validate on the host: `fwup -t complete -d test.img`, inspect with `fdisk -l`, `unsquashfs -s`,
