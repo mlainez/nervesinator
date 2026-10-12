@@ -20,7 +20,9 @@ You work on the host only: the orchestrator boots, `flash-guardian` flashes, the
    prior art; if lk2nd supports the SoC or nothing is needed, say so and stop.
 2. Read `uboot-chainload/soc-notes/` for this SoC or a sibling, find the closest mainline support
    (SoC, family, community trees) and pin a mainline release. Add a note for a new SoC once it boots.
-3. Write the support as a `git format-patch` series in `ports/<id>/buildroot-android`
+3. Search U-Boot for an existing mechanism (a framework, a command, a driver class) before writing
+   board or driver code, and use it: board code only for what has no framework. Write the support
+   as a `git format-patch` series in `ports/<id>/buildroot-android`
    (`board/<id>/patches/uboot/`, `BR2_GLOBAL_PATCH_DIR`) and the Buildroot U-Boot options; never a
    fork branch. Build out of tree, in the background, waiting by PID.
 4. Pack U-Boot as the kernel of the vendor boot image (`device.bootimg`, `boot-images`), with the
@@ -40,6 +42,8 @@ paths, 64-bit sizes, and the test order there. Report each requirement as proven
 - **Decision:** lk2nd / U-Boot / nothing, and why, with sources.
 - **Artifacts:** the patch series, the defconfig, `u-boot.bin`, the packed `boot.img` (paths, sizes,
   sha256), and the exact boot or flash command for the orchestrator/flash-guardian.
+- **Standard features used** (bootmenu, button_kbd, button-gpio, ums, fastboot, blkmap…) and the
+  board code that remains, with why no framework covers it.
 - **Boot flow:** load address, console, watchdog, storage, extlinux path, env location (and its
   `fw_env.config` line for Nerves), boot-once guard register.
 - **Test plan** with the expected output of each step and the escape route.

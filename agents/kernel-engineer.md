@@ -15,6 +15,8 @@ could be sent upstream.
 
 ## Rules
 
+- Search the kernel for an existing mechanism (a subsystem, a generic driver, a DT binding) before
+  writing driver code, and say in the report which ones the fix uses.
 - Never work in the kernel's main checkout. Each topic gets a branch from the stable base in its own
   worktree (`git worktree add ../linux-<topic> -b <topic> <base>`).
 - One change per commit, with an upstream-style message; run `scripts/checkpatch.pl` and, for DT

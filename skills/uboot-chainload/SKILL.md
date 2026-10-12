@@ -166,12 +166,22 @@ with the phone through it without keys, screen photos or the vendor's tools:
 3. **64-bit sizes:** on ARM32, sizes over 4 GiB truncate in 32-bit arithmetic (seen: userdata
    `0x144340000` reported as `0x44340000`); use 64-bit sizes and bounds, and test `getvar` against the
    real size.
-4. **A boot menu:** holding a hardware key opens an on-screen menu with at least Fastboot, USB disk
-   (`ums` of `userdata`), Recovery (the vendor's) and Continue boot; volume keys move, the power key
-   selects (often read through the PMIC). The watchdog stays fed and the boot-once guard disarmed
-   while it waits. Find the key wiring in the vendor board files (dct/keypad), then prove it with a
-   read-only sampler on Linux while the user presses each key; read the GPIO input register
-   directly rather than a keypad controller whose clock Linux may gate.
+4. **A boot menu, built from U-Boot's standard parts:** holding a hardware key opens an on-screen
+   menu with at least Fastboot, USB disk (`ums` of `userdata`), Recovery (the vendor's) and Continue
+   boot; volume keys move, the power key selects. The watchdog stays fed and the boot-once guard
+   disarmed while it waits. Use the framework, not a hand-rolled loop:
+   - `bootmenu` (`CONFIG_CMD_BOOTMENU`), entries as env `bootmenu_N="Label=command"`;
+   - `button_kbd` (`CONFIG_BUTTON_KEYBOARD`) to turn buttons into up/down/enter, as U-Boot does on
+     Qualcomm phones with volume keys and power;
+   - `button-gpio` with a DT `gpio-keys` node and `linux,code` for GPIO keys, which needs `DM_GPIO`
+     for the SoC (its pinctrl/gpio driver and pin data: part of the port, upstreamable);
+   - a small PMIC button driver for a power key that is not a GPIO (model:
+     `drivers/button/button-qcom-pmic.c`);
+   - boot-time key checks through the `button` command in the boot script.
+   Board code only for what has no framework (the boot-once guard, the boot-mode bits). Find the key
+   wiring in the vendor board files (dct/keypad), then prove it with a read-only sampler on Linux
+   while the user presses each key; read the GPIO input register directly rather than a keypad
+   controller whose clock Linux may gate.
 5. **A key window, not an instant:** show a prompt ("Hold Volume-Down for the menu, Volume-Up for
    recovery") and poll keys through a ~3 s window plus the autoboot countdown; accept a key already
    held at entry. Do not tell users to hold a key from power-on when the vendor bootloader reads it

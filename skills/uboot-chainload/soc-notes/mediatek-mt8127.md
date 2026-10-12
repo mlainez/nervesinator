@@ -33,6 +33,9 @@ booting Linux. A hang then becomes a key-free recovery boot through the watchdog
 
 ## USB, keys and transfers
 
+- Keys through U-Boot's standard parts need MT8127 pin data for its MediaTek pinctrl/gpio driver
+  (close to MT8135/MT7623) for `button-gpio`, and an MT6323 power-key button driver (modelled on
+  `button-qcom-pmic.c`); then `bootmenu` with `button_kbd` replaces any board-code menu.
 - Gadget: the mt85xx MUSB glue needed an MT8127 compatible and the USB2 PHY power-on sequence
   (ported from Linux's PHY driver). The MediaTek AIoT BSP fork had nothing usable for MT8127/MT6323.
 - The power key is read through the MT6323 PMIC (pwrap); the volume keys through GPIO input
