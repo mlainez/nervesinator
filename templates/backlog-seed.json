@@ -139,6 +139,9 @@
       "tasks": [
         {"title": "Write device documentation", "labels": "risk-green,agent-buildroot", "ac": ["docs/<id>.md in buildroot-android: what works, how to flash, partitions"]},
         {"title": "Prepare a PR to buildroot-android", "labels": "risk-green,agent-orchestrator", "ac": ["Branch ready; the user decided whether to open the PR"]},
+        {"title": "Write the Dependencies section of the Nerves system's README", "labels": "risk-green,agent-nerves", "ac": ["Host packages per distribution, udev rules for every USB mode, one-time phone setup, battery and cable rules"]},
+        {"title": "Write the one-command installer (stock phone to Nerves)", "labels": "risk-green,agent-nerves", "ac": ["Dry run by default, exact plan printed, typed confirmation naming irreversible costs", "Preflight identity checks, unlock if needed, class B backups before any write", "Bootloader and latest release written to allowlisted partitions only, every asset checksum-verified", "Forbidden list built in; recovery hints at every failure point", "Reviewed by flash-guardian"]},
+        {"title": "Set up the release recipe (images, SHA256SUMS, GPL sources)", "labels": "risk-green,agent-nerves", "ac": ["A release carries the raw image, bootloader image, SHA256SUMS and GPL source references"]},
         {"title": "Compile the learner journal", "labels": "risk-green,agent-tutor,lesson", "ac": ["journal/README.md tells the story with links to all lessons"]},
         {"title": "GATE M12: done", "labels": "risk-green,gate", "ac": ["Celebration 🎉", "Next device ideas noted"]}
       ]

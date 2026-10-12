@@ -252,5 +252,8 @@ install, a re-check and a tagged commit.
 |---|---|
 | Write device documentation (what works, how to flash) | buildroot-engineer / nerves-architect (`docs/<id>.md` in buildroot-android style) |
 | Prepare a PR to buildroot-android | orchestrator (the user decides whether to open it) |
+| Write the Dependencies section of the Nerves system's README | nerves-architect (`nerves-port` section 8) |
+| Write the one-command installer (stock phone to Nerves) | nerves-architect + flash-guardian (review) |
+| Set up the release recipe (images, SHA256SUMS, GPL sources) | nerves-architect |
 | Compile the learner journal | tutor |
 | GATE M12 | orchestrator |

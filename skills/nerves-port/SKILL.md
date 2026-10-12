@@ -111,3 +111,31 @@ which is smaller than the Buildroot board's.
 `mix firmware` → `mix firmware.image <id>.img` → `flash-guardian` flashes it to the allowlisted
 partition (fastboot/heimdall/`dd` from the rescue system) → boot → IEx over ssh on 10.0.42.1/USB →
 `mix upload` → reboot into the new slot → `Nerves.Runtime.revert()` → confirm it boots the old slot.
+
+## 8. Ship it: dependencies, a one-command installer, releases (M12)
+
+Every port's Nerves system ships so that someone else can put Nerves on a **pristine stock phone**
+safely, in one command:
+
+1. **README "Dependencies"**: host packages per distribution (adb, fastboot, heimdall…), udev rules
+   for every USB mode the install uses, what to do once on the phone (Developer options, USB
+   debugging, OEM unlock toggle), and the battery and cable rules (charged above 50 %, a data cable,
+   a wall supply nearby).
+2. **`install.sh`**, from stock to Nerves:
+   - a dry run by default that prints the exact plan; a typed confirmation that names the
+     irreversible costs (data wipe, warranty/KNOX fuse) before anything is written;
+   - preflight identity checks (model, codename, bootloader version) and one device only, by serial;
+   - the vendor unlock when needed;
+   - backups of the class B partitions (calibration, IMEI) through a temporary or custom recovery,
+     kept on the user's computer, before any write;
+   - the second-stage bootloader and the latest Nerves release image from GitHub, written to the
+     port's allowlisted partitions only (`boot`, `userdata` by default), through the port's proven
+     key-free path (on samsung-s3ve3g: `adb reboot download`, heimdall, `adb reboot recovery`);
+   - every downloaded asset verified (the release's `SHA256SUMS`; upstream signatures or checksums
+     for third-party images such as TWRP) before use;
+   - the kit's rules built in, since the kit's guard does not run on the user's computer: the
+     forbidden partition list, no relock, no repartition;
+   - at every step that can fail, what state the phone is in and how to recover.
+3. **A release recipe** so each GitHub release carries what the installer needs: the raw image (and
+   `.fw`), the bootloader image, `SHA256SUMS`, and the source references for the GPL parts (kernel
+   commit, Buildroot and package versions).

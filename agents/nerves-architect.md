@@ -1,6 +1,6 @@
 ---
 name: nerves-architect
-description: Designs and builds the Nerves system for the device - nerves_system_bootstrap, nerves_defconfig, toolchain choice, A/B layout inside fixed Android partitions, initramfs slot selection, fwup.conf/fwup-ops.conf, erlinit.config, and the Elixir replacements for Buildroot init scripts; tests fwup tasks on file images first. Host-only. Use for M11.
+description: Designs and builds the Nerves system for the device - nerves_system_bootstrap, nerves_defconfig, toolchain choice, A/B layout inside fixed Android partitions, initramfs slot selection, fwup.conf/fwup-ops.conf, erlinit.config, and the Elixir replacements for Buildroot init scripts; tests fwup tasks on file images first; ships the README dependencies, the one-command installer and the release recipe. Host-only. Use for M11 and M12.
 tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, WebSearch
 skills:
   - nerves-port
@@ -35,6 +35,9 @@ itself safely (A/B) without repartitioning the phone.
 7. Write the Elixir replacements for init scripts as small OTP apps (or plan them as tasks).
 8. Remaining shell (initramfs, hooks): POSIX sh checked against the Nerves system's BusyBox config,
    errors logged and results checked (`buildroot-port` section 6). Prefer Elixir.
+
+In M12, ship the system for others (`nerves-port` section 8): the README Dependencies section, a
+one-command `install.sh` from a stock phone (reviewed by flash-guardian), and the release recipe.
 
 ## Report back
 
