@@ -90,8 +90,8 @@ before Linux, or every later reset lands in that mode.
 ## 5. Optional: U-Boot fastboot
 
 `CONFIG_USB_FUNCTION_FASTBOOT` with the SoC's USB gadget driver gives an lk2nd-like flash mode
-(`fastboot flash userdata`, `fastboot boot`) reachable by command, which helps key-free and
-unattended work. It also needs the guard's rules: only allowlisted partitions.
+(`fastboot flash boot`, `fastboot boot`) reachable by command, and `ums` exposes `userdata` as a
+USB disk. Both are part of the definition of done (section 8), not options.
 
 ## 6. Testing
 
@@ -140,3 +140,52 @@ Each item is a check to run on the device, not an assumption.
   left in RAM at a fixed address can be overwritten by the next (vendor) kernel.
 - **One device, by serial:** flash by serial and check the product (MediaTek reports a platform
   name, e.g. `HQ8127_TB_B2B_L`); refuse when another device is in the same mode.
+
+## 8. Definition of done: truly usable
+
+A ported second stage is **not done when it merely boots Linux**. It is done when someone can work
+with the phone through it without keys, screen photos or the vendor's tools:
+
+1. **USB device mode** works in U-Boot: the SoC's gadget controller (MUSB/DWC2/DWC3) and its USB PHY
+   init, often ported from the Linux PHY driver's register sequence. Prove enumeration on the host
+   (`lsusb`, `journalctl -k`).
+2. **U-Boot fastboot**, restricted: `flash`/`erase` only on the port's allowlisted raw regions
+   (`boot`, `userdata` by default); every other name, `dev:part` number and `mbr`/`gpt` target is
+   refused, and `getvar partition-size:<forbidden>` fails. `fastboot boot` from RAM works (RAM test
+   boots even where the vendor bootloader has none). A distinct product and serial
+   (`device.second_stage_product`, `device.second_stage_serial`) so it is never confused with the
+   vendor fastboot or another phone. **Never** `fastboot oem run` or any arbitrary-command channel:
+   it bypasses the allowlist (the guard denies it). Read-only `oem console` (the log) and extra
+   getvars (keys, boot path) are welcome: they replace screen photos.
+3. **64-bit sizes:** on ARM32, sizes over 4 GiB truncate in 32-bit arithmetic (seen: userdata
+   `0x144340000` reported as `0x44340000`); use 64-bit sizes and bounds, and test `getvar` against the
+   real size.
+4. **A boot menu:** holding a hardware key opens an on-screen menu with at least Fastboot, USB disk
+   (`ums` of `userdata`), Recovery (the vendor's) and Continue boot; volume keys move, the power key
+   selects (often read through the PMIC). The watchdog stays fed and the boot-once guard disarmed
+   while it waits. Find the key wiring in the vendor board files (dct/keypad), then prove it with a
+   read-only sampler on Linux while the user presses each key; read the GPIO input register
+   directly rather than a keypad controller whose clock Linux may gate.
+5. **A key window, not an instant:** show a prompt ("Hold Volume-Down for the menu, Volume-Up for
+   recovery") and poll keys through a ~3 s window plus the autoboot countdown; accept a key already
+   held at entry. Do not tell users to hold a key from power-on when the vendor bootloader reads it
+   too (MediaTek LK: Volume-Down = factory mode).
+6. **USB disk (`ums`) is the Nerves flashing path:** expose **only** `userdata` through a `blkmap`
+   bounded to its vendor size (never a vendor tail or another partition), so the host runs
+   `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` or `mix burn` directly: no
+   `.img`, no sparse, no fastboot buffer limit. Offer `fastboot oem ums` to switch without keys.
+   Fastboot stays for `flash boot` (self-update), RAM boot and diagnostics.
+7. **Entry without keys:** a DRAM/RTC flag so `fastboot reboot-bootloader` and Linux (write the flag,
+   reboot) land back in U-Boot's fastboot; `reboot-recovery` and the vendor's fastboot through the
+   boot-mode bits; with nothing bootable, fall into U-Boot's fastboot rather than the vendor's.
+8. **Test order:** key-free steps first (allowed unattended): normal boot, enter fastboot from Linux,
+   getvars including refused names, `flash boot` through U-Boot's own fastboot with a read-back from
+   Linux, `fastboot boot`, `reboot-bootloader`, a large `fastboot stage` transfer for reliability. Then
+   the key tests, with the user present and exact instructions. Then the first `userdata` write, with
+   its own go.
+9. **Artifact hygiene:** name each build `boot-uboot-<sha8>.img` and never overwrite a rollback image.
+   A lost known-good image can be recovered by a read-only raw read of the boot region from Linux,
+   checked against its sha256.
+10. **Unclean resets and the display:** every reboot-mode, guard or forced reset is an unclean reset
+    and can leave the vendor display pipeline or panel in a bad state. That is a kernel/panel
+    power-sequencing bug, not the bootloader's: track it separately.

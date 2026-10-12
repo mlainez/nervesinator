@@ -91,7 +91,7 @@ or "invoke" a skill.
 | `device-recon` | Read-only collection of everything about the device into the dossier | No (read-only adb) |
 | `prior-art-scout` | Searching pmaports, the postmarketOS wiki, mainline, lk2nd, LineageOS and GitHub for existing work | No (host only) |
 | `bootloader-strategist` | Unlock procedure, second-stage bootloader choice, boot image format, the unbrick kit | No (research and plans only) |
-| `uboot-engineer` | Mainline U-Boot chainloaded by the stock bootloader when lk2nd does not support the SoC: patches on a pinned release, packing, boot-once guard, test plan | No (host only) |
+| `uboot-engineer` | Mainline U-Boot chainloaded by the stock bootloader when lk2nd does not support the SoC, made truly usable (USB gadget, restricted fastboot, boot menu, `ums` of userdata): patches on a pinned release, packing, boot-once guard, test plan | No (host only) |
 | `flash-guardian` | Pre-flight checks and backups; writes the exact flash plan; runs it only after the user agrees | Only with explicit user approval |
 | `buildroot-engineer` | Kernel configs, initramfs, the Buildroot external tree, packages, builds | No (host only) |
 | `boot-debugger` | Working out why a boot failed (screen photos, ramoops, dmesg, lk2nd logs) | No |

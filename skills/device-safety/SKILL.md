@@ -105,7 +105,9 @@ partition, **add it to that file** (a commit in the kit) before going further.
 - **eMMC boot areas:** `/sys/block/mmcblk0boot*/force_ro` stays 1. Never write the `mmcblk0boot*`,
   `rpmb` or whole-disk devices from Linux.
 - **Host safety:** `dd of=/dev/sdX` on the computer can erase the user's own disk. The guard denies
-  it; the user runs host raw writes themselves, after checking `lsblk`.
+  it; the user runs host raw writes themselves, after checking `lsblk`. Writing a phone exposed as a
+  USB disk (`fwup -d /dev/sdX`, `mix burn`) asks first: find the target with
+  `tools/ums-target.sh --port <id>` (matched by the phone's USB serial and size), never by guessing.
 
 ## Backups (M5)
 

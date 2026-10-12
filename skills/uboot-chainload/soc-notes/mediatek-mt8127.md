@@ -31,7 +31,13 @@ booting Linux. A hang then becomes a key-free recovery boot through the watchdog
 - Watchdog: `mtk_wdt`, autostart, 15 s timeout, fed every second by `cyclic`.
 - MTK MBR + EBR are read as DOS partitions numbered exactly like Linux (`mmc 0:7` = `mmcblk0p7`).
 
-## Not available yet
+## USB, keys and transfers
 
-USB gadget (ACM console or fastboot) needs MT8127 MUSB glue and USB2 PHY init in U-Boot. The
-MediaTek AIoT BSP fork had nothing usable for MT8127/MT6323.
+- Gadget: the mt85xx MUSB glue needed an MT8127 compatible and the USB2 PHY power-on sequence
+  (ported from Linux's PHY driver). The MediaTek AIoT BSP fork had nothing usable for MT8127/MT6323.
+- The power key is read through the MT6323 PMIC (pwrap); the volume keys through GPIO input
+  registers. LK reads Volume-Down at power-on as factory mode: never ask users to hold it from
+  power-on.
+- `fastboot stage` of 2 x 700 MiB succeeded at about 9.4 MB/s, despite
+  `musb-hdrc: peripheral reset irq lost!` messages.
+- ARM32: `userdata` is `0x144340000` bytes; 32-bit size arithmetic reported `0x44340000`.

@@ -91,7 +91,9 @@ Android A/B".
 Whoever starts the kernel must know the Nerves active slot:
 - **Chainloaded U-Boot** (no lk2nd for the SoC): its env lives where fwup writes it (`fw_env.config`),
   `nerves_fw_active` picks the slot, and `sysboot` reads extlinux from the sub-image through `blkmap`
-  (`uboot-chainload`).
+  (`uboot-chainload`). Its `ums` mode exposes only `userdata`, so the host writes the firmware with
+  `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` (or `mix burn`), and its own
+  fastboot handles `flash boot` and RAM boots.
 - **lk2nd + extlinux:** the fwup `on-finish` rewrites `extlinux.conf` (or two labels `nerves_a`/`nerves_b`
   with `default` switched) on a small FAT/ext partition inside the sub-image.
 - **Stock LK + boot.img:** a single boot.img with an initramfs that reads the fwup env
@@ -154,6 +156,10 @@ partition (fastboot/heimdall/`dd` from the rescue system) → boot → IEx over 
 `mix upload` → reboot into the new slot → `Nerves.Runtime.revert()` → confirm it boots the old slot.
 
 ## 8. Ship it: dependencies, a one-command installer, releases (M12)
+
+With a U-Boot second stage, the installer flashes `boot` once through the vendor path, then uses
+U-Boot's `ums` for `userdata` (fwup straight to the USB disk, found by serial, never a guessed
+`/dev/sdX`) and U-Boot's fastboot for later `boot` updates.
 
 Every port's Nerves system ships so that someone else can put Nerves on a **pristine stock phone**
 safely, in one command:

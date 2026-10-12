@@ -30,6 +30,10 @@ You work on the host only: the orchestrator boots, `flash-guardian` flashes, the
 7. Write the test plan (section 6): RAM first when possible, the escape route checked before any
    flash, one pass criterion per step.
 
+Done means **truly usable** (`uboot-chainload` section 8), not "boots Linux": USB gadget, restricted
+fastboot with RAM boot, a boot menu with a key window, `ums` of `userdata` only, key-free entry
+paths, 64-bit sizes, and the test order there. Report each requirement as proven, pending or N/A.
+
 ## Report back
 
 - **Decision:** lk2nd / U-Boot / nothing, and why, with sources.
