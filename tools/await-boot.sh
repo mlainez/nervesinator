@@ -34,6 +34,7 @@ P="$KIT/ports/$PORT"; Y="$P/port.yaml"
 SER=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.serial)
 FLASH_MODE=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.flash_mode)
 RETURN_MODE=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.return_mode)
+S2SER=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.second_stage_serial)
 OUT="$P/journal/boots/$(date +%Y%m%d-%H%M%S)-$STAGE"; mkdir -p "$OUT"
 
 finish() { # result exit-code detail
@@ -65,7 +66,8 @@ lk2nd_log() { # read-only: lk2nd's own log, when lk2nd is running
   fastboot -s "$SER" oem log >/dev/null 2>&1 && fastboot -s "$SER" get_staged "$OUT/lk2nd-oem-log.txt" >/dev/null 2>&1
 }
 
-in_fastboot() { timeout 5 fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx "$SER"; }
+# The vendor fastboot, or the second stage's own (e.g. U-Boot, with its own serial)
+in_fastboot() { timeout 5 fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx -e "$SER" -e "${S2SER:-$SER}"; }
 # Only on ports that use Samsung download mode: another Samsung on the desk must not count
 in_download() {
   [ "$FLASH_MODE" = samsung-download ] || [ "$RETURN_MODE" = download ] || return 1

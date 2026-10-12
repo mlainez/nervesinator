@@ -55,6 +55,16 @@ t DENY  "ssh root@10.0.42.1 sgdisk -Z /dev/mmcblk0"
 t DENY  "ssh root@10.0.42.1 'echo 0 > /sys/block/mmcblk0boot0/force_ro'"
 t DENY  "bash -c 'fastboot -s X flash tz tz.img'"
 t DENY  "echo ZmFzdGJvb3Q= | base64 -d | sh # fastboot"
+# Host block devices (a phone in USB mass storage mode, or the wrong disk) and U-Boot fastboot
+t ASK   "fwup -a -d /dev/sdb -i app.fw -t complete"
+t ASK   "sudo fwup -a -i app.fw -t upgrade"
+t ALLOW "fwup -a -i app.fw -t complete -d test.img"
+t ALLOW "fwup -c -f fwup.conf -o app.fw"
+t ASK   "mix burn"
+t DENY  "fastboot -s X oem run:mw 0x0 0"
+t DENY  "fastboot -s X oem run reset"
+t ALLOW "fastboot -s X oem console"
+t ALLOW "fastboot -s X oem ums"
 # heredoc bodies written to a file are text; bodies fed to a shell are commands
 t ALLOW $'cat > notes.md <<\'EOF\'\nroot shell over telnet; mmcblk0boot0 force_ro=1\nEOF'
 t ALLOW $'tee notes.md <<EOF\nfastboot -s X flash aboot x.img\nEOF'

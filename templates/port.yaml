@@ -9,6 +9,8 @@ device:
   model: ""                # ro.product.model
   codename: ""             # ro.product.device
   product: ""              # what the bootloader reports (fastboot getvar product / PIT), checked before writes
+  second_stage_serial: ""  # USB serial of the second stage's own fastboot/ums (e.g. U-Boot), distinct from the vendor's
+  second_stage_product: "" # its fastboot product, checked by safe-flash
   lk2nd_compatible: ""     # fastboot getvar lk2nd:compatible (<vendor>,<codename>); checked when lk2nd reports its SoC board as product
   qcom_ids: ""             # lk2nd's SMEM ids <chip>/<soc_rev>/<platform>/<subtype>, from its "Device info" log line
   soc: ""                  # e.g. qcom msm8916, mediatek mt8127

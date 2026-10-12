@@ -24,9 +24,10 @@ Y="$KIT/ports/$PORT/port.yaml"
 [ -f "$Y" ] || { echo "no such port: $PORT"; exit 1; }
 cfg() { python3 -I "$KIT/tools/lib/portcfg.py" "$Y" "$1"; }
 SER=$(cfg device.serial); MODE=$(cfg device.return_mode); MODE=${MODE:-bootloader}
+S2SER=$(cfg device.second_stage_serial)
 
 in_flash_mode() {
-  timeout 5 fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx "$SER" && return 0
+  timeout 5 fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx -e "$SER" -e "${S2SER:-$SER}" && return 0
   [ "$MODE" = download ] && lsusb 2>/dev/null | grep -q '04e8:685d'
 }
 

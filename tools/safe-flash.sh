@@ -41,6 +41,7 @@ cfg() { python3 -I "$KIT/tools/lib/portcfg.py" "$Y" "$1"; }
 SER=$(cfg device.serial); PRODUCT=$(cfg device.product); MODE=$(cfg device.flash_mode)
 STOCK_MODE=$MODE; [ -n "$MODE_ARG" ] && MODE=$MODE_ARG
 LK2ND_COMPAT=$(cfg device.lk2nd_compatible); QCOM_IDS=$(cfg device.qcom_ids); LK2ND=0
+S2SER=$(cfg device.second_stage_serial); S2PROD=$(cfg device.second_stage_product)
 LOG="$P/journal/plans/safe-flash.log"; mkdir -p "$(dirname "$LOG")"
 
 fails=0
@@ -55,6 +56,17 @@ forbidden() {
 check_fastboot_device() {
   local devs others prod compat ver
   devs=$(timeout 10 fastboot devices 2>/dev/null | awk '{print $1}')
+  # The second stage's own fastboot (e.g. U-Boot) has a distinct serial and product
+  if ! echo "$devs" | grep -qx "$SER" && [ -n "$S2SER" ] && echo "$devs" | grep -qx "$S2SER"; then
+    SER=$S2SER
+    ok "device $SER is in the second stage's fastboot"
+    others=$(echo "$devs" | grep -vx "$SER" | grep . || true)
+    [ -z "$others" ] && ok "no other fastboot device attached" || bad "other fastboot devices attached: $others (unplug them)"
+    prod=$(fastboot -s "$SER" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
+    [ -n "$S2PROD" ] && [ "$prod" = "$S2PROD" ] && ok "product '$prod' matches device.second_stage_product" \
+      || bad "product '$prod' != device.second_stage_product '$S2PROD'"
+    return
+  fi
   echo "$devs" | grep -qx "$SER" && ok "device $SER is in fastboot mode" || { bad "device $SER not in fastboot mode"; return; }
   others=$(echo "$devs" | grep -vx "$SER" | grep . || true)
   [ -z "$others" ] && ok "no other fastboot device attached" || bad "other fastboot devices attached: $others (unplug them)"

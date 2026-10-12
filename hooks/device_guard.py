@@ -167,8 +167,12 @@ def check_fastboot(args, v):
                        "(warranty bits, DRM keys). Confirm the pre-unlock checklist is done.")
         elif what in ("edl", "reboot-edl"):
             v.add(ASK, "Rebooting to EDL (emergency download mode).")
+        elif sub == "oem" and (what == "run" or what.startswith("run:")):
+            v.add(DENY, "fastboot oem run executes arbitrary bootloader commands and bypasses the "
+                        "partition allowlist; a kit second stage never offers it.")
         elif sub == "oem" and what not in ("device-info", "log", "lk_log", "get_unlock_data",
-                                           "get_identifier_token", "help", "screenshot"):
+                                           "get_identifier_token", "help", "screenshot",
+                                           "console", "ums"):
             v.add(ASK, "Unknown fastboot oem command '%s': vendor oem commands can change settings." % what)
         elif sub == "flashing" and what not in ("get_unlock_ability",):
             v.add(ASK, "fastboot flashing %s" % what)
@@ -275,6 +279,22 @@ REMOTE_DENY_RE = re.compile(
 REMOTE_ASK_RE = re.compile(r"\b(mkfs(\.\w+)?|mke2fs|mkfs\.f2fs|resize2fs|wipefs|tune2fs)\b")
 
 
+def check_fwup(args, v):
+    """fwup applying to a host block device (a phone in USB mass storage mode, or the wrong disk)."""
+    if not any(a in ("-a", "--apply") for a in args):
+        return
+    target = None
+    for i, a in enumerate(args):
+        if a in ("-d", "--device") and i + 1 < len(args):
+            target = args[i + 1]
+        elif a.startswith("--device="):
+            target = a.split("=", 1)[1]
+    if target is None or target.startswith("/dev/"):
+        v.add(ASK, "fwup writes a raw host block device (%s): check it is the phone's USB disk "
+                   "(tools/ums-target.sh), not one of this computer's disks."
+              % (target or "auto-detected"))
+
+
 def safe_flash_op(args):
     """The operation of a safe-flash.sh command line (its first non-option word)."""
     i = 0
@@ -356,6 +376,11 @@ def analyse(cmd, v, depth=0):
             check_odin(args, v)
         elif prog in ("edl", "edl.py", "mtk", "mtk.py", "mtkclient"):
             check_edl(prog, args, v)
+        elif prog == "fwup":
+            check_fwup(args, v)
+        elif prog == "mix" and args[:1] == ["burn"]:
+            v.add(ASK, "mix burn writes a raw host block device: check it is the phone's USB disk "
+                       "(tools/ums-target.sh), not one of this computer's disks.")
         elif prog == "safe-flash.sh":
             # "boot" is a RAM-only fastboot boot, allowed like a plain `fastboot boot`;
             # every other operation writes to the device
