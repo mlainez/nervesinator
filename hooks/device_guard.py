@@ -109,6 +109,11 @@ def tokens_of(segment):
     return toks[i:]
 
 
+def oem_base(what):
+    """An oem command without U-Boot's `board:` prefix (its hook for board-specific commands)."""
+    return what[len("board:"):] if what.startswith("board:") else what
+
+
 def check_fastboot(args, v):
     serial = False
     rest = []
@@ -167,12 +172,12 @@ def check_fastboot(args, v):
                        "(warranty bits, DRM keys). Confirm the pre-unlock checklist is done.")
         elif what in ("edl", "reboot-edl"):
             v.add(ASK, "Rebooting to EDL (emergency download mode).")
-        elif sub == "oem" and (what == "run" or what.startswith("run:")):
+        elif sub == "oem" and (oem_base(what) == "run" or oem_base(what).startswith("run:")):
             v.add(DENY, "fastboot oem run executes arbitrary bootloader commands and bypasses the "
                         "partition allowlist; a kit second stage never offers it.")
-        elif sub == "oem" and what not in ("device-info", "log", "lk_log", "get_unlock_data",
-                                           "get_identifier_token", "help", "screenshot",
-                                           "console", "ums"):
+        elif sub == "oem" and oem_base(what) not in ("device-info", "log", "lk_log", "get_unlock_data",
+                                                     "get_identifier_token", "help", "screenshot",
+                                                     "console", "ums"):
             v.add(ASK, "Unknown fastboot oem command '%s': vendor oem commands can change settings." % what)
         elif sub == "flashing" and what not in ("get_unlock_ability",):
             v.add(ASK, "fastboot flashing %s" % what)

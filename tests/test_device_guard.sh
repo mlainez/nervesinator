@@ -65,6 +65,11 @@ t DENY  "fastboot -s X oem run:mw 0x0 0"
 t DENY  "fastboot -s X oem run reset"
 t ALLOW "fastboot -s X oem console"
 t ALLOW "fastboot -s X oem ums"
+t ALLOW "fastboot -s X oem board:ums"
+t ALLOW "fastboot -s X oem board:console"
+t DENY  "fastboot -s X oem board:run"
+t DENY  "fastboot -s X oem board:run:reset"
+t ASK   "fastboot -s X oem board:something-else"
 # heredoc bodies written to a file are text; bodies fed to a shell are commands
 t ALLOW $'cat > notes.md <<\'EOF\'\nroot shell over telnet; mmcblk0boot0 force_ro=1\nEOF'
 t ALLOW $'tee notes.md <<EOF\nfastboot -s X flash aboot x.img\nEOF'

@@ -155,8 +155,10 @@ with the phone through it without keys, screen photos or the vendor's tools:
    boots even where the vendor bootloader has none). A distinct product and serial
    (`device.second_stage_product`, `device.second_stage_serial`) so it is never confused with the
    vendor fastboot or another phone. **Never** `fastboot oem run` or any arbitrary-command channel:
-   it bypasses the allowlist (the guard denies it). Read-only `oem console` (the log) and extra
-   getvars (keys, boot path) are welcome: they replace screen photos.
+   it bypasses the allowlist (the guard denies it, with or without a `board:` prefix). Read-only
+   `oem console` (the log) and extra getvars (keys, boot path) are welcome: they replace screen
+   photos. Mainline U-Boot dispatches board-specific oem commands only through its `oem board:<cmd>`
+   hook, so the board's own commands are called as `fastboot oem board:ums`, `oem board:console`.
 3. **64-bit sizes:** on ARM32, sizes over 4 GiB truncate in 32-bit arithmetic (seen: userdata
    `0x144340000` reported as `0x44340000`); use 64-bit sizes and bounds, and test `getvar` against the
    real size.
@@ -173,7 +175,7 @@ with the phone through it without keys, screen photos or the vendor's tools:
 6. **USB disk (`ums`) is the Nerves flashing path:** expose **only** `userdata` through a `blkmap`
    bounded to its vendor size (never a vendor tail or another partition), so the host runs
    `fwup -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1) <app>.fw` or `mix burn` directly: no
-   `.img`, no sparse, no fastboot buffer limit. Offer `fastboot oem ums` to switch without keys.
+   `.img`, no sparse, no fastboot buffer limit. Offer `fastboot oem board:ums` to switch without keys.
    Fastboot stays for `flash boot` (self-update), RAM boot and diagnostics.
 7. **Entry without keys:** a DRAM/RTC flag so `fastboot reboot-bootloader` and Linux (write the flag,
    reboot) land back in U-Boot's fastboot; `reboot-recovery` and the vendor's fastboot through the
