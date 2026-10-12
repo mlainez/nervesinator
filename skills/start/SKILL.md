@@ -15,7 +15,7 @@ once it is known.
 cat ports/.active 2>/dev/null; ls ports/*/port.yaml 2>/dev/null
 ```
 
-- If an argument was given (`/start samsung-s3ve3g`), use that port and go to **step 5 (Resume)**.
+- If an argument was given (`/start <id>`), use that port and go to **step 5 (Resume)**.
 - If ports exist, show them (id, model, current milestone from `port.yaml`) and ask: resume one
   of them, or start a new device?
 
@@ -53,7 +53,7 @@ vendor IDs (EDL/BROM). Then handle the result:
    adb -s <serial> shell getprop ro.product.model
    ```
    (If the device is only in fastboot/download mode, use `fastboot -s <serial> getvar product` or ask the user.)
-2. Propose the port id `<vendor>-<codename>` in lowercase (e.g. `samsung-s3ve3g`). Check
+2. Propose the port id `<vendor>-<codename>` in lowercase (e.g. `fairphone-fp2`). Check
    `grep -l "serial: <serial>" ports/*/port.yaml` first: if this serial already has a port, resume it.
 3. Create it:
    ```bash

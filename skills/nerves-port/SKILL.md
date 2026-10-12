@@ -70,7 +70,7 @@ Never copy them verbatim. Diff the kernel config against the official systems' d
 ## 3. Pick the A/B layout (ADR)
 
 Android's partition table is fixed: don't repartition (risk-red). Keep the port's default of writing
-only `boot` (lk2nd) and `userdata`. Choose from android-ab-layouts.md:
+only `boot` (the second stage or `boot.img`) and `userdata`. Choose from android-ab-layouts.md:
 - **Sub-image in userdata** (FP2 style, most common).
 - **Split across boot / system / userdata** when partitions are big enough.
 Record the choice, the offsets and the device paths in the decision and in `port.yaml` `path.nerves_layout`.
@@ -142,7 +142,7 @@ safely, in one command:
      kept on the user's computer, before any write;
    - the second-stage bootloader and the latest Nerves release image from GitHub, written to the
      port's allowlisted partitions only (`boot`, `userdata` by default), through the port's proven
-     key-free path (on samsung-s3ve3g: `adb reboot download`, heimdall, `adb reboot recovery`);
+     key-free path (on a Samsung, for example: `adb reboot download`, heimdall, `adb reboot recovery`);
    - every downloaded asset verified (the release's `SHA256SUMS`; upstream signatures or checksums
      for third-party images such as TWRP) before use;
    - the kit's rules built in, since the kit's guard does not run on the user's computer: the

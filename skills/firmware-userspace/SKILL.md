@@ -53,7 +53,7 @@ For each pmOS dependency of the device package (`APKBUILD` `depends=`, the `soc-
   - On PM8226/PM8941 (SMBB, mainline `qcom_smbb`): BAT_IF `0x1293` (BATFET_CTRL4) bits 7:6 = 01 is
     BATFET low-power mode. The vendor driver clears it on every insertion and never allows it under a
     charger; mainline leaves it, and the input stays "present but not qualified". Leave LPM whenever
-    a supply is present, set it only with no input (fixed this way on samsung-s3ve3g, upstreamable).
+    a supply is present, set it only with no input (a fix worth sending upstream).
   - Check the input current limit (USB_IMAX) is not stuck at 100 mA after an input-arbiter reset.
   - Test the trickle/ATC path at low battery, and test on a wall supply as well as a PC port: do not
     conclude "weak PC port" without a wall supply test.

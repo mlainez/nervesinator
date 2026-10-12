@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Create the workspace for a new port: ports/<id>/ as a git repo with port.yaml, folders and a
 # seeded Backlog.md project (milestones M0-M12 and their tasks).
-# Usage: tools/new-port.sh <id> <serial>      e.g. tools/new-port.sh samsung-s3ve3g 31cf1659
+# Usage: tools/new-port.sh <id> <serial>      e.g. tools/new-port.sh fairphone-fp2 0123abcd
 set -euo pipefail
 KIT=$(cd "$(dirname "$0")/.." && pwd)
 ID=${1:?usage: new-port.sh <id> <serial>}; SER=${2:?usage: new-port.sh <id> <serial>}

@@ -58,7 +58,7 @@ menu title lk2nd boot menu
 
 label buildroot
     kernel /boot/zImage
-    fdt /boot/qcom-msm8226-<vendor>-<codename>.dtb
+    fdt /boot/qcom-<soc>-<vendor>-<codename>.dtb
     initrd /boot/initramfs        # optional
     append console=tty0 root=PARTLABEL=userdata rootwait rw   # match the GPT name's case (USERDATA on Samsung), or root=/dev/mmcblk0pNN
 ```

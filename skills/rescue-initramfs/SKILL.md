@@ -77,11 +77,11 @@ anyone looking at the phone:
 - **Way back to the flash mode:** `reboot-mode <KIT_RETURN_MODE>` (LINUX_REBOOT_CMD_RESTART2),
   else `reboot -f`. `bootloader` lands in fastboot (stock or lk2nd), `download` in Samsung
   download mode. The PID 1 shell traps TERM/USR1/USR2, so busybox `reboot`/`poweroff`/`halt` work.
-- **Traps:** on Samsung with lk2nd, the stock `aboot` runs first and clears the restart reason, so
-  `reboot-mode bootloader` cannot reach lk2nd's fastboot: use `KIT_RETURN_MODE=download` there.
-  On Qualcomm, the restart reason lives in IMEM and survives only a **warm** reset; mainline may do
-  a hard reset (PM8226 PS_HOLD), which loses it. Check it in M8: write a reason, reboot, see it
-  honoured.
+- **Traps:** the restart reason must survive until the bootloader that acts on it. With a second
+  stage, the stock bootloader runs first and may clear it (seen on Samsung with lk2nd: then use
+  `KIT_RETURN_MODE=download`). On Qualcomm it lives in IMEM and survives only a **warm** reset;
+  mainline may do a hard reset (seen with PM8226 PS_HOLD), which loses it. Check it in M8 on this
+  device: write a reason, reboot, see it honoured.
 - **Limit:** a hard hang without a working watchdog needs a human (force power off or battery pull).
 - On-device shell scripts follow `buildroot-port` section 6 (BusyBox ash, the image's own applets, errors never hidden).
 

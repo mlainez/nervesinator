@@ -9,9 +9,9 @@ device:
   model: ""                # ro.product.model
   codename: ""             # ro.product.device
   product: ""              # what the bootloader reports (fastboot getvar product / PIT), checked before writes
-  lk2nd_compatible: ""     # fastboot getvar lk2nd:compatible, e.g. samsung,s3ve3g; checked when lk2nd reports its SoC board as product
-  qcom_ids: ""             # lk2nd's SMEM ids chip/soc_rev/platform/subtype from its "Device info" log line, e.g. 221/0x00020000/8/0
-  soc: ""                  # e.g. qcom msm8226
+  lk2nd_compatible: ""     # fastboot getvar lk2nd:compatible (<vendor>,<codename>); checked when lk2nd reports its SoC board as product
+  qcom_ids: ""             # lk2nd's SMEM ids <chip>/<soc_rev>/<platform>/<subtype>, from its "Device info" log line
+  soc: ""                  # e.g. qcom msm8916, mediatek mt8127
   arch: ""                 # armv7 | aarch64
   ram_mb: 0
   storage: ""              # emmc | ufs, size
@@ -64,7 +64,7 @@ path:
   boot_method: ""                   # how we load our kernel (command)
   after_buildroot: ""               # nerves | peripherals | subset (decided once Buildroot boots)
   peripherals: []                   # the peripherals chosen for M10 (charging is always first)
-  rootfs_placement: ""              # recommended: ext2-userdata (one ext2 image with /extlinux, lk2nd)
+  rootfs_placement: ""              # recommended: userdata-image (the whole system on userdata; decisions.md)
   nerves_layout: ""
 
 repos:

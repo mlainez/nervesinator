@@ -32,6 +32,8 @@ done
 P="$KIT/ports/$PORT"; Y="$P/port.yaml"
 [ -f "$Y" ] || { echo "no such port: $P"; exit 3; }
 SER=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.serial)
+FLASH_MODE=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.flash_mode)
+RETURN_MODE=$(python3 -I "$KIT/tools/lib/portcfg.py" "$Y" device.return_mode)
 OUT="$P/journal/boots/$(date +%Y%m%d-%H%M%S)-$STAGE"; mkdir -p "$OUT"
 
 finish() { # result exit-code detail
@@ -64,7 +66,11 @@ lk2nd_log() { # read-only: lk2nd's own log, when lk2nd is running
 }
 
 in_fastboot() { timeout 5 fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx "$SER"; }
-in_download() { lsusb 2>/dev/null | grep -q '04e8:685d'; }
+# Only on ports that use Samsung download mode: another Samsung on the desk must not count
+in_download() {
+  [ "$FLASH_MODE" = samsung-download ] || [ "$RETURN_MODE" = download ] || return 1
+  lsusb 2>/dev/null | grep -q '04e8:685d'
+}
 in_android() { adb devices 2>/dev/null | awk -v s="$SER" '$1==s && ($2=="device" || $2=="recovery"){f=1} END{exit !f}'; }
 
 SECONDS=0

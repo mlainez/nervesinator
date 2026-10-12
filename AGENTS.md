@@ -116,7 +116,7 @@ ports/<id>/             one port = one git repo
 cache/                  shared clones (pmaports, lk2nd, linux), reused across ports
 ```
 
-`<id>` follows the postmarketOS naming: `<vendor>-<codename>` (for example `samsung-s3ve3g`).
+`<id>` follows the postmarketOS naming: `<vendor>-<codename>` (for example `fairphone-fp2`).
 
 ## Style
 

@@ -2,9 +2,9 @@
 # Send a phone running a kit image or the port's Linux back to its flash mode, with no keys.
 # Usage: tools/return-to-flash.sh --port <id> [--timeout S]
 #
-# The target is device.return_mode in port.yaml: `download` on Samsung (the stock aboot clears the
-# restart reason, so lk2nd's fastboot cannot be reached by command; download mode + heimdall can),
-# `bootloader` elsewhere (fastboot, stock or lk2nd). The phone runs `reboot-mode <mode>`, and
+# The target is device.return_mode in port.yaml: `bootloader` (fastboot, stock or second stage) by
+# default, `download` where the stock bootloader clears the restart reason before a second stage
+# sees it (seen on Samsung with lk2nd; download mode + heimdall stay reachable). The phone runs `reboot-mode <mode>`, and
 # `reboot -f` as the last resort. Over the kit gadget's ACM console when present (no login), else
 # over ssh to 10.0.42.1 with a short ServerAlive timeout (the session dies mid-command).
 # Exit 0 once the flash mode shows up, 1 otherwise.

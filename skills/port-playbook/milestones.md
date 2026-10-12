@@ -175,7 +175,7 @@ teach at the gate. `<id>` is the port id, `$P` is `ports/<id>`.
 | Task | Agent | Notes |
 |---|---|---|
 | Add the board to buildroot-android | buildroot-engineer | `board/<id>/`, `configs/<id>_defconfig`, `linux.config`, overlay, genimage; follow the repo's conventions |
-| Choose rootfs placement and boot flow | buildroot-engineer + orchestrator | Recommend the default: one ext2 image on `userdata` with /extlinux, booted by lk2nd (decisions.md section 3); other options only with a reason; ADR |
+| Choose rootfs placement and boot flow | buildroot-engineer + orchestrator | Recommend the default: the whole system in one image on `userdata`, writing only `boot` and `userdata` (ext2 + /extlinux under lk2nd or U-Boot, else `boot.img` with root on `userdata`; decisions.md section 3); other options only with a reason; ADR |
 | Build the full system | buildroot-engineer | |
 | Flash plan and first persistent flash | flash-guardian (user approves) | Only allowlisted partitions; keep the rescue path (RAM boot) available |
 | Boot, ssh in, check reflash cycle | orchestrator | Write a `reflash.sh` like tb3_710f's: talks only to this serial; it returns to the flash mode with `tools/return-to-flash.sh` (`reboot-mode <device.return_mode>`), flashes, and waits for ssh, with no keys |

@@ -97,7 +97,7 @@ bootloader charges it (the vendor flash mode), not in a kit image.
 For each item that needs the user: set its backlog task to `Needs User` with a note (what, why,
 the exact command or question, what was already checked), then notify:
 
-- Claude Code: the `PushNotification` tool, one short line ("s3ve3g: M7 first light PASS; GATE M7
+- Claude Code: the `PushNotification` tool, one short line ("<id>: M7 first light PASS; GATE M7
   waits for you").
 - Other tools: the line goes to `journal/sessions.md` under a `## Needs you` heading.
 
