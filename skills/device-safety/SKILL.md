@@ -92,7 +92,15 @@ partition, **add it to that file** (a commit in the kit) before going further.
   allowed"): read the model with `fastboot oem get-product-model`, the state with
   `oem lock-state info`, `oem get-build-number`, `oem get_bootinfo`. There is no `fastboot boot`, so
   no RAM boot: test images go to an experiment partition (e.g. `recovery_ramdisk`). Treble Kirin
-  devices split boot into `kernel` and `ramdisk` partitions. Huawei stopped giving unlock codes in
+  devices have no `boot` partition: the kernel image is in `kernel`, the ramdisk in `ramdisk`, and
+  recovery is `recovery_ramdisk` + `recovery_vendor` sharing that `kernel`. The DTB comes from the
+  `dts` partition (Huawei's own format) plus `dto` (both forbidden by default: a port that needs
+  its own DTB there decides it with the user, through an override). `ptable`, `vrl*`, the
+  eRecovery partitions and the unknown vendor partitions are on the forbidden list too. A dload or
+  service ROM writes class A itself through the vendor updater: a user-run path only. Versions:
+  `oem get-build-number` gives the base version + cust + preload (e.g. `9.1.0.401(C432E13R1P7)`),
+  which differs from `ro.build.display.id`; anti-rollback compares the base version, so a
+  restore uses the same or a newer base. Huawei stopped giving unlock codes in
   2018; the community path (PotatoNV through a test point) writes `nvme`, class B: only with the
   user's override, after explaining it. BootROM rescue mode enumerates as `12d1:3609` ("USB COM 1.0")
   and `hisi-idt` loads images there: rung 3 of the unbrick ladder, run by the user. Never relock.

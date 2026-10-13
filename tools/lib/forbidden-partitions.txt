@@ -157,6 +157,37 @@ modemnvm_img
 modemnvm_system
 modem_secure
 modem_om
+# HiSilicon / Huawei: partition table and verification records
+ptable
+vrl
+vrl_backup
+# HiSilicon / Huawei: vendor data of unknown or irreplaceable content (conservative)
+secure_storage
+modemnvm_update
+dfx
+rrecord
+hisitest0
+hisitest1
+hisitest2
+splash2
+reserved1
+reserved2
+reserved3
+reserved4
+reserved5
+reserved9
+# HiSilicon / Huawei: replaceable firmware and the eRecovery rescue path, not written by default.
+# Plain vbmeta stays writable: other vendors' ports legitimately write it.
+erecovery_kernel
+erecovery_ramdisk
+erecovery_vendor
+erecovery_vbmeta
+recovery_vbmeta
+fw_hifi
+modem_fw
+dts
+dto
+preload
 # Sony
 ta
 # Generic / other vendors
