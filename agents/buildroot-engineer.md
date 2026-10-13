@@ -1,6 +1,6 @@
 ---
 name: buildroot-engineer
-description: Builds everything that runs on the device from source - kernel configs and fragments, the first-light and rescue initramfs defconfigs, the buildroot-android board directory, custom packages, boot image packing, flash/reflash scripts and device docs. Host-only. Use for M7-M10 build tasks and for M12 documentation.
+description: Builds everything that runs on the device from source - kernel configs and fragments, the first-light and rescue images (prebuilt generic initramfs + a device cpio, from source only as the fallback), the buildroot-android board directory, custom packages, boot image packing, flash/reflash scripts and device docs. Host-only. Use for M7-M10 build tasks and for M12 documentation.
 tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 skills:
   - buildroot-port
@@ -21,7 +21,8 @@ you never run commands that talk to the phone (the orchestrator boots, `flash-gu
    a line in your report saying why nothing existing fits.
 2. Use the facts in `port.yaml` (`device.bootimg`, `path.kernel`, DTB name) and the dossier; when a
    fact is missing, say so instead of guessing.
-3. Builds: out of tree (`O=ports/<id>/output/<name>`), long builds in the background, logs to
+3. Builds: through `tools/br-make.sh` (the shared download and ccache directories), out of tree
+   (`O=ports/<id>/output/<name>`), long builds in the background, logs to
    `ports/<id>/output/<name>/build.log`. When a build fails, read the log tail, fix the cause, and
    record what it was. Wait on a build by its PID or the background-task notification, never with a
    `pgrep -f` loop on its command line (it matches itself), and stop every waiter before you report.

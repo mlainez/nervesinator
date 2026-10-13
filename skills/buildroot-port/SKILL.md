@@ -59,12 +59,32 @@ docs/<id>.md                            what works, how to flash (tb3_710f.md is
 
 The external tree's name is `ANDROID`, so paths use `$(BR2_EXTERNAL_ANDROID_PATH)`.
 
+## 1b. Share what is not per device
+
+Per device: the kernel (fork, config, DTB), boot image packing, a few overlay files. Everything else
+is per architecture, so it is shared:
+
+- **Test images (M7/M8):** the prebuilt generic initramfs (`rescue-initramfs`, "Prebuilt first").
+- **One Buildroot checkout** in `cache/buildroot-android`, pinned to a release tag, with the port's
+  board in a second external tree (`BR2_EXTERNAL=cache/buildroot-android/buildroot-external:ports/<id>/br-external`,
+  its `external.desc` named `PORT_<ID>`) instead of a full fork per port. A port that must change
+  the shared tree works in a `git worktree` of it and upstreams the change.
+- **Layered defconfigs:** a per-architecture base fragment (the full system's shared userspace) plus
+  the board's fragment, merged with `support/kconfig/merge_config.sh`, so a port keeps only its delta.
+- **Caches:** every build through `tools/br-make.sh <buildroot dir> …`, which sets `BR2_DL_DIR`
+  (`cache/buildroot-dl`) and `BR2_CCACHE_DIR` (`cache/buildroot-ccache`); defconfigs set `BR2_CCACHE=y`.
+  One prebuilt toolchain per architecture (the Nerves toolchains: `nerves_toolchain_aarch64_nerves_linux_gnu`,
+  `nerves_toolchain_armv7_nerves_linux_gnueabihf`), downloaded once into that cache.
+- **Optional:** a per-architecture prebuilt base rootfs, with the device's modules and firmware
+  added in post-image, when the userspace delta is empty.
+
 ## 2. Build out of tree, one output dir per defconfig
 
 ```bash
 cd ports/<id>/buildroot-android/buildroot
-make BR2_EXTERNAL=../buildroot-external O=$PWD/../../output/firstlight <id>_firstlight_defconfig
-make O=$PWD/../../output/firstlight -j$(nproc)          # run in the background; teach meanwhile
+tools/br-make.sh ports/<id>/buildroot-android/buildroot BR2_EXTERNAL=../buildroot-external \
+    O=$PWD/ports/<id>/output/system <id>_defconfig
+tools/br-make.sh ports/<id>/buildroot-android/buildroot O=$PWD/ports/<id>/output/system -j$(nproc)   # in the background
 ```
 
 Outputs go to `ports/<id>/output/<name>/images/` (git-ignored). First builds take 30–90 min

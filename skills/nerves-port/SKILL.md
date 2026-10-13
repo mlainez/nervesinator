@@ -24,6 +24,14 @@ mlainez/nerves_system_fp3, nerves_system_tickwatch_pro3, Spin42/nerves_system_gr
 mlainez/nerves_system_bootstrap to generate the skeleton. Reuse their structure, fwup A/B layout,
 erlinit config and firmware handling rather than designing from scratch.
 
+## 0b. Artifacts, not rebuilds
+
+Follow the Nerves artifact model, so users never rebuild a system: each `nerves_system_<id>`
+publishes its artifact (GitHub release, `nerves_artifact`), and `mix firmware` downloads it.
+Generate the system from `nerves_system_bootstrap` on a shared per-architecture Android base (a
+common `nerves_defconfig` fragment, fwup/erlinit templates, the Nerves toolchain), so the
+per-device repository holds only the kernel, the DT and the A/B partition mapping.
+
 ## 1. Bootstrap
 
 ```bash

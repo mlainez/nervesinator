@@ -8,6 +8,24 @@ description: Build the in-RAM test systems - the first-light kernel that prints 
 Both systems live **only in RAM** (the rootfs is the initramfs packed in the boot image). Nothing
 on the phone's storage changes, so a reboot always gives the phone back.
 
+## Prebuilt first
+
+The initramfs is the same for every device of an architecture; only the kernel, the DTB and a few
+files differ. So M7 and M8 do not run Buildroot for the userspace:
+
+1. `tools/fetch-prebuilt.sh --arch aarch64|armv7` puts the generic `firstlight-<arch>.cpio.gz` and
+   `rescue-<arch>.cpio.gz` (built from buildroot-android's `configs/{firstlight,rescue}_<arch>_defconfig`,
+   published with `SHA256SUMS`, version pinned in `tools/lib/prebuilt.conf`) into
+   `cache/prebuilt/<version>/`.
+2. `tools/mk-test-initramfs.sh --port <id> --image rescue --arch <arch> [--overlay <dir>]` appends a
+   small device cpio (its `/etc/kit-image` from `port.yaml`, plus firmware/modules/panel files from
+   the overlays): the kernel accepts concatenated cpio archives, and the later file wins.
+3. Build only the kernel, DTB and modules, then pack the boot image (`boot-images`).
+
+**From source** stays the fallback: a new architecture, a userspace change under test, or no release
+yet. Build the generic defconfig (`tools/br-make.sh … rescue_<arch>_defconfig`, then import it with
+`fetch-prebuilt.sh --from-dir <images> --image rescue`), or a per-board defconfig as below.
+
 ## Kernel config essentials (both stages)
 
 Start from the chosen base config (pmaports `config-*`, or `qcom_defconfig`/`multi_v7_defconfig`/
@@ -94,7 +112,8 @@ anyone looking at the phone:
 - `BR2_PACKAGE_DROPBEAR=y` (or busybox `telnetd`), `BR2_TARGET_GENERIC_ROOT_PASSWD="root"`,
 - `BR2_PACKAGE_UNUDHCPD=y` (the package exists in buildroot-android: `package/unudhcpd`),
 - busybox with `fdisk`, `blkid`, `dd`, `sha256sum`, `devmem`, `i2cdetect` (`BR2_PACKAGE_I2C_TOOLS=y`),
-  `e2fsprogs`, `evtest`, `usbutils`,
+  `e2fsprogs`, `evtest`, `lsusb` from busybox (`usbutils` needs udev and is silently dropped without it;
+  `i2c-tools` needs `BR2_PACKAGE_BUSYBOX_SHOW_OTHERS`),
 - the same overlay as first light, with `init-rescue` as `/init` and `KIT_IMAGE=rescue`.
 
 What `usb-gadget.sh` does (configfs): create gadget `g1` with the kit identity above, add the ACM

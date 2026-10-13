@@ -52,6 +52,13 @@ elif command -v fwup >/dev/null && ! fwup --version >/dev/null 2>&1; then
 fi
 chk later mksquashfs  "$PM squashfs-tools"
 chk later mcopy       "$PM mtools"
+echo "== Shared caches (cache/)"
+for c in buildroot-dl buildroot-ccache prebuilt; do
+  if [ -d "$KIT/cache/$c" ]; then echo "  ✅ cache/$c ($(du -sh "$KIT/cache/$c" 2>/dev/null | cut -f1))"
+  else echo "  ⏳ cache/$c not created yet"; fi
+done
+. "$KIT/tools/lib/prebuilt.conf"
+echo "  prebuilt test images: ${PREBUILT_VERSION:-no release pinned (tools/lib/prebuilt.conf)}"
 echo "== Kit adapter (Claude Code: agents, skills, the guard hook)"
 for l in agents skills; do
   if [ -d "$KIT/.claude/$l" ] && [ "$(cd "$KIT/.claude/$l" && pwd -P)" = "$(cd "$KIT/$l" && pwd -P)" ]; then
