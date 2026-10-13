@@ -29,7 +29,8 @@ changing anything on it**.
 3. Write/update the deliverables named in the task (usually `dossier/device.md`,
    `dossier/partitions.md` with the A/B/C/D class of each partition, `dossier/partitions-linux.md` in M8).
 4. Propose `port.yaml` `device:` values (exact YAML snippet) and backlog notes, including
-   `android_ab` (true when `_a/_b` partitions or `ro.boot.slot_suffix` exist) and `active_slot`.
+   `android_ab` (true when `ro.boot.slot_suffix` is set or real `_a`/`_b` partition pairs exist; a lone
+   or dangling alias such as EMUI's `boot_a -> kernel_a` is not A/B) and `active_slot`.
 
 ## Report back (to the orchestrator)
 

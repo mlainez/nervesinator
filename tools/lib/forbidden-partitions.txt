@@ -188,6 +188,13 @@ modem_fw
 dts
 dto
 preload
+recovery_vendor
+eng_system
+eng_vendor
+patch
+bootfail_info
+# The RPMB area by name (raw writes to /dev/…rpmb are denied by the guard's device-path rule)
+mmcblk0rpmb
 # Sony
 ta
 # Generic / other vendors

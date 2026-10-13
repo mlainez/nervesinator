@@ -104,6 +104,8 @@ partition, **add it to that file** (a commit in the kit) before going further.
   2018; the community path (PotatoNV through a test point) writes `nvme`, class B: only with the
   user's override, after explaining it. BootROM rescue mode enumerates as `12d1:3609` ("USB COM 1.0")
   and `hisi-idt` loads images there: rung 3 of the unbrick ladder, run by the user. Never relock.
+  EMUI's by-name directory carries a dangling `boot_a -> kernel_a` alias: it is not an A/B slot
+  (`device.android_ab` stays false).
 - **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;
   SP Flash Tool "Format All + Download" erases calibration: never use it. mtkclient reads are fine.
   Many MTK devices reserve a tail of `userdata` (BMT pool/encryption footer): do not grow
