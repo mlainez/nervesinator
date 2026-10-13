@@ -180,6 +180,9 @@ def check_fastboot(args, v):
                         "partition allowlist; a kit second stage never offers it.")
         elif sub == "oem" and oem_base(what) not in ("device-info", "log", "lk_log", "get_unlock_data",
                                                      "get_identifier_token", "help", "screenshot",
+                                                     # Huawei read-only queries
+                                                     "lock-state", "get-build-number", "get_bootinfo",
+                                                     "get-product-model",
                                                      "console", "ums"):
             v.add(ASK, "Unknown fastboot oem command '%s': vendor oem commands can change settings." % what)
         elif sub == "flashing" and what not in ("get_unlock_ability",):

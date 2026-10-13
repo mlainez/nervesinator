@@ -9,6 +9,15 @@ ID=${1:?usage: new-port.sh <id> <serial>}; SER=${2:?usage: new-port.sh <id> <ser
 P="$KIT/ports/$ID"
 [ -e "$P" ] && { echo "ports/$ID already exists: resume it instead"; exit 1; }
 command -v backlog >/dev/null || { echo "backlog CLI missing: npm i -g backlog.md (or bun add -g backlog.md)"; exit 1; }
+# Without the Claude Code adapter the kit's agents are not registered and the guard hook never runs
+if [ -d "$KIT/.claude" ] || [ -n "${CLAUDECODE:-}" ]; then
+  for l in agents skills; do
+    [ "$(cd "$KIT/.claude/$l" 2>/dev/null && pwd -P)" = "$(cd "$KIT/$l" && pwd -P)" ] || \
+      { echo ".claude/$l is broken: run tools/check-host.sh and apply its fix first"; exit 1; }
+  done
+  grep -q device_guard.py "$KIT/.claude/settings.json" 2>/dev/null || \
+    { echo ".claude/settings.json does not run the guard: run tools/check-host.sh and apply its fix first"; exit 1; }
+fi
 
 mkdir -p "$P"/{dossier/raw,backups/stock,journal/lessons,journal/plans,journal/photos,output}
 sed -e "s/@ID@/$ID/" -e "s/@SERIAL@/$SER/" -e "s/@DATE@/$(date +%F)/" "$KIT/templates/port.yaml" > "$P/port.yaml"

@@ -137,6 +137,26 @@ bmtpool
 kb
 dkb
 logo
+# HiSilicon / Huawei (Kirin): boot chain (`fastboot` is the bootloader partition itself)
+xloader
+fastboot
+vector
+fw_lpm3
+teeos
+trustfirmware
+sensorhub
+hisee_img
+hisee_fs
+bl2
+# HiSilicon / Huawei: per-device data (nvme holds IMEI, MACs, the unlock-code hash, FBLOCK)
+nvme
+oeminfo
+modemnvm_factory
+modemnvm_backup
+modemnvm_img
+modemnvm_system
+modem_secure
+modem_om
 # Sony
 ta
 # Generic / other vendors

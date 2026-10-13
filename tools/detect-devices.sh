@@ -30,6 +30,8 @@ if command -v fastboot >/dev/null; then
     [ -z "$ser" ] && continue
     found=1
     prod=$(fastboot -s "$ser" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
+    # Huawei fastboot refuses getvar product: ask its own read-only query
+    [ -n "$prod" ] || prod=$(fastboot -s "$ser" oem get-product-model 2>&1 | sed -n 's/^(bootloader) *//p' | head -1)
     unl=$(fastboot -s "$ser" getvar unlocked 2>&1 | awk -F': ' '/^unlocked:/{print $2}')
     printf "  %-20s %-10s product=%s unlocked=%s\n" "$ser" "$mode" "${prod:-?}" "${unl:-?}"
   done < <(timeout 10 fastboot devices 2>/dev/null)
@@ -56,11 +58,12 @@ if command -v lsusb >/dev/null; then
       05c6:900e) echo "  Qualcomm crash dump (ramdump) mode: $line" ;;
       0e8d:0003) echo "  MediaTek BROM mode: $line" ;;
       0e8d:2000) echo "  MediaTek preloader mode: $line" ;;
+      12d1:3609) echo "  HiSilicon BootROM rescue mode (USB COM 1.0, hisi-idt): $line  !! stop and read device-safety" ;;
       18d1:4ee0|18d1:d00d) echo "  Android fastboot: $line" ;;
       18d1:d001) echo "  USB networking gadget (older rescue initramfs?): $line" ;;
     esac
   done
-  lsusb | grep -qE '04e8:685d|05c6:9008|0e8d:0003|0e8d:2000' && found=1
+  lsusb | grep -qE '04e8:685d|05c6:9008|0e8d:0003|0e8d:2000|12d1:3609' && found=1
 else
   echo "  lsusb not installed"
 fi

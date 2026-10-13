@@ -85,6 +85,17 @@ partition, **add it to that file** (a commit in the kit) before going further.
   session needs `--resume` (`tools/safe-flash.sh --resume`), or reboot into download mode first.
 - **Sony:** unlocking erases the **TA partition DRM keys** forever: back up TA (needs an exploit,
   before unlock) if the user cares about camera quality/DRM. Ask them.
+- **Huawei / HiSilicon (Kirin):** the boot chain is `xloader`, `fastboot` (the bootloader partition
+  itself), `vector`, `fw_lpm3`, `teeos`, `trustfirmware`, `sensorhub`, `hisee_*`, `bl2`; `nvme`
+  (IMEI, MACs, the unlock-code hash, FBLOCK), `oeminfo` and `modemnvm_*`/`modem_secure`/`modem_om`
+  are class B (all on the forbidden list). Huawei fastboot refuses most getvars ("Command not
+  allowed"): read the model with `fastboot oem get-product-model`, the state with
+  `oem lock-state info`, `oem get-build-number`, `oem get_bootinfo`. There is no `fastboot boot`, so
+  no RAM boot: test images go to an experiment partition (e.g. `recovery_ramdisk`). Treble Kirin
+  devices split boot into `kernel` and `ramdisk` partitions. Huawei stopped giving unlock codes in
+  2018; the community path (PotatoNV through a test point) writes `nvme`, class B: only with the
+  user's override, after explaining it. BootROM rescue mode enumerates as `12d1:3609` ("USB COM 1.0")
+  and `hisi-idt` loads images there: rung 3 of the unbrick ladder, run by the user. Never relock.
 - **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;
   SP Flash Tool "Format All + Download" erases calibration: never use it. mtkclient reads are fine.
   Many MTK devices reserve a tail of `userdata` (BMT pool/encryption footer): do not grow
