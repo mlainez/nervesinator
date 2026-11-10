@@ -64,7 +64,7 @@ check_fastboot_device() {
     ok "device $SER is in the second stage's fastboot"
     others=$(echo "$devs" | grep -vx "$SER" | grep . || true)
     [ -z "$others" ] && ok "no other fastboot device attached" || bad "other fastboot devices attached: $others (unplug them)"
-    prod=$(fastboot -s "$SER" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
+    prod=$(timeout 15 fastboot -s "$SER" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
     [ -n "$S2PROD" ] && [ "$prod" = "$S2PROD" ] && ok "product '$prod' matches device.second_stage_product" \
       || bad "product '$prod' != device.second_stage_product '$S2PROD'"
     return
@@ -73,18 +73,18 @@ check_fastboot_device() {
   others=$(echo "$devs" | grep -vx "$SER" | grep . || true)
   [ -z "$others" ] && ok "no other fastboot device attached" || bad "other fastboot devices attached: $others (unplug them)"
   if [ -n "$PRODUCT" ]; then
-    prod=$(fastboot -s "$SER" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
+    prod=$(timeout 15 fastboot -s "$SER" getvar product 2>&1 | awk -F': ' '/^product:/{print $2}')
     if [ "$prod" = "$PRODUCT" ]; then
       ok "product '$prod' matches port.yaml"
     elif [ -n "$LK2ND_COMPAT" ]; then
       # lk2nd reports the SoC board name as product, shared by many devices: match its DT compatible
-      compat=$(fastboot -s "$SER" getvar lk2nd:compatible 2>&1 | awk -F': ' '/^lk2nd:compatible:/{print $2}')
+      compat=$(timeout 15 fastboot -s "$SER" getvar lk2nd:compatible 2>&1 | awk -F': ' '/^lk2nd:compatible:/{print $2}')
       [ "$compat" = "$LK2ND_COMPAT" ] && ok "lk2nd:compatible '$compat' matches port.yaml (lk2nd product '$prod')" \
         || bad "product '$prod' != port.yaml '$PRODUCT' and lk2nd:compatible '$compat' != '$LK2ND_COMPAT'"
     else
       bad "product '$prod' != port.yaml '$PRODUCT' (under lk2nd, set device.lk2nd_compatible)"
     fi
-    ver=$(fastboot -s "$SER" getvar lk2nd:version 2>&1 | awk -F': ' '/^lk2nd:version:/{print $2}')
+    ver=$(timeout 15 fastboot -s "$SER" getvar lk2nd:version 2>&1 | awk -F': ' '/^lk2nd:version:/{print $2}')
     [ -n "$ver" ] && { LK2ND=1; echo "  ℹ️  lk2nd $ver is running"; }
   else
     bad "device.product is empty in port.yaml (set it from 'fastboot getvar product' first)"
@@ -141,7 +141,7 @@ check_fastboot_size() { # partition image: the size the running bootloader repor
   # names), so there the scatter file or Linux sysfs, through partition_size(), is the source
   cfg device.partition_sizes 2>/dev/null | grep -qi "^$1=" && return
   case "$STOCK_MODE" in mtk-*) echo "  ℹ️  MediaTek LK's partition-size is not trusted: size from port.yaml/recon only"; return ;; esac
-  hex=$(fastboot -s "$SER" getvar "partition-size:$1" 2>&1 | sed -n "s/^partition-size:$1:[[:space:]]*\(0x[0-9a-fA-F]*\).*/\1/p")
+  hex=$(timeout 15 fastboot -s "$SER" getvar "partition-size:$1" 2>&1 | sed -n "s/^partition-size:$1:[[:space:]]*\(0x[0-9a-fA-F]*\).*/\1/p")
   [ -n "$hex" ] || return
   isize=$(stat -c %s "$2")
   [ "$isize" -le $((hex)) ] && ok "image fits '$1' as the bootloader reports it ($isize <= $((hex)))" \
@@ -149,7 +149,7 @@ check_fastboot_size() { # partition image: the size the running bootloader repor
 }
 
 lk2nd_log() { # file: lk2nd's own log, read through fastboot (read-only)
-  fastboot -s "$SER" oem log >/dev/null 2>&1 && fastboot -s "$SER" get_staged "$1" >/dev/null 2>&1
+  timeout 15 fastboot -s "$SER" oem log >/dev/null 2>&1 && timeout 15 fastboot -s "$SER" get_staged "$1" >/dev/null 2>&1
 }
 
 check_lk2nd_dtb() { # image
