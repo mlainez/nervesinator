@@ -52,9 +52,11 @@ device (`override <target…>`), informed of the cost.
    for good; without a RAM boot, `boot` is the experiment partition.
 3. **Start from the family.** The closest existing Nerves system is the template
    (`nerves-system` family.md); the port changes what its hardware forces and says which.
-4. **Straight to Nerves.** The rescue shell is the last Buildroot-only step. A persistent
-   buildroot-android board is an optional branch (`path.buildroot_branch: true`,
-   `buildroot-port`), taken when the user wants to contribute one.
+4. **Follow the Nerves porting guide.** Its "working Buildroot system first" is the rescue shell
+   of S3, with the kernel config and the init inventory saved from it; the Nerves system then has
+   the guide's anatomy and layout, **boot A/B and rootfs A/B, never a single boot slot**, checked
+   by `tools/check-nerves-system.sh`. A persistent buildroot-android board is an optional branch
+   (`path.buildroot_branch: true`, `buildroot-port`), taken when the user wants to contribute one.
 5. **Every boot experiment keeps a way back**: the command, the key combo, the backup image.
 6. **Going back is normal.** If first light fails because of the kernel choice, change
    `path.kernel_*` and say why in a decision; the evidence model follows.

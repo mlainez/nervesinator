@@ -33,6 +33,7 @@ Nothing writes to the device. After recon, the other steps run in parallel.
 | First light | `builder` builds, orchestrator runs `tools/await-boot.sh --stage firstlight` | a PASS record in `journal/boots/*-firstlight/` |
 | Rescue shell | same, `--stage rescue`, then `tools/usbnet.sh` | a PASS record in `journal/boots/*-rescue/` |
 | Linux hardware inventory | `researcher` over ssh | `dossier/partitions-linux.md`, `dossier/raw/linux-dmesg.txt` |
+| Buildroot baseline saved (porting guide) | `builder` | `path.kernel_config`; `dossier/init-inventory.md` |
 
 A failed boot goes to `boot-debugger` with its record; loop until PASS.
 
@@ -43,6 +44,7 @@ The host steps start as soon as G1 passed.
 | Step | Who | Evidence |
 |---|---|---|
 | Nerves system scaffold | `builder`, `tools/scaffold-system.sh` | `$P/nerves_system_<name>/mix.exs` |
+| Compliance with the porting guide; boot A/B and rootfs A/B | `builder`, `tools/check-nerves-system.sh` | the check reports no FAIL (run by `kit-next` itself) |
 | A/B layout, proven on a file image | `builder` | `path.nerves_layout`; `checks.fwup_host` |
 | Firmware built | `builder` | a `.fw` under `$P/<app>/_build/*/nerves/images/` |
 | First Nerves boot | orchestrator: `tools/safe-flash.sh`, then `tools/await-boot.sh --watch-only --stage nerves --host nerves.local` | a PASS record in `journal/boots/*-nerves/` (or `checks.nerves_boot`) |

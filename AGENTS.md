@@ -77,7 +77,9 @@ type any of these, on their behalf.
 8. **Start from the family.** Before any system, package, script or config, look at the closest
    existing Nerves system (`nerves-system` family.md) and at Spin42/buildroot-android; reuse or
    extend, and say what the hardware forced you to change.
-9. **Say what and why in a line before a step, and what it showed after.** Never claim something
+9. **The Nerves system follows the Nerves porting guide** and has boot A/B and rootfs A/B, never
+   a single boot slot. `tools/check-nerves-system.sh` must report no FAIL before the first flash.
+10. **Say what and why in a line before a step, and what it showed after.** Never claim something
    worked unless you checked it: say what you saw (a log line, an exit code, a boot record).
    Lessons are for when the user asks (`teach`).
 

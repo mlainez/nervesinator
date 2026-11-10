@@ -5,6 +5,10 @@ description: Stage S3 of a port - prove a boot path from RAM and get a shell. Ch
 
 # S3 Boot from RAM
 
+This stage is the Nerves porting guide's first requirement: *a working Buildroot system first*,
+one that boots, gives a shell and proves the kernel, the device tree and the bootloader. The
+rescue image is that system, booted from RAM.
+
 Temporary before permanent: every image is proven from RAM (`fastboot boot`, or the second
 stage's) before anything is written for good. Where no RAM boot exists, `boot` is the experiment
 partition and the stock flash mode restores it.
@@ -35,5 +39,10 @@ partition and the stock flash mode restores it.
 4. **Inventory**, over ssh from the rescue shell (`scout` recon.md, "Linux-side recon"):
    `dossier/raw/linux-dmesg.txt`, `dossier/partitions-linux.md` (block device ↔ name ↔ class), the
    battery readings, and the key-free way back (`tools/return-to-flash.sh`).
+5. **Save the baseline**, as the guide asks before moving to Nerves: the kernel config that
+   booted (`make linux-update-defconfig`, recorded in `path.kernel_config`), and
+   `dossier/init-inventory.md`: everything the rescue system had to do at startup for the hardware
+   to work (modules and their order, firmware, a daemon). Each row becomes Elixir in S4.
 
-The Nerves system (S4) is built on the host while this runs: it only needs the kernel choice.
+The Nerves system (S4) is scaffolded on the host while this runs; its kernel config is replaced by
+the saved one.

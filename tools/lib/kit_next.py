@@ -26,6 +26,7 @@ def load(name, *path):
 
 portcfg = load("portcfg", "tools", "lib", "portcfg.py")
 grants = load("autonomy_grant", "hooks", "autonomy_grant.py")
+nerves_check = load("nerves_check", "tools", "lib", "nerves_check.py")
 
 STAGES = [("S1", "Scout", "scout"), ("S2", "Open", "open"), ("S3", "Boot from RAM", "boot-test"),
           ("S4", "Nerves", "nerves-system"), ("S6", "Share", "share")]
@@ -152,6 +153,23 @@ def system(p):
                          else "nerves_system_<name>/ (tools/scaffold-system.sh --port %s)" % p.id)
 
 
+def baseline(p):
+    m = missing(p, ["dossier/init-inventory.md"], ["path.kernel_config"])
+    return (not m, m or "kernel config %s, dossier/init-inventory.md" % p.get("path.kernel_config"))
+
+
+def compliance(p):
+    found = p.glob("nerves_system_*/mix.exs")
+    if not found:
+        return False, "no Nerves system yet"
+    report = nerves_check.check(os.path.dirname(found[0]))
+    fails = [what for level, what, _ in report.rows if level == "FAIL"]
+    warns = sum(level == "WARN" for level, _, _ in report.rows)
+    if fails:
+        return False, "%d FAIL (tools/check-nerves-system.sh): %s" % (len(fails), "; ".join(fails[:3]))
+    return True, "porting guide and boot A/B + rootfs A/B: no FAIL, %d WARN" % warns
+
+
 def layout(p):
     m = missing(p, [], ["path.nerves_layout"])
     if not p.check("fwup_host"):
@@ -219,9 +237,13 @@ STEPS = [
      "tools/await-boot.sh --port <id> --image <img> --stage rescue, tools/usbnet.sh"),
     ("inventory", "S3", "Linux hardware inventory", "device", ["rescue"], inventory,
      "over ssh from the rescue shell (scout/recon.md, Linux-side recon)"),
+    ("baseline", "S3", "Buildroot baseline saved", "host", ["inventory"], baseline,
+     "the porting guide's working Buildroot system: path.kernel_config, dossier/init-inventory.md (boot-test)"),
     ("system", "S4", "Nerves system scaffold", "host", ["G1"], system,
      "tools/scaffold-system.sh --port <id> (nerves-system)"),
-    ("layout", "S4", "A/B layout checked on a file image", "host", ["system", "inventory"], layout,
+    ("compliance", "S4", "Porting guide, boot A/B and rootfs A/B", "host", ["system"], compliance,
+     "tools/check-nerves-system.sh --port <id> until no FAIL (nerves-system/porting.md)"),
+    ("layout", "S4", "A/B layout checked on a file image", "host", ["compliance", "baseline"], layout,
      "nerves-system/android-ab-layouts.md, templates/nerves/host-check-fwup.sh"),
     ("firmware", "S4", "Firmware built", "host", ["layout"], firmware, "mix firmware (nerves-system/app.md)"),
     ("nerves-boot", "S4", "First Nerves boot", "device", ["firmware", "G2"], nerves_boot,

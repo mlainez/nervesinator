@@ -1,8 +1,29 @@
 # Nerves on an Android device
 
-Prerequisites: a rescue shell (S3) with the Linux inventory, and the reference system chosen
-([family.md](family.md)). Read the [porting guide](https://hexdocs.pm/nerves/porting-guide.html) sections that apply:
-this skill covers what is different on phones. Details on layouts: [android-ab-layouts.md](android-ab-layouts.md).
+The [Nerves porting guide](https://hexdocs.pm/nerves/porting-guide.html) is the reference: follow it,
+and read it before the first system. This file covers only what is different on phones.
+Prerequisites: the guide's "working Buildroot system first" (here the rescue shell of S3, with its
+saved kernel config and init inventory), and the reference system chosen ([family.md](family.md)). Details on layouts: [android-ab-layouts.md](android-ab-layouts.md).
+
+## 0a. What compliant means
+
+A system the kit produces follows the porting guide and looks like an official system:
+
+| Guide | On a phone |
+|---|---|
+| A working Buildroot system first; save its defconfig and kernel config; note what it does at startup | The rescue image of S3 is that system: `make linux-update-defconfig` gives the system's `linux-X.Y.defconfig`, and `dossier/init-inventory.md` lists what made the hardware work |
+| Start from an existing system that is close | `tools/scaffold-system.sh` ([family.md](family.md)) |
+| The anatomy: `mix.exs`, `nerves_defconfig`, `linux-X.Y.defconfig`, `fwup.conf`, `fwup-ops.conf`, `fwup_include/`, `post-build.sh`, `post-createfs.sh`, `rootfs_overlay/etc/{erlinit,fw_env,boardid}.config`, `VERSION` | The same files, same names |
+| `nerves_defconfig`: the Nerves toolchain for the architecture, `BR2_INIT_NONE=y`, the nerves-common skeleton, overlay, post-build script and BusyBox config, `BR2_PACKAGE_NERVES_CONFIG=y` | The same; device needs go in fragments and packages |
+| Kernel, built in: `SQUASHFS`, `F2FS_FS`, `USB_GADGET`, `USB_ETH` | The same, plus both squashfs decompressors (`SQUASHFS_ZLIB` and `SQUASHFS_LZ4`): the guide names LZ4, and `mix firmware` builds gzip as the official systems run it |
+| Layout: U-Boot env, Boot A, Boot B, Rootfs A, Rootfs B, application data; three MBR entries swapped by fwup | The same, inside `userdata` ([android-ab-layouts.md](android-ab-layouts.md)) |
+| `fwup-ops.conf`: revert, validate, status, factory-reset, prevent-revert | The same |
+| erlinit mounts the application partition fwup names; `fw_env.config` points at the env | The same, with the device paths as seen after the initramfs mapped the sub-image |
+| No init scripts: startup work moves into the Elixir application | The same ([app.md](app.md)) |
+| Test: boot, networking with VintageNet, ssh, an update with `mix upload`; publish artifacts | S4's evidence, then `share` |
+
+`tools/check-nerves-system.sh --port <id>` checks all of this statically and must report no FAIL
+before the first flash; each WARN is fixed or justified in `dossier/nerves-config-review.md`.
 
 ## 0. Reference systems
 
@@ -108,8 +129,7 @@ A/B is introduced here, with the standard Nerves mechanism (fwup env, rootfs A/B
 the Buildroot board stays single-root as it is.
 Android's partition table is fixed: don't repartition (the guard denies it). Keep the port's default of writing
 only `boot` (the second stage or `boot.img`) and `userdata`. Choose from android-ab-layouts.md:
-- **Sub-image in userdata** (FP2 style, most common).
-- **Split across boot / system / userdata** when partitions are big enough.
+the sub-image in `userdata` with boot A/B and rootfs A/B. A single boot slot is never chosen.
 Record the choice, the offsets and the device paths in the decision and in `port.yaml` `path.nerves_layout`.
 
 ## 4. Boot flow and slot switching
@@ -129,10 +149,11 @@ Whoever starts the kernel must know the Nerves active slot:
   fastboot handles `flash boot` and RAM boots. The disk must not be mounted on the host (the
   desktop may mount the boot FAT or the app partition): `ums-target.sh` refuses then; finish with
   `sync` and `udisksctl power-off -b /dev/sdX` before leaving UMS.
-- **lk2nd + extlinux:** the fwup `on-finish` rewrites `extlinux.conf` (or two labels `nerves_a`/`nerves_b`
-  with `default` switched) on a small FAT/ext partition inside the sub-image.
-- **Stock LK + boot.img:** a single boot.img with an initramfs that reads the fwup env
-  (`nerves_fw_active`) and mounts rootfs A or B, then `switch_root` to erlinit. Revert = env change.
+- **lk2nd + extlinux:** each boot slot (ext2) carries its own `extlinux/extlinux.conf`, kernel, DTB
+  and initramfs; fwup's MBR switch makes nested partition 1 the active one, which lk2nd reads.
+- **Stock bootloader only** (it starts one fixed `boot.img`): the kernel would have a single slot,
+  which is not accepted. Add a second stage (lk2nd or a chainloaded U-Boot) that reads the active
+  boot slot; when none is possible, stop and ask the user.
 - The **initramfs** (a small busybox cpio, like FP2's) does: mount the parent partition, map the
   sub-image (`losetup -P` / `kpartx -a`), pick the slot from the U-Boot-format env, mount squashfs,
   `switch_root /newroot /sbin/init`.

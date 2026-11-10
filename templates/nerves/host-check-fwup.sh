@@ -8,8 +8,8 @@
 #      images directory), or from stand-ins;
 #   2. runs `complete` into an image file, the way `mix firmware.image` does, and copies it to the
 #      start of a sparse file the size of the target partition;
-#   3. checks the nested MBR, the U-Boot-format environment, the boot slots (when they are FAT) and
-#      the squashfs;
+#   3. checks the nested MBR (boot A/B and rootfs A/B), the U-Boot-format environment, the boot
+#      slots' contents (when they are FAT) and the squashfs;
 #   4. runs upgrade, status, revert, validate, prevent-revert and factory-reset and checks each
 #      result, and that nothing is written past the layout (a vendor tail stays untouched).
 #
@@ -26,7 +26,7 @@ LIMIT_BLOCKS=${LIMIT_BLOCKS:-$TARGET_BLOCKS}
 MARGIN_BLOCKS=${MARGIN_BLOCKS:-2048}
 ENV_OFFSET=${ENV_OFFSET:-2048}
 ENV_BYTES=${ENV_BYTES:-8192}
-BOOT_FS=${BOOT_FS:-none}
+BOOT_FS=${BOOT_FS:-fat}
 WORK=${1:-$(mktemp -d /tmp/fwup-check.XXXXXX)}
 mkdir -p "$WORK"
 cd "$WORK"
@@ -139,13 +139,11 @@ boot_cat() {
 boot_has() { boot_cat /extlinux/extlinux.conf | grep -q -- "$1"; }
 boot_file_matches() { boot_cat "/$1" | cmp -s - "system/images/$1"; }
 
-if [ "$BOOT_FS" = fat ]; then
-    check "MBR slot A: boot $BOOT_A+$BOOT_COUNT, rootfs $ROOTFS_A+$ROOTFS_COUNT" \
-        test "$(part 0)/$(part 1)" = "$BOOT_A $BOOT_COUNT/$ROOTFS_A $ROOTFS_COUNT"
-    check "MBR app partition $APP+$APP_COUNT" test "$(part 2)" = "$APP $APP_COUNT"
-else
-    check "MBR slot A: rootfs $ROOTFS_A+$ROOTFS_COUNT" test "$(part 1)" = "$ROOTFS_A $ROOTFS_COUNT"
-fi
+# Boot A/B and rootfs A/B: nested partition 1 is the active boot slot, 2 the active rootfs, 3 the app
+check "boot A and boot B are two distinct slots" test -n "$BOOT_A" -a -n "$BOOT_B" -a "$BOOT_A" != "$BOOT_B"
+check "MBR slot A: boot $BOOT_A+$BOOT_COUNT, rootfs $ROOTFS_A+$ROOTFS_COUNT" \
+    test "$(part 0)/$(part 1)" = "$BOOT_A $BOOT_COUNT/$ROOTFS_A $ROOTFS_COUNT"
+check "MBR app partition $APP+$APP_COUNT" test "$(part 2)" = "$APP $APP_COUNT"
 check "env nerves_fw_active=a" test "$(env_get nerves_fw_active)" = a
 check "env a.nerves_fw_version=0.0.1" test "$(env_get a.nerves_fw_version)" = 0.0.1
 check "env a.nerves_fw_validated=1" test "$(env_get a.nerves_fw_validated)" = 1
@@ -173,6 +171,7 @@ check "revert refused with nothing to revert to" \
 # --- upgrade to B -----------------------------------------------------------------------
 fwup -q -U -a -i v2.fw -t upgrade -d target.img
 check "upgrade wrote slot B into the MBR" test "$(part 1)" = "$ROOTFS_B $ROOTFS_COUNT"
+check "upgrade switched the boot slot to B too" test "$(part 0)" = "$BOOT_B $BOOT_COUNT"
 check "app partition unchanged" test "$(part 2)" = "$APP $APP_COUNT"
 check "env active=b, b version 0.0.2, b not yet validated" \
     test "$(env_get nerves_fw_active)/$(env_get b.nerves_fw_version)/$(env_get b.nerves_fw_validated)" = "b/0.0.2/0"
@@ -186,8 +185,8 @@ check "validate sets b.nerves_fw_validated" test "$(env_get b.nerves_fw_validate
 
 # --- revert to A and back ---------------------------------------------------------------
 fwup_ops revert >/dev/null
-check "revert switched MBR and env to A" \
-    test "$(part 1)/$(env_get nerves_fw_active)" = "$ROOTFS_A $ROOTFS_COUNT/a"
+check "revert switched boot, rootfs and env to A" \
+    test "$(part 0)/$(part 1)/$(env_get nerves_fw_active)" = "$BOOT_A $BOOT_COUNT/$ROOTFS_A $ROOTFS_COUNT/a"
 fwup_ops revert >/dev/null
 check "revert again goes back to B" \
     test "$(part 1)/$(env_get nerves_fw_active)" = "$ROOTFS_B $ROOTFS_COUNT/b"

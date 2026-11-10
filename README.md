@@ -35,6 +35,11 @@ way; off by default).
 | **G2** | Which partitions may be written: you type `allow writes boot userdata …` once |
 | **G3** | What becomes public |
 
+The resulting system follows the [Nerves porting guide](https://hexdocs.pm/nerves/porting-guide.html)
+and has the layout of the official systems, inside `userdata`: U-Boot env, boot A, boot B, rootfs A,
+rootfs B, application data. The kernel is updated and reverted with its root filesystem; a single
+boot slot is refused by `tools/check-nerves-system.sh`.
+
 Everything else runs without stopping, because it is checked by code instead of by asking:
 scouting is read-only and runs in parallel, boots are proven from RAM and judged from the host,
 and after G2 a write to an allowlisted, backed-up partition of *this* device needs no further
@@ -54,6 +59,7 @@ Details: [`skills/port-playbook/SKILL.md`](skills/port-playbook/SKILL.md) and
 | `check-host.sh`, `detect-devices.sh`, `new-port.sh` | Host prerequisites, attached phones in any mode, a new port workspace |
 | `recon/collect.sh`, `prior-art.sh` | Read-only device recon; a scan of pmaports, lk2nd and the family for the device and SoC |
 | `scaffold-system.sh` | Ranks the existing Nerves systems by similarity and scaffolds the port's system from the closest one |
+| `check-nerves-system.sh` | Checks a Nerves system against the Nerves porting guide and the layout rule: boot A/B and rootfs A/B, never a single boot slot |
 | `backup-partitions.sh` | Partition dumps verified by sha256 on the device and on the host |
 | `safe-flash.sh` | Guarded `boot` / `flash` / `unlock`: serial, product, forbidden list, allowlist, backup, size, image format |
 | `await-boot.sh`, `usbnet.sh`, `return-to-flash.sh` | Boot a test image and judge it from the host; USB networking; a key-free way back to the flash mode |
@@ -215,4 +221,4 @@ says how). `tools/ums-target.sh` finds the disk and refuses while anything on it
   gets smarter with every device.
 
 Tests: `tests/test_device_guard.sh`, `tests/test_kit_next.sh`, `tests/test_hooks.sh`,
-`tests/test_shims.sh`.
+`tests/test_shims.sh`, `tests/test_nerves_check.sh`.

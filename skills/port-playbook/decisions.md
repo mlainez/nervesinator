@@ -45,6 +45,12 @@ Can the stock bootloader be unlocked (or does it already accept unsigned images)
                            └─ no  → Use `boot` as the experiment partition for every test boot image.
 ```
 
+**Nerves needs a boot slot per side.** "No second stage needed" above holds for test images and
+the Buildroot branch. The Nerves system keeps its kernel in boot A/B inside `userdata`
+(`nerves-system` android-ab-layouts.md), which the stock bootloader cannot read: plan a second
+stage (lk2nd, or a chainloaded U-Boot) for S4 even when the stock bootloader boots a mainline
+kernel fine.
+
 **Escape route rule:** keeping Android bootable is not a goal; keeping the flash mode and a return
 to stock possible is (see `device-safety`). The safety net is `aboot` (with the rest of class A,
 never written): it always brings the phone into its flash mode (fastboot on most Qualcomm phones,
