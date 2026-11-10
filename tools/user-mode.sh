@@ -6,12 +6,15 @@
 #   tools/user-mode.sh autonomous off                         end it
 #   tools/user-mode.sh override <target…> [--minutes N]       overrule a safety invariant (60 min)
 #   tools/user-mode.sh override off                           end it
+#   tools/user-mode.sh writes <partition…> [--no-backup <partition…>]
+#                                                             partitions the port may write without asking
+#   tools/user-mode.sh writes off                             ask for every write again
 #   tools/user-mode.sh hands off | hands on                   freeze / resume device work
 #   tools/user-mode.sh status
 # Acts on the active port (ports/.active). In Claude Code the same words work typed as a prompt.
 set -uo pipefail
 KIT=$(cd "$(dirname "$0")/.." && pwd)
-[ $# -ge 1 ] || { sed -n '2,12p' "$0"; exit 2; }
+[ $# -ge 1 ] || { sed -n '2,15p' "$0"; exit 2; }
 python3 -I - "$KIT" "$@" <<'EOF'
 import importlib.util, json, os, sys
 kit, args = sys.argv[1], sys.argv[2:]
@@ -48,6 +51,21 @@ elif args[:1] == ["override"] and len(args) > 1:
     o = g.write_override(ports, targets, minutes, typed)
     print("override of %s until %s: each command naming them still asks you, with its consequences"
           % (", ".join(targets), o["expires_at"]))
+elif cmd == ["writes", "off"]:
+    print("write allowlist cleared" if g.clear_allowlist(ports) else "no write allowlist was set")
+elif args[:1] == ["writes"] and len(args) > 1:
+    rest, lost = args[1:], []
+    if "--no-backup" in rest:
+        i = rest.index("--no-backup")
+        rest, lost = rest[:i], rest[i + 1:]
+    allow, refused = g.write_allowlist(ports, rest, lost, typed, g.forbidden_names(kit))
+    if refused:
+        print("left out (forbidden list, they need an override): " + ", ".join(refused))
+    if not allow:
+        sys.exit("nothing was set")
+    print("writes allowed without asking: %s%s" % (
+        ", ".join(allow["partitions"]),
+        " (no backup needed for: %s)" % ", ".join(allow["no_backup"]) if allow["no_backup"] else ""))
 elif cmd == ["hands", "off"]:
     g.set_hands_off(ports, typed)
     print("hands off: every device command is denied until `tools/user-mode.sh hands on`")
@@ -58,6 +76,7 @@ elif cmd == ["status"]:
     print("full autonomy:", json.dumps(g.valid_grant(ports)) if g.valid_grant(ports) else "no")
     print("override:", json.dumps(g.valid_override(ports)) if g.valid_override(ports) else "no")
     print("hands off:", "yes" if g.hands_off_active(ports) else "no")
+    print("write allowlist:", json.dumps(g.read_allowlist(ports)) if g.read_allowlist(ports) else "none")
 else:
     sys.exit("unknown: %s (run without arguments for the usage)" % " ".join(args))
 EOF

@@ -9,8 +9,9 @@
 #   tools/safe-flash.sh --port <id> [--execute] unlock [flashing|oem]      # bootloader unlock (wipes data)
 #
 # Checks: device present by serial and alone in its mode, product matches port.yaml, partition not
-# forbidden, partition allowlisted, verified backup present (or its loss accepted by the user in
-# safety.accepted_loss, for userdata), image fits, boot image magic.
+# forbidden, partition in the user's write allowlist (they type `allow writes <partition…>`),
+# verified backup present (or its loss accepted by the user: `… no backup <partition>`), image
+# fits, boot image magic.
 # The partition size comes from port.yaml device.partition_sizes (bytes), else from the M1 recon
 # (dossier/raw/by-name.txt or partnames-sysfs.txt + partitions.txt), else from the backup, which is
 # right only when the backup is a full dump, not a stock image.
@@ -176,6 +177,17 @@ sys.exit(0 if o and sys.argv[3].lower() in o["targets"] else 1)
 EOF
 }
 
+# Is this partition in the user's write allowlist, under the given key (partitions | no_backup)?
+allowlisted() { # key partition
+  python3 -I - "$KIT/hooks" "$KIT/ports" "$PORT" "$1" "$2" <<'EOF'
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location("g", os.path.join(sys.argv[1], "autonomy_grant.py"))
+g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
+a = g.read_allowlist(sys.argv[2], sys.argv[3])
+sys.exit(0 if a and g.slotless(sys.argv[5]) in (a.get(sys.argv[4]) or []) else 1)
+EOF
+}
+
 check_partition() { # partition
   local part=$1 line
   # The user's override turns these three checks into warnings: they decided, informed, to do it
@@ -185,8 +197,8 @@ check_partition() { # partition
     echo "  ⚠️  '$part' is named in the user's override: the checks below warn instead of refusing"
   fi
   forbidden "$part" && $fail "'$part' is on the forbidden list (tools/lib/forbidden-partitions.txt)" || ok "'$part' is not forbidden"
-  cfg safety.writable_partitions | grep -qix "$part" && ok "'$part' is in safety.writable_partitions" \
-    || $fail "'$part' is not in safety.writable_partitions"
+  allowlisted partitions "$part" && ok "'$part' is in the user's write allowlist" \
+    || $fail "'$part' is not in the user's write allowlist (the user types: allow writes <partition…>)"
   if [ -f "$P/backups/$part.img" ]; then
     line=$(cd "$P/backups" && grep -E "[ *]$part\.img$" SHA256SUMS 2>/dev/null)
     if [ -n "$line" ] && (cd "$P/backups" && echo "$line" | sha256sum -c --quiet - >/dev/null 2>&1); then
@@ -194,10 +206,10 @@ check_partition() { # partition
     else
       $fail "backup backups/$part.img does not verify against SHA256SUMS"
     fi
-  elif cfg safety.accepted_loss | grep -qix "$part"; then
-    ok "no backup of '$part': its loss was accepted by the user (safety.accepted_loss)"
+  elif allowlisted no_backup "$part"; then
+    ok "no backup of '$part': the user accepted its loss (allow writes … no backup $part)"
   else
-    $fail "no backup: backups/$part.img (or, for userdata, the user's accepted loss in safety.accepted_loss)"
+    $fail "no backup: backups/$part.img (or the user's accepted loss: allow writes … no backup $part)"
   fi
 }
 
@@ -237,7 +249,7 @@ if [ $fails -gt 0 ]; then
   echo "REFUSED: $fails check(s) failed."; echo "$(date -Is) REFUSED $OP $* ($fails failed)" >> "$LOG"; exit 1
 fi
 if [ $EXEC = 0 ]; then
-  echo "dry run: all checks passed. Re-run with --execute after the user approved this exact command."; exit 0
+  echo "dry run: all checks passed. Re-run with --execute."; exit 0
 fi
 echo "$(date -Is) EXECUTE ${CMD[*]}" >> "$LOG"
 "${CMD[@]}" 2>&1 | tee -a "$LOG"; rc=${PIPESTATUS[0]}

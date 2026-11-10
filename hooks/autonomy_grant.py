@@ -103,7 +103,8 @@ def hands_off_active(ports_dir):
 # name a target; it never allows them silently, even under the full-autonomy grant.
 OVERRIDE_NAME = ".override"
 DEFAULT_OVERRIDE_MINUTES = 60
-PROTECTED_NAMES = (GRANT_NAME, HANDS_OFF_NAME, OVERRIDE_NAME)
+ALLOWLIST_NAME = ".write-allowlist"
+PROTECTED_NAMES = (GRANT_NAME, HANDS_OFF_NAME, OVERRIDE_NAME, ALLOWLIST_NAME)
 
 
 def override_path(ports_dir):
@@ -143,4 +144,71 @@ def valid_override(ports_dir):
             return None
         return override if override.get("targets") else None
     except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+# The user's write allowlist: `allow writes <partition…> [no backup <partition…>]` names the
+# partitions the port may write. Only the prompt hook (or tools/user-mode.sh) writes it. The guard
+# then allows, without asking, a write to a listed partition that has a backup in
+# backups/SHA256SUMS or whose loss the user accepted (`no backup`); safe-flash.sh reads the same
+# file. Forbidden partitions are never listed: they need an override.
+def allowlist_path(ports_dir, port=None):
+    port = port or active_port(ports_dir)
+    return os.path.join(ports_dir, port, ALLOWLIST_NAME) if port else None
+
+
+def forbidden_names(kit_dir):
+    names = set()
+    try:
+        with open(os.path.join(kit_dir, "tools", "lib", "forbidden-partitions.txt")) as f:
+            for line in f:
+                line = line.split("#", 1)[0].strip().lower()
+                if line:
+                    names.add(line)
+    except OSError:
+        pass
+    return names
+
+
+def slotless(name):
+    name = name.lower().strip()
+    return name[:-2] if name.endswith(("_a", "_b")) else name
+
+
+def write_allowlist(ports_dir, partitions, no_backup, prompt, forbidden=()):
+    """Returns (allowlist, refused): refused holds the forbidden names that were left out."""
+    path = allowlist_path(ports_dir)
+    if not path or not os.path.isdir(os.path.dirname(path)):
+        return None, []
+    wanted = list(dict.fromkeys(slotless(p) for p in list(partitions) + list(no_backup)))
+    refused = [p for p in wanted if p in forbidden]
+    kept = [p for p in wanted if p not in forbidden]
+    if not kept:
+        return None, refused
+    allow = {"partitions": kept,
+             "no_backup": [p for p in dict.fromkeys(slotless(n) for n in no_backup) if p in kept],
+             "granted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+             "typed_by_user": prompt}
+    with open(path, "w") as f:
+        json.dump(allow, f, indent=2)
+    return allow, refused
+
+
+def clear_allowlist(ports_dir):
+    path = allowlist_path(ports_dir)
+    if path and os.path.exists(path):
+        os.remove(path)
+        return True
+    return False
+
+
+def read_allowlist(ports_dir, port=None):
+    path = allowlist_path(ports_dir, port)
+    if not path:
+        return None
+    try:
+        with open(path) as f:
+            allow = json.load(f)
+        return allow if isinstance(allow.get("partitions"), list) and allow["partitions"] else None
+    except (OSError, ValueError, AttributeError):
         return None

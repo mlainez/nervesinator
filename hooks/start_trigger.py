@@ -21,7 +21,14 @@ AUTONOMY = {"autonomous on": "unattended", "/autonomous on": "unattended", "i'm 
             "im away": "unattended", "autonomous off": "attended", "/autonomous off": "attended",
             "i'm back": "attended", "im back": "attended"}
 OVERRIDE_RE = re.compile(r"^/?override\s+(?P<targets>.+?)(?:\s+for\s+(?P<minutes>\d+)\s*m)?$", re.I | re.S)
-FULL_RE = re.compile(r"^/?autonomous\s+full\b\s*(?P<goal>.*?)(?:\s+for\s+(?P<hours>\d+)\s*h)?$", re.I | re.S)
+ALLOW_RE = re.compile(r"^/?allow\s+writes?\s+(?P<parts>.+?)"
+                      r"(?:[,;]?\s+(?:no|without)\s+backups?\s+(?:of\s+)?(?P<lost>.+))?$", re.I | re.S)
+FULL_RE =re.compile(r"^/?autonomous\s+full\b\s*(?P<goal>.*?)(?:\s+for\s+(?P<hours>\d+)\s*h)?$", re.I | re.S)
+
+
+def names(text):
+    """Partition names from the user's words: split on spaces, commas and "and"."""
+    return [t for t in re.split(r"[\s,]+", (text or "").lower()) if t and t != "and"]
 
 
 def context(text):
@@ -69,6 +76,31 @@ def main():
         else:
             context("The user asked for an override, but there is no active port or no target: "
                     "nothing was set. The form is: override <target…> [for <N>m].")
+    elif prompt in ("allow writes off", "/allow writes off", "allow writes none"):
+        cleared = autonomy_grant.clear_allowlist(PORTS)
+        context("The user cleared their write allowlist%s: the guard asks for every device write "
+                "again." % ("" if cleared else " (none was set)"))
+    elif ALLOW_RE.match(raw):
+        m = ALLOW_RE.match(raw)
+        allow, refused = autonomy_grant.write_allowlist(
+            PORTS, names(m.group("parts")), names(m.group("lost")), raw,
+            autonomy_grant.forbidden_names(KIT))
+        note = (" Left out, because they are on the forbidden list and need an override instead: "
+                "%s." % ", ".join(refused)) if refused else ""
+        if allow:
+            context("The user set the write allowlist of the active port: %s%s.%s Tell the user "
+                    "exactly what was set. From now on the guard allows, without asking, a write to "
+                    "one of these partitions when it has a backup in backups/SHA256SUMS%s and the "
+                    "command addresses this port's device; tools/safe-flash.sh reads the same list. "
+                    "Unlocks, wipes, raw writes and other partitions still ask."
+                    % (", ".join(allow["partitions"]),
+                       (" (no backup needed for: %s)" % ", ".join(allow["no_backup"]))
+                       if allow["no_backup"] else "", note,
+                       " or is listed as no backup" if allow["no_backup"] else ""))
+        else:
+            context("The user asked to allow writes, but nothing was set (no active port, or only "
+                    "forbidden names).%s The form is: allow writes <partition…> [no backup "
+                    "<partition…>]." % note)
     elif prompt in ("hands off", "/hands off"):
         if autonomy_grant.set_hands_off(PORTS, raw):
             context("HANDS OFF: the user is working on the device. The guard now denies every device "

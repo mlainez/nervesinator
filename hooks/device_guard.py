@@ -14,6 +14,11 @@ Decisions:
           unlock, wipe); forces a human confirmation.
   (none)- everything else; normal permission rules apply.
 
+The user's write allowlist (`allow writes <partition…>`, typed by the user) turns the ask for a
+write to a listed partition into allow when the partition has a backup in backups/SHA256SUMS (or
+the user accepted its loss) and the command addresses the active port's device. Unlocks, wipes
+and raw writes keep asking.
+
 A full-autonomy grant (hooks/autonomy_grant.py), created only from the user's own typed
 `autonomous full <goal>` (or tools/user-mode.sh, run by the user), turns ask into allow for the active port until it is revoked or expires.
 Agents can never create or edit that grant: any command or file tool touching it is denied.
@@ -78,10 +83,15 @@ class Verdict:
         self.reasons = []
         self.hard = False        # a deny no user override can lift
         self.overridden = False  # lowered to ask by the user's override
+        self.asks = []           # per ask: the partition it writes, or None when it is not a partition write
+        self.serials = set()     # the -s serials of the fastboot commands
+        self.ports = set()       # the --port of the safe-flash.sh commands
 
-    def add(self, level, reason):
+    def add(self, level, reason, part=None):
         self.level = max(self.level, level)
         self.reasons.append(reason)
+        if level == ASK:
+            self.asks.append(part)
 
 
 SPLIT_RE = re.compile(r"\|\||&&|;|\||\n")
@@ -128,10 +138,13 @@ def check_fastboot(args, v):
                  "--header-version", "--os-version", "--os-patch-level", "--dtb"):
             if a == "-s":
                 serial = True
+                if i + 1 < len(args):
+                    v.serials.add(args[i + 1])
             i += 2
             continue
         if a.startswith("-s") and len(a) > 2:
             serial = True
+            v.serials.add(a[2:])
         elif a == "-w":
             v.add(ASK, "fastboot -w wipes userdata and cache.")
         elif not a.startswith("-"):
@@ -152,8 +165,9 @@ def check_fastboot(args, v):
             v.add(DENY, "Partition '%s' is on the forbidden list (bootloader chain, calibration "
                         "or per-device data). Writing it can hard-brick the device." % part)
         else:
-            v.add(ASK, "fastboot %s %s modifies the device. Check: verified backup of '%s' exists "
-                       "and it is in safety.writable_partitions." % (sub, part, part))
+            v.add(ASK, "fastboot %s %s modifies the device and '%s' is not covered by the user's "
+                       "write allowlist (a listed partition with a backup; the user types: allow "
+                       "writes <partition…>)." % (sub, part, part), part)
         if not serial:
             v.add(DENY, "Device writes must address the device by serial: add `-s <serial>`.")
     elif sub in ("flashall", "update"):
@@ -213,8 +227,8 @@ def check_heimdall(args, v):
         elif is_forbidden(name):
             v.add(DENY, "Partition '%s' is on the forbidden list." % name)
         else:
-            v.add(ASK, "heimdall flash %s modifies the device (no RAM boot on Samsung download mode). "
-                       "Check the backup and the escape route." % name)
+            v.add(ASK, "heimdall flash %s modifies the device and is not covered by the user's write "
+                       "allowlist (allow writes <partition…>)." % name, name)
     if not parts:
         v.add(ASK, "heimdall flash")
 
@@ -270,7 +284,8 @@ def classify_block_target(path, v, remote):
         if is_forbidden(base):
             v.add(DENY, "Block write to forbidden partition '%s'." % base)
         else:
-            v.add(ASK, "Raw write to device partition '%s'. Check backup + allowlist." % base)
+            v.add(ASK, "Raw write to device partition '%s', not covered by the user's write "
+                       "allowlist." % base, base)
         return
     if re.match(r"^mmcblk\d+boot\d+$", base) or base.endswith("rpmb"):
         v.add(DENY, "%s holds the boot ROM's first-stage loader (or RPMB). Never written." % p)
@@ -307,17 +322,20 @@ def check_fwup(args, v):
               % (target or "auto-detected"))
 
 
-def safe_flash_op(args):
-    """The operation of a safe-flash.sh command line (its first non-option word)."""
-    i = 0
+def safe_flash_words(args, v):
+    """The non-option words of a safe-flash.sh command line: the operation, then its arguments."""
+    words, i = [], 0
     while i < len(args):
         if args[i] in ("--port", "--mode"):
+            if args[i] == "--port" and i + 1 < len(args):
+                v.ports.add(args[i + 1])
             i += 2
         elif args[i].startswith("-"):
             i += 1
         else:
-            return args[i]
-    return ""
+            words.append(args[i])
+            i += 1
+    return words
 
 
 HEREDOC_RE = re.compile(r"^(?P<head>.*?)<<-?\s*(?P<q>['\"]?)(?P<tag>[A-Za-z_][A-Za-z0-9_]*)(?P=q)(?P<tail>.*)$")
@@ -352,9 +370,9 @@ def analyse(cmd, v, depth=0):
         return
     if depth == 0:
         if any(n in cmd for n in autonomy_grant.PROTECTED_NAMES + (USER_TOOL,)):
-            v.add(DENY, "The autonomy grant, the hands-off marker and user overrides are set only by "
-                        "the user: their own words (autonomous full, hands off / hands on, override) "
-                        "or tools/user-mode.sh run by them.")
+            v.add(DENY, "The autonomy grant, the hands-off marker, user overrides and the write "
+                        "allowlist are set only by the user: their own words (autonomous full, hands "
+                        "off / hands on, override, allow writes) or tools/user-mode.sh run by them.")
             v.hard = True
         cmd = strip_file_heredocs(cmd)
     remote_whole = bool(REMOTE_RE.search(cmd))
@@ -399,8 +417,10 @@ def analyse(cmd, v, depth=0):
         elif prog == "safe-flash.sh":
             # "boot" is a RAM-only fastboot boot, allowed like a plain `fastboot boot`;
             # every other operation writes to the device
-            if "--execute" in args and safe_flash_op(args) != "boot":
-                v.add(ASK, "safe-flash.sh --execute will write to the device: " + " ".join(args))
+            words = safe_flash_words(args, v)
+            if "--execute" in args and words[:1] != ["boot"]:
+                v.add(ASK, "safe-flash.sh --execute will write to the device: " + " ".join(args),
+                      words[1] if words[:1] == ["flash"] and len(words) > 1 else None)
         elif prog == "await-boot.sh":
             pass  # runs only `safe-flash.sh --execute boot` (RAM) and read-only USB/fastboot/adb probes
 
@@ -452,6 +472,52 @@ def apply_override(cmd, v, ports_dir):
     return override
 
 
+def port_serials(port_dir):
+    """The serials port.yaml gives the device (the vendor's and the second stage's)."""
+    spec = importlib.util.spec_from_file_location(
+        "portcfg", os.path.join(PROJECT_DIR, "tools", "lib", "portcfg.py"))
+    portcfg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(portcfg)
+    try:
+        device = portcfg.parse(os.path.join(port_dir, "port.yaml")).get("device") or {}
+    except OSError:
+        return set()
+    return {str(device[k]) for k in ("serial", "second_stage_serial") if device.get(k)}
+
+
+def backed_up(port_dir, part):
+    """True when backups/SHA256SUMS lists <part>.img (safe-flash.sh verifies the hash itself)."""
+    names = {part.lower() + ".img", norm_part(part) + ".img"}
+    try:
+        with open(os.path.join(port_dir, "backups", "SHA256SUMS")) as f:
+            return any(line.split()[-1].lstrip("*").lower() in names for line in f if line.split())
+    except OSError:
+        return False
+
+
+def apply_allowlist(v, ports_dir):
+    """ASK becomes ALLOW when every ask is a write to a partition the user allowlisted, with a
+    backup or an accepted loss, addressed to the active port's device."""
+    if v.level != ASK or v.overridden or not v.asks or None in v.asks:
+        return None
+    allow = autonomy_grant.read_allowlist(ports_dir)
+    port = autonomy_grant.active_port(ports_dir)
+    if not allow or not port or v.ports - {port}:
+        return None
+    port_dir = os.path.join(ports_dir, port)
+    if v.serials - port_serials(port_dir):
+        return None
+    listed = {norm_part(p) for p in allow["partitions"]}
+    lost = {norm_part(p) for p in allow.get("no_backup") or []}
+    for part in v.asks:
+        n = norm_part(part)
+        if n not in listed or not (n in lost or backed_up(port_dir, part)):
+            return None
+    v.level = 0
+    v.reasons.append("allowed by the user's write allowlist (%s)" % ", ".join(sorted(listed)))
+    return allow
+
+
 def apply_grant(v, ports_dir):
     """ASK becomes ALLOW under a valid full-autonomy grant; returns the grant used, if any."""
     if v.level != ASK or v.overridden:
@@ -470,6 +536,8 @@ def check_cli(cmd, ports_dir=PORTS_DIR):
     if apply_override(cmd, v, ports_dir):
         log("ask-override", cmd, v.reasons)
     apply_hands_off(cmd, v, ports_dir)
+    if apply_allowlist(v, ports_dir):
+        log("allow-allowlist", cmd, v.reasons)
     if apply_grant(v, ports_dir):
         log("allow-autonomy", cmd, v.reasons)
     label = {0: "ALLOW", ASK: "ASK", DENY: "DENY"}[v.level]
@@ -495,8 +563,8 @@ def main():
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse", "permissionDecision": "deny",
                 "permissionDecisionReason": "[device-guard] The autonomy grant, the hands-off "
-                                            "marker and user overrides are set only by the user's "
-                                            "own words."}}))
+                                            "marker, user overrides and the write allowlist are "
+                                            "set only by the user's own words."}}))
         return 0
     if data.get("tool_name") != "Bash":
         return 0
@@ -510,6 +578,8 @@ def main():
     if apply_override(cmd, v, PORTS_DIR):
         log("ask-override", cmd, v.reasons)
     apply_hands_off(cmd, v, PORTS_DIR)
+    if apply_allowlist(v, PORTS_DIR):
+        log("allow-allowlist", cmd, v.reasons)
     if apply_grant(v, PORTS_DIR):
         log("allow-autonomy", cmd, v.reasons)
     if v.level == 0:
