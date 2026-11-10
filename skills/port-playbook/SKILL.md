@@ -1,71 +1,64 @@
 ---
 name: port-playbook
-description: The milestone map for porting mainline Linux, Buildroot and Nerves to an Android device (M0 to M12), with the risk level, tasks, exit criteria and gate of each milestone, plus the decision tree for kernel and bootloader paths. Load it when picking the next task, at a gate, or when planning.
+description: The map of a port from a stock Android device to a published Nerves system - six stages (S1 Scout, S2 Open, S3 Boot from RAM, S4 Nerves, S5 Peripherals, S6 Share), the three gates where the user decides (G1 costs, G2 write allowlist, G3 publish), what runs in parallel, the optional Buildroot branch, and the decision trees for the kernel and the boot path. Load it when planning, at a gate, or when tools/kit-next.sh output needs explaining.
 user-invocable: false
 ---
 
 # Porting playbook
 
-The port is a ladder. Every rung is a **milestone** that ends with a **gate**: a stop where the
-user checks what happened, learns the lesson and says "go" before anything riskier happens. The
-ladder is ordered so that **risk only goes up after the safety net has been checked**.
+`tools/kit-next.sh` says where the port stands and which steps are ready; it reads the evidence
+on disk, so nothing here is ticked by hand. This skill says what the stages mean.
 
-Details for each milestone (tasks, commands, exit criteria, lesson topics): [milestones.md](milestones.md).
-Decision trees (kernel source, bootloader path, rootfs placement): [decisions.md](decisions.md).
-
-## Risk levels
-
-Every task carries one `risk-*` label. The level of a milestone is that of its riskiest task.
-
-| Label | Meaning | Examples | Who may run it |
-|---|---|---|---|
-| `risk-green` | Read-only, or host only | `getprop`, cloning pmaports, building | Any agent |
-| `risk-yellow` | Temporary: a reboot undoes it | `fastboot boot`, rebooting into a bootloader or download mode | The orchestrator, after telling the user |
-| `risk-orange` | Writes to a partition that can be replaced and **has a verified backup** | flashing `boot`, `recovery` or `userdata`, unlocking (wipes data) | `flash-guardian`, after an explicit user yes |
-| `risk-red` | Bootloader chain, irreversible fuses, partition table, radio calibration | `aboot`, `sbl1`, `preloader`, `tz`, `efs`, PIT/GPT rewrites, relocking | **Never automated.** It needs an ADR, the user must type the command, and the unbrick kit must be tested |
+Each stage has its own skill, backed by its tools. Steps and their evidence: [stages.md](stages.md).
+Decision trees (kernel source, boot path, display console): [decisions.md](decisions.md).
 
 ## The ladder
 
-| # | Milestone | Risk | What we get at the end |
+| Stage | Skill | What we get | Device risk |
 |---|---|---|---|
-| M0 | Setup & safety briefing | green | Host tools ready, workspace + backlog created, learner profile, safety rules explained, root preference recorded |
-| M1 | Reconnaissance | green | `dossier/` with SoC, board, partitions, boot image format, kernel config, display/touch/WiFi/modem chips |
-| M2 | Prior art & feasibility | green | `dossier/prior-art.md`, kernel path chosen (ADR), go/no-go verdict |
-| M3 | Unbrick kit | green / yellow | Stock firmware located and downloaded, the flash tool works, every boot mode key combo tested, recovery procedure written |
-| M4 | Bootloader unlock | orange | Bootloader reports unlocked; the user knows what they gave up (warranty, data, KNOX fuse…) |
-| M5 | Full backup | green / yellow (orange if the root shell needs a flash) | Every partition except `userdata`/`system` dumped with sha256, verified, stored safely |
-| M6 | Boot path proven | yellow (orange if a 2nd stage has to be written) | We can load our own kernel without touching the bootloader chain: `fastboot boot`, lk2nd, or an experiment partition |
-| M7 | First light | yellow | Our mainline kernel prints its boot log on the phone screen |
-| M8 | Rescue shell | yellow | A Buildroot initramfs running from RAM with USB networking (unudhcpd) and a shell over ssh/telnet; hardware inventory under Linux |
-| M9 | Persistent Buildroot | orange | A Buildroot system in `buildroot-android` style with a single root filesystem (no A/B), booting from flash, reflashable, rescue path kept |
-| M10 | Hardware enablement | orange | One task per peripheral (display, touch, WiFi, modem, audio, battery…): firmware and userspace daemons packaged |
-| M11 | Nerves system | orange | `nerves_system_<id>`, where A/B first appears (the standard Nerves fwup scheme) in an Android partition, `mix firmware`, first flash, `mix upload` and revert tested |
-| M12 | Share it | green | Docs, a PR to buildroot-android, the learner's journal, a write-up |
+| **S1 Scout** | `scout` | The dossier: device facts, prior art, the closest existing Nerves system, the unbrick kit, the unlock plan and its costs | none: read-only, key-free reboots |
+| → **G1** | | *The user says go and accepts the irreversible costs of the unlock* | |
+| **S2 Open** | `open` | Bootloader unlocked, every partition that matters dumped and verified | the unlock wipes the phone (always asked) |
+| → **G2** | | *The user types the write allowlist (`allow writes boot userdata …`)* | |
+| **S3 Boot from RAM** | `boot-test` | A boot path, our kernel's first light, a rescue shell over USB, the Linux inventory | RAM boots; a second stage flashed to `boot` |
+| **S4 Nerves** | `nerves-system` | A Nerves system scaffolded from the closest existing one, A/B updates inside Android partitions, upload and revert proven, charging | writes to allowlisted partitions |
+| **S5 Peripherals** | `peripherals` | The peripherals the user wants, one backlog task each | same |
+| **S6 Share** | `share` | README, one-command installer, release | none |
+| → **G3** | | *The user agrees to what becomes public; then the release and the row in awesome-nerves-systems* | |
+
+## Why only three gates
+
+A gate is where only the user can decide. Everything else is checked by code and recorded as
+evidence, so it does not stop:
+
+- **G1** is the last moment to walk away for free: after it, the unlock wipes the phone and may
+  blow a fuse.
+- **G2** is where the user decides which partitions may be written. After it, a write to one of
+  them, backed up, addressed to this device, runs without asking; a mistake there is undone from
+  the flash mode with the backup.
+- **G3** is where the work leaves this machine.
+
+Between gates the guard still **asks** for what is not covered (an unlock, a wipe, a raw block
+write, a partition outside the allowlist) and still **denies** the bootloader chain, calibration
+data, relocking and repartitioning (`device-safety`). The user can overrule a denial for their own
+device (`override <target…>`), informed of the cost.
 
 ## Rules for moving along the ladder
 
-1. **One milestone at a time.** Finish its tasks (Done, or Done with "N/A because…" in the notes),
-   then run its `GATE` task.
-2. **A gate is a conversation.** Show: what we achieved (with proof: a log line, a photo, a hash),
-   what we learned (the milestone lesson, see the `teach` skill), what the next milestone will
-   risk and how we will undo it. Ask for "go". Record the answer in the gate task notes and add
-   the milestone to `gates_passed` in `port.yaml`.
-3. **Going back is normal.** If M7 fails because of the kernel choice, reopen M2 tasks. Record why
-   in a decision.
-4. **Skipping is allowed only when the step is truly not needed**, for example M6 with an
-   already-open U-Boot. Write why.
-5. **Hard prerequisites** (the gate refuses otherwise):
-   - M4 needs M3 done (an unbrick kit before the first change that cannot be undone).
-   - Any `risk-orange` task needs M5 done and the target partition listed in
-     `safety.writable_partitions`. The one exception is the M5 root shell: its target's backup is
-     the matching image from the stock firmware, and the user allowlists it for that task.
-   - M9 needs M8 (never make a persistent system you cannot get a shell into).
-   - M11 needs M9 and a working list of everything the Buildroot init scripts do.
-   - Long or unattended device work needs charging proven (the first M10 task); until then device
-     sessions stay short and the battery guard rails of the `autonomy` skill apply.
-6. **Every boot experiment keeps an escape route.** Before a boot test, write down how we get back:
-   which key combo, which command, which backup image.
-7. **Buildroot has a single root, A/B comes with Nerves.** M7 to M10 use one root filesystem
-   (initramfs, an image on `userdata`, or `system`) and never an A/B layout, a slot switcher or a
-   custom update scheme. A/B appears at M11 only, through the standard Nerves mechanism (fwup env,
-   rootfs A/B, an app partition, e.g. a sub-image in `userdata`).
+1. **Run what is ready, in parallel.** The S1 steps after recon are independent: give them to
+   several `researcher` agents in one message. The S4 scaffold and kernel build start on the host
+   as soon as G1 passed, while S2 and S3 use the device.
+2. **Temporary before permanent.** Each boot path is proven from RAM before anything is written
+   for good; without a RAM boot, `boot` is the experiment partition.
+3. **Start from the family.** The closest existing Nerves system is the template
+   (`nerves-system` family.md); the port changes what its hardware forces and says which.
+4. **Straight to Nerves.** The rescue shell is the last Buildroot-only step. A persistent
+   buildroot-android board is an optional branch (`path.buildroot_branch: true`,
+   `buildroot-port`), taken when the user wants to contribute one.
+5. **Every boot experiment keeps a way back**: the command, the key combo, the backup image.
+6. **Going back is normal.** If first light fails because of the kernel choice, change
+   `path.kernel_*` and say why in a decision; the evidence model follows.
+7. **S5 never blocks S6.** USB networking, updates and charging make a publishable system;
+   peripherals keep landing in later releases.
+8. **Long or unattended device work needs charging proven** (`checks.charging`); until then
+   device sessions stay short (`autonomy`, battery guard rails).

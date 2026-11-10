@@ -1,8 +1,3 @@
----
-name: prior-art-search
-description: How to find existing Linux work for a device or SoC - cloning and grepping pmaports (deviceinfo, kernel APKBUILDs and configs, firmware packages), the postmarketOS wiki, mainline device trees, SoC mainline communities, lk2nd/U-Boot support, LineageOS device and kernel trees, TheMuppets blobs - and how to grade what you find. Use in M2 and in M10 when looking for peripheral support.
----
-
 # Prior-art search
 
 Goal: answer "who already booted Linux on this device or SoC, with which kernel, how, and what works?"

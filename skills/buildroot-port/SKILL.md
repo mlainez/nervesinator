@@ -1,9 +1,14 @@
 ---
 name: buildroot-port
-description: Building the device's Buildroot systems in the Spin42/buildroot-android layout - forking/cloning the tree, adding board/<id> (linux.config, overlay, genimage, post-image, scripts), the firstlight/rescue/full defconfigs, kernel from a git fork with LINUX_OVERRIDE_SRCDIR, out-of-tree builds with O=, savedefconfig/linux-update-defconfig, custom packages, and reflash scripts. Use in M7-M10.
+description: Building the device's Buildroot systems in the Spin42/buildroot-android layout - forking/cloning the tree, adding board/<id> (linux.config, overlay, genimage, post-image, scripts), the firstlight/rescue/full defconfigs, kernel from a git fork with LINUX_OVERRIDE_SRCDIR, out-of-tree builds with O=, savedefconfig/linux-update-defconfig, custom packages, and reflash scripts. The kernel build and package conventions serve every stage from S3 on; the persistent single-root board is the optional Buildroot branch (path.buildroot_branch), taken when the user wants to contribute a buildroot-android board.
 ---
 
 # Buildroot port (buildroot-android style)
+
+A port goes from the rescue shell (S3) straight to Nerves (S4). This skill serves two things: the
+kernel, test-image and package conventions every stage builds on (sections 0, 2 to 4, 6, 7), and the
+**optional Buildroot branch**, a persistent single-root board contributed to buildroot-android
+(sections 1 and 5), when `path.buildroot_branch` is true.
 
 ## 0. Reuse before you create
 
@@ -37,9 +42,9 @@ Layout to add (mirror the existing boards: `fairphone2`, `grouper`, `tb3_710f`):
 
 ```
 buildroot-external/
-  configs/<id>_firstlight_defconfig     M7
-  configs/<id>_rescue_defconfig         M8
-  configs/<id>_defconfig                M9 (the real system)
+  configs/<id>_firstlight_defconfig     S3
+  configs/<id>_rescue_defconfig         S3
+  configs/<id>_defconfig                the Buildroot branch (the real system)
   board/<id>/linux.config               full kernel config (savedefconfig output)
   board/<id>/linux-firstlight.fragment  optional
   board/<id>/overlay/                   /etc (fstab, network/interfaces, dhcp, ssh), extlinux/ if lk2nd
@@ -48,12 +53,12 @@ buildroot-external/
   board/<id>/overlay/extlinux/extlinux.conf   the default layout: the rootfs image itself is the
                                         ext2 userdata image (BR2_TARGET_ROOTFS_EXT2_2r1=y,
                                         BR2_LINUX_KERNEL_INSTALL_TARGET=y for /boot); see
-                                        boot-images section 3 for the ext2 rules
+                                        boot-test/boot-images.md section 3 for the ext2 rules
   board/<id>/post-image.sh              packs boot.img (mkbootimg args from port.yaml device.bootimg)
   board/<id>/scripts/flash.sh           flashes by serial only, checks the product (copy tb3_710f's)
   board/<id>/scripts/reflash.sh         reboot-mode <device.return_mode> (tools/return-to-flash.sh)
                                         → fastboot or heimdall flash → wait for ssh; no keys
-  package/<id>-firmware/                proprietary blobs (not committed: see firmware-userspace)
+  package/<id>-firmware/                proprietary blobs (not committed: see peripherals/firmware.md)
 docs/<id>.md                            what works, how to flash (tb3_710f.md is the model)
 ```
 
@@ -64,7 +69,7 @@ The external tree's name is `ANDROID`, so paths use `$(BR2_EXTERNAL_ANDROID_PATH
 Per device: the kernel (fork, config, DTB), boot image packing, a few overlay files. Everything else
 is per architecture, so it is shared:
 
-- **Test images (M7/M8):** the prebuilt generic initramfs (`rescue-initramfs`, "Prebuilt first").
+- **Test images (S3):** the prebuilt generic initramfs (`boot-test/test-images.md`, "Prebuilt first").
 - **One Buildroot checkout** in `cache/buildroot-android`, pinned to a release tag, with the port's
   board in a second external tree (`BR2_EXTERNAL=cache/buildroot-android/buildroot-external:ports/<id>/br-external`,
   its `external.desc` named `PORT_<ID>`) instead of a full fork per port. A port that must change
@@ -94,7 +99,7 @@ Outputs go to `ports/<id>/output/<name>/images/` (git-ignored). First builds tak
 
 ```
 BR2_LINUX_KERNEL_CUSTOM_GIT=y
-BR2_LINUX_KERNEL_CUSTOM_REPO_URL="<repo from the M2 decision>"
+BR2_LINUX_KERNEL_CUSTOM_REPO_URL="<repo from the S1 decision>"
 BR2_LINUX_KERNEL_CUSTOM_REPO_VERSION="<tag or commit SHA, pinned>"
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
 BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_ANDROID_PATH)/board/<id>/linux.config"
@@ -120,10 +125,10 @@ Copy the style of the existing packages in `buildroot-external/package/` (`Confi
 ## 5. Rules
 
 - The Buildroot board has a single root filesystem. Never design A/B slots, a slot switcher
-  or a custom update loader for it: A/B comes with Nerves (M11, standard fwup).
+  or a custom update loader for it: A/B comes with Nerves (S4, standard fwup).
 - Pin every git version (kernel, packages) to a tag or SHA in committed defconfigs.
 - Every init script added for hardware → a line in `dossier/init-inventory.md`: what it does, why,
-  in what order, what it depends on. Nerves (M11) replaces each one with Elixir.
+  in what order, what it depends on. Nerves (S4) replaces each one with Elixir.
 - Never commit proprietary blobs; packages fetch them from a local path prepared by a script.
 - The flash scripts address the device by serial and refuse if the product doesn't match.
 - Commit in the buildroot-android clone with clear messages; the port repo records the commit SHA in
@@ -152,11 +157,11 @@ POSIX `sh` for BusyBox `ash`, and uses only what **that** image's BusyBox has:
   <applet> --help` (`qemu-aarch64-static` on arm64), for the initramfs as well as the rootfs.
 - Read the **screen console** as well as dmesg: a script's stderr goes to the console, not the
   kernel log (an unsupported `mdev -d` printed its usage on the screen at every boot and never
-  reached dmesg). On a running system, capture what the user sees (`nerves-port` section 7).
+  reached dmesg). On a running system, capture what the user sees (`nerves-system/porting.md` section 7).
 - In Nerves, work done after the BEAM starts belongs in Elixir (`File`, `:binary`, `System.cmd`
   with checked output), not in shell: Nerves keeps BusyBox minimal on purpose.
 
-## 7. Iterate with scp, checkpoint with a full build (M10, M11)
+## 7. Iterate with scp, checkpoint with a full build (S4, S5)
 
 Once a persistent system with ssh runs, peripheral work does not rebuild and reflash the whole
 system for each try.

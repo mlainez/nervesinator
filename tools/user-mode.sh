@@ -38,7 +38,7 @@ def option(name, default):
 cmd = args[:2]
 if cmd == ["autonomous", "full"]:
     hours = option("--hours", g.DEFAULT_HOURS)
-    goal = " ".join(args[2:]) or "the current milestone's gate"
+    goal = " ".join(args[2:]) or "the next gate"
     grant = g.write_grant(ports, goal, hours, typed)
     print("full autonomy until: %s (expires %s)" % (goal, grant["expires_at"]))
 elif cmd == ["autonomous", "off"]:

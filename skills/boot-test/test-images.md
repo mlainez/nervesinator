@@ -1,8 +1,3 @@
----
-name: rescue-initramfs
-description: Build the in-RAM test systems - the first-light kernel that prints boot messages on the screen, and the rescue initramfs with USB gadget networking (configfs NCM/RNDIS), unudhcpd and ssh/telnet - using Buildroot defconfigs and the templates in templates/rescue. Use in M7 and M8, and whenever a safe RAM-only system is needed for investigation or for writing the rootfs.
----
-
 # First light and the rescue initramfs
 
 Both systems live **only in RAM** (the rootfs is the initramfs packed in the boot image). Nothing
@@ -11,7 +6,7 @@ on the phone's storage changes, so a reboot always gives the phone back.
 ## Prebuilt first
 
 The initramfs is the same for every device of an architecture; only the kernel, the DTB and a few
-files differ. So M7 and M8 do not run Buildroot for the userspace:
+files differ. So first light and the rescue shell do not run Buildroot for the userspace:
 
 1. `tools/fetch-prebuilt.sh --arch aarch64|armv7` puts the generic `firstlight-<arch>.cpio.gz` and
    `rescue-<arch>.cpio.gz` (built from buildroot-android's `configs/{firstlight,rescue}_<arch>_defconfig`,
@@ -20,7 +15,7 @@ files differ. So M7 and M8 do not run Buildroot for the userspace:
 2. `tools/mk-test-initramfs.sh --port <id> --image rescue --arch <arch> [--overlay <dir>]` appends a
    small device cpio (its `/etc/kit-image` from `port.yaml`, plus firmware/modules/panel files from
    the overlays): the kernel accepts concatenated cpio archives, and the later file wins.
-3. Build only the kernel, DTB and modules, then pack the boot image (`boot-images`).
+3. Build only the kernel, DTB and modules, then pack the boot image (`boot-test/boot-images.md`).
 
 **From source** stays the fallback: a new architecture, a userspace change under test, or no release
 yet. Build the generic defconfig (`tools/br-make.sh … rescue_<arch>_defconfig`, then import it with
@@ -64,7 +59,7 @@ regulators, the PMIC) as listed in the pmOS config. A **config fragment** in
 Kernel cmdline for first light: `console=tty0 earlycon loglevel=8 ignore_loglevel` (+
 `fbcon=rotate:N` if the panel is rotated, + the vendor-specific `earlycon=…` if a UART is wired).
 
-## M7: first light
+## First light
 
 A Buildroot defconfig `configs/<id>_firstlight_defconfig` in the port's buildroot-android tree:
 
@@ -74,11 +69,11 @@ A Buildroot defconfig `configs/<id>_firstlight_defconfig` in the port's buildroo
   buildroot-android) and the overlay from `templates/rescue/`: `init-firstlight` as `/init`,
   `kit-common.sh` as `/usr/lib/kit-common.sh`, `usb-gadget.sh`, `udhcpd.conf` and `kit-image` as
   `/etc/kit-image` (`KIT_IMAGE=firstlight`, the port id and `device.serial` filled in),
-- a post-image script that packs `boot.img` (see `boot-images`).
+- a post-image script that packs `boot.img` (see `boot-test/boot-images.md`).
 
 Expected: a penguin/logo or the scrolling kernel log, then the init's banner on the screen **and**
 on the host: `tools/await-boot.sh` sees the kit gadget and reads `KIT-READY` from its ACM console.
-That is the M7 proof; a photo is optional. If neither shows up, hand over to `boot-debugger`.
+That is the first-light proof; a photo is optional. If neither shows up, hand over to `boot-debugger`.
 
 ## Self-verifying test images (every image the kit boots)
 
@@ -100,12 +95,12 @@ anyone looking at the phone:
 - **Traps:** the restart reason must survive until the bootloader that acts on it. With a second
   stage, the stock bootloader runs first and may clear it (seen on Samsung with lk2nd: then use
   `KIT_RETURN_MODE=download`). On Qualcomm it lives in IMEM and survives only a **warm** reset;
-  mainline may do a hard reset (seen with PM8226 PS_HOLD), which loses it. Check it in M8 on this
+  mainline may do a hard reset (seen with PM8226 PS_HOLD), which loses it. Check it in S3 on this
   device: write a reason, reboot, see it honoured.
 - **Limit:** a hard hang without a working watchdog needs a human (force power off or battery pull).
 - On-device shell scripts follow `buildroot-port` section 6 (BusyBox ash, the image's own applets, errors never hidden).
 
-## M8: rescue initramfs
+## Rescue initramfs
 
 `configs/<id>_rescue_defconfig` = first light +:
 
@@ -125,7 +120,7 @@ convention).
 On the host: `tools/usbnet.sh` finds the new interface, waits for the DHCP lease (or sets
 10.0.42.2 itself with the user's approval), and prints the ssh command.
 
-## Writing the rootfs from the rescue system (M9)
+## Writing the rootfs from the rescue system (Buildroot branch)
 
 The TB3-710F pattern: boot rescue from RAM, `scp -O` the rootfs image (legacy protocol: dropbear has no sftp-server), `dd` it to the allowlisted
 partition (the guard asks for confirmation), verify by reading it back and comparing the sha256,

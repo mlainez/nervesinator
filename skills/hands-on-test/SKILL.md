@@ -21,4 +21,6 @@ description: Running a test that needs the user at the device (keys, cables, wat
    and every agent's device commands are denied until "hands on".
 7. **Diagnose by isolation:** with the bad state on screen, change one thing at a time and ask the
    user after each; never several changes in one step.
-8. **Record** the test, the instructions given, the photos and the host evidence in the backlog task.
+8. **Batch** what needs hands (mode entries, key combos) into one short session rather than one
+   interruption per test, and **record** the test, the photos and the host evidence in the journal
+   or the backlog task.

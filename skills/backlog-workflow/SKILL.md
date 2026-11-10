@@ -1,91 +1,49 @@
 ---
 name: backlog-workflow
-description: Conventions for tracking a port with Backlog.md - statuses, labels, milestone and gate tasks, how to create/update/close tasks, decisions (ADRs), notes with evidence, commits, and how to make work resumable. Load it before creating or editing tasks, or when resuming.
+description: Conventions for the work the ladder does not know about - one Backlog.md task per peripheral and per piece of discovered work, with acceptance criteria and evidence, plus decisions (ADRs) for choices a newcomer would question. Load it before creating or editing tasks or decisions.
 user-invocable: false
 ---
 
-# Backlog.md conventions
+# Backlog.md: discovered work and decisions
 
-Each port has its own Backlog.md project in `ports/<id>/backlog/` (created by `tools/new-port.sh`).
-**Always run `backlog` from inside `ports/<id>/`.** Use `--plain` for output you read back.
-If unsure about a command, `backlog <command> --help` lists the exact flags.
+The ladder itself is not tracked here: `tools/kit-next.sh` derives it from the evidence. The
+backlog in `ports/<id>/backlog/` holds what only this port knows: each peripheral (S5), a bug
+found on the way, a follow-up. **Run `backlog` from inside `ports/<id>/`**, with `--plain` for
+output you read back; `backlog <command> --help` lists the exact flags.
 
-## Statuses
+## Tasks
 
-| Status | Meaning |
-|---|---|
-| `To Do` | Not started |
-| `In Progress` | Someone is working on it (only one or two at a time) |
-| `Needs User` | Waiting for a human: a decision, a photo, a physical action (key combo, cable), a gate approval |
-| `Blocked` | Cannot progress: write what blocks it and what would unblock it |
-| `Done` | Acceptance criteria checked, notes written |
+A task can be picked up by someone who never saw the conversation:
 
-## Labels
-
-- One risk label: `risk-green`, `risk-yellow`, `risk-orange`, `risk-red`.
-- One agent label: `agent-recon`, `agent-scout`, `agent-bootloader`, `agent-flash`, `agent-buildroot`,
-  `agent-debug`, `agent-firmware`, `agent-nerves`, `agent-tutor`, `agent-orchestrator`,
-  `agent-kernel`, `agent-nerves-app`, `agent-uboot`.
-- Extras: `gate`, `needs-device` (the phone must be attached), `needs-root`, `lesson`, `peripheral`,
-  `deferred` (kept for later by a decision, e.g. peripherals skipped to reach Nerves sooner; the
-  work loop skips it, and its dependents do not wait for it).
-
-## Milestones
-
-`M0 Setup` … `M12 Share` (created by `new-port.sh`; see `port-playbook`). Every task belongs to one.
-`backlog milestone list --plain` shows progress.
-
-## Task anatomy
-
-A good task can be picked up by someone who has never seen the conversation:
-
-- **Title:** imperative, specific ("Dump class B partitions with root dd").
-- **Description:** the why and the context, the inputs (files, facts from `port.yaml`).
-- **Acceptance criteria:** checkable facts ("`backups/SHA256SUMS` verifies", "photo shows kernel log").
-- **Plan** (`--plan`): set before starting a non-trivial task.
-- **Notes** (`--append-notes`): what was found, **with evidence**: a command + its key output line,
-  a file path, a URL. Mark guesses as guesses.
-- **Final summary** (`--final-summary`): 2-4 lines when Done.
-- **Refs** (`--ref`): links and files used.
-
-## Everyday commands
-
-Task ids carry the project prefix: `PORT-12`, not `12` (`backlog task edit 12` fails with "Task 12
-not found").
+- **Title:** imperative, specific ("Enable WiFi (wcn36xx)").
+- **Acceptance criteria:** checkable facts ("`wlan0` appears", "a scan lists networks"), set
+  before the first try.
+- **Notes:** what was found, **with evidence** (a command and its key output line, a file path, a
+  URL). Mark guesses as guesses.
+- **Status:** `To Do`, `In Progress`, `Needs User` (a decision, a photo, a physical action),
+  `Blocked` (say what would unblock it), `Done`.
+- **Labels:** `peripheral`, `needs-device`, `deferred` (kept for a later release).
 
 ```bash
-backlog task list --plain                       # everything, grouped by status
-backlog task list --plain -m "M1"               # one milestone
-backlog task <id> --plain                       # read one task
-backlog task edit <id> -s "In Progress" -a @orchestrator
-backlog task edit <id> --plan "1. … 2. …"
-backlog task edit <id> --append-notes "getprop ro.board.platform = msm8226 (dossier/raw/getprop.txt)"
-backlog task edit <id> --check-ac 1 --check-ac 2
-backlog task edit <id> -s Done --final-summary "…"
-backlog task create "Enable WiFi (wcn36xx)" -m "M10" -p <M10-parent-id> -l risk-orange,agent-firmware,peripheral \
+backlog task create "Enable WiFi (wcn36xx)" -l peripheral,needs-device \
   --ac "wlan0 appears" --ac "scan lists networks" -d "…"
-backlog decision create "Kernel: msm8226-mainline v6.x"    # then edit the file: context, options, decision, consequences
-backlog sequence list --plain                   # what can be done next given dependencies
+backlog task list --plain
+backlog task edit <id> -s "In Progress"
+backlog task edit <id> --append-notes "wcnss firmware requested: … (dossier/raw/linux-dmesg.txt)"
+backlog task edit <id> --check-ac 1 -s Done --final-summary "…"
 ```
 
-## Gates
+Task ids carry the project prefix (`PORT-12`, not `12`).
 
-The last task of each milestone is `GATE Mx: …` (label `gate`). Its ACs are the milestone exit
-criteria from `port-playbook`. At the gate: check every AC with evidence, set the status to `Needs User`,
-present the gate to the user, and only after their explicit "go" set it to `Done` with their answer
-in the notes ("User approved on 2026-10-11: 'go, flash it'"). Then add `Mx` to `gates_passed` in `port.yaml`.
+## Decisions
 
-## Decisions (ADRs)
-
-Create one for every choice that would be expensive to reverse or that a newcomer would ask
-"why?" about: kernel source, bootloader path, experiment partition, rootfs placement, A/B layout,
-adding a name to the forbidden list. Format: Context / Options considered / Decision / Consequences /
-Evidence.
+One for every choice that would be expensive to reverse or that a newcomer would ask "why?"
+about: the kernel source, the boot path, the A/B layout, a departure from the reference system,
+a name added to the forbidden list, a user override. `backlog decision create "<title>"`, then
+Context / Options considered / Decision / Consequences / Evidence. The result also goes in
+`port.yaml` (`path:`), which is what the tools read.
 
 ## Resumability
 
-- Never keep state only in the conversation. Facts → `port.yaml` or `dossier/`; work → tasks;
-  choices → decisions; the narrative → `journal/sessions.md`.
-- Commit after every completed task in `ports/<id>` (the user's git identity; follow the user's
-  global commit rules if they have any). `backups/`, `cache/` and build outputs are in `.gitignore`.
-- New work discovered along the way becomes a new task right away, even if it is for later.
+Never keep state only in the conversation: facts go to `port.yaml` and `dossier/`, proofs to
+`checks:`, work to tasks, choices to decisions. The Stop hook commits the port workspace.

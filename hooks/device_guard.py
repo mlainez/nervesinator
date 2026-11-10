@@ -379,7 +379,7 @@ def analyse(cmd, v, depth=0):
     if remote_whole:
         if REMOTE_DENY_RE.search(cmd):
             v.add(DENY, "Repartitioning, discarding or unlocking eMMC boot areas on the device is "
-                        "not allowed (risk-red).")
+                        "not allowed.")
         if REMOTE_ASK_RE.search(cmd):
             v.add(ASK, "Formatting a filesystem on the device. Check the target is allowlisted.")
         if re.search(r"\breboot\s+edl\b", cmd):

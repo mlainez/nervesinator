@@ -34,7 +34,7 @@ if [ -n "$FROM" ]; then
 fi
 
 if [ -z "$VERSION" ]; then
-  echo "no prebuilt release is pinned yet (tools/lib/prebuilt.conf): build from source (rescue-initramfs)"
+  echo "no prebuilt release is pinned yet (tools/lib/prebuilt.conf): build from source (boot-test/test-images.md)"
   echo "or import a local build: tools/fetch-prebuilt.sh --arch $ARCH --from-dir <images dir> --image rescue"
   exit 1
 fi

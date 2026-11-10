@@ -1,8 +1,3 @@
----
-name: firmware-userspace
-description: Finding and packaging what peripherals need beyond the kernel - proprietary firmware blobs (from the device, stock firmware, pmaports firmware-* packages, TheMuppets, linux-firmware), and userspace daemons/configs from postmarketOS (APKBUILD dependencies, OpenRC services, udev rules, ALSA UCM) translated into Buildroot packages. Covers Qualcomm (wcnss/wcn36xx, modem remoteproc, rmtfs, qrtr, tqftpserv, pd-mapper), MediaTek (CONSYS/WMT) and Broadcom WiFi. Use in M10.
----
-
 # Firmware and userspace
 
 ## 1. Find out what is requested
@@ -18,7 +13,7 @@ Each `Direct firmware load for X failed` names a file the kernel wants under `/l
 2. **The device itself:** `adb pull /vendor/firmware`, `/firmware/image` (the `modem`/`NON-HLOS`
    partition, a FAT image: mount the backup copy `backups/modem.img` read-only with `-o loop,ro`),
    `/system/etc/firmware`, `/persist` (WiFi NV, sensor calibration: per-device, never published).
-3. **Stock firmware** packages (M3 download): extract `NON-HLOS.bin`, `system.img`, `vendor.img`.
+3. **Stock firmware** packages (S1 download): extract `NON-HLOS.bin`, `system.img`, `vendor.img`.
 4. **TheMuppets** `proprietary_vendor_<vendor>` repos (the LineageOS `proprietary-files.txt` maps paths).
 5. **linux-firmware** (Adreno GPU `a3xx_*`, some WiFi): Buildroot `BR2_PACKAGE_LINUX_FIRMWARE_*`.
 

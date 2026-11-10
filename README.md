@@ -1,8 +1,9 @@
 # Nerves Porting Kit
 
-An agentic system that takes you by the hand to port **mainline Linux → Buildroot → Elixir Nerves**
-onto an Android phone or tablet you own. It does the work **and teaches you** what it is doing and
-why, so that by the end you can port the next device yourself.
+An agentic kit that takes an Android phone or tablet you own from stock to a published
+**Elixir Nerves** system, starting from the closest device that already runs Nerves in the
+[awesome-nerves-systems](https://github.com/mlainez/awesome-nerves-systems) family, and adds the
+result back to that family.
 
 It encodes the method behind [buildroot-android](https://github.com/Spin42/buildroot-android), the
 [Nerves porting guide](https://hexdocs.pm/nerves/porting-guide.html) and the
@@ -11,136 +12,124 @@ It encodes the method behind [buildroot-android](https://github.com/Spin42/build
 ## Quick start
 
 1. Plug in the phone with **USB debugging** enabled (Settings → About → tap "Build number" 7× →
-   Developer options → USB debugging).
+   Developer options → USB debugging). Copy your personal data off it: the port wipes it.
 2. Open this folder in your coding agent (Claude Code: `claude` from this directory).
 3. Type **`Start`**.
 
-The guide checks your computer, finds the phone, asks which device to work on, creates a workspace
-with a task backlog, asks a few questions about you (experience, how deep you want explanations,
-language), and starts the first milestone. You can stop at any time; typing `Start` again resumes
-from the backlog. Other commands: `/status` (where are we?) and `/explain <topic>` (a lesson on anything).
+The guide checks your computer, finds the phone, creates a workspace and starts scouting. You
+can stop at any time: the next session picks up from the evidence on disk. Other words:
+`status` (where are we?), `explain <topic>` (a lesson on anything), `teach on` (lessons along the
+way; off by default).
 
-## The journey: 13 milestones, each ending at a gate
+## The journey: six stages, three gates
 
 ```
- M0 Setup ─ M1 Recon ─ M2 Prior art ─ M3 Unbrick kit ─ M4 Unlock ─ M5 Backup ─ M6 Boot path
-   🟢          🟢          🟢              🟢/🟡           🟠           🟢/🟡        🟡/🟠
- ─ M7 First light ─ M8 Rescue shell ─ M9 Persistent Buildroot ─ M10 Hardware ─ M11 Nerves ─ M12 Share
-        🟡                🟡                    🟠                    🟠             🟠           🟢
+ S1 Scout ──G1──▶ S2 Open ──G2──▶ S3 Boot from RAM ──▶ S4 Nerves ──▶ S5 Peripherals ──▶ S6 Share ──G3──▶ published
+ read-only       unlock, backups   first light, shell   from the closest   one task each     README, installer,
+ in parallel                                            existing system                      release, family row
 ```
 
-| Color | Meaning |
+| Gate | You decide |
 |---|---|
-| 🟢 green | read-only or host-only |
-| 🟡 yellow | temporary: a reboot undoes it (RAM boot) |
-| 🟠 orange | writes a replaceable partition (`boot`, `recovery`, `userdata`) **that has a verified backup** |
-| 🔴 red | bootloader chain, calibration data, partition tables, relocking: **never automated** |
+| **G1** | Go or no-go, and the irreversible costs of unlocking (data wipe, a warranty fuse) |
+| **G2** | Which partitions may be written: you type `allow writes boot userdata …` once |
+| **G3** | What becomes public |
 
-The order is chosen so that risk only increases after the safety net has been checked: an unbrick kit
-(M3) before the first irreversible step (M4), full verified backups (M5) before any write, RAM-only
-boots (M6–M8) before anything persistent (M9+). Every milestone ends with a **gate**: the guide shows
-proof of what was achieved, teaches the milestone's lesson, explains what the next step risks, and
-**waits for your "go"**.
+Everything else runs without stopping, because it is checked by code instead of by asking:
+scouting is read-only and runs in parallel, boots are proven from RAM and judged from the host,
+and after G2 a write to an allowlisted, backed-up partition of *this* device needs no further
+yes. The Nerves system is built on the host while the device work goes on. A persistent
+buildroot-android board is an optional branch, not a step on the way.
 
-Full details: [`skills/port-playbook/milestones.md`](skills/port-playbook/milestones.md).
+Details: [`skills/port-playbook/SKILL.md`](skills/port-playbook/SKILL.md) and
+[`stages.md`](skills/port-playbook/stages.md).
 
-## How it is built
+## How it is built: tools, hooks, skills
 
-```
-                 you ⇄ Orchestrator ("Porting Guide", AGENTS.md)
-                          │  owns the conversation, the gates and the backlog
-     ┌──────────┬─────────┼────────────┬───────────────┬──────────────┐
- device-recon  prior-art  bootloader-  flash-guardian  buildroot-     boot-debugger
- (read-only)   -scout     strategist   (only one that  engineer       firmware-hunter
-                          (plans)      writes devices) (host builds)  nerves-architect, tutor
-     └──────────┴─────────┴────────────┴───────────────┴──────────────┘
-                 skills/  (playbook, safety, procedures, teaching)
-                 tools/   (scripts the agents run)
-                 ports/<id>/  (per-device git repo: backlog, dossier, backups, journal)
-```
-
-### Agents (`agents/`)
-
-| Agent | Job |
-|---|---|
-| `device-recon` | Read-only collection of device facts over adb/ssh into the dossier, a source for every fact |
-| `prior-art-scout` | pmaports, the postmarketOS wiki, mainline/SoC forks, lk2nd, LineageOS → a feasibility verdict |
-| `bootloader-strategist` | Unbrick kit, unlock procedure, second-stage bootloader, boot image format: plans only |
-| `flash-guardian` | The only agent that changes the device: pre-flight checklist → plan file → executes after your yes |
-| `buildroot-engineer` | Kernel, first-light and rescue initramfs, the buildroot-android board, packages, docs |
-| `boot-debugger` | Reads screen photos, ramoops, lk2nd logs and dmesg; proposes the next minimal experiment |
-| `firmware-hunter` | Blobs and pmOS userspace (rmtfs, qrtr, UCM…) → Buildroot packages |
-| `nerves-architect` | A/B layout inside Android partitions, fwup, erlinit, initramfs slot switching, Elixir replacements |
-| `tutor` | Lessons tied to your device, at your level, saved to the journal |
-
-### Skills (`skills/`)
-
-| Skill | What it holds |
-|---|---|
-| `start`, `status`, `explain` | The user-facing entry points |
-| `port-playbook` | Milestones, risk levels, gate rules, decision trees (kernel / boot path / rootfs) |
-| `device-safety` | Partition classes, pre-flight checklist, vendor traps, backups, the unbrick ladder |
-| `backlog-workflow` | Backlog.md conventions: statuses, labels, gates, decisions, resumability |
-| `teach` | Teaching format and tone, analogies, lesson template, a checked reading list |
-| `adb-recon`, `prior-art-search`, `bootloader-unlock`, `boot-images`, `rescue-initramfs`, `buildroot-port`, `firmware-userspace`, `nerves-port` | Procedures for each phase |
-
-### Tools (`tools/`)
+**Tools** do the work and hold the state.
 
 | Script | Purpose |
 |---|---|
-| `check-host.sh` | Host prerequisites, grouped by the milestone that needs them |
-| `detect-devices.sh` | Every phone in adb, fastboot, Samsung download, EDL or BROM mode (read-only) |
-| `new-port.sh <id> <serial>` | Creates `ports/<id>/`: git repo, `port.yaml`, and a Backlog.md project with 13 milestones and 70 tasks |
-| `recon/collect.sh` | Read-only device recon over adb (root-enhanced if already rooted) |
-| `backup-partitions.sh` | Partition dumps verified by comparing the sha256 on the device with the local copy |
-| `safe-flash.sh` | Guarded `boot` / `flash` / `unlock`: dry run by default; checks the serial, product, forbidden list, allowlist, backup and size |
-| `usbnet.sh` | Finds the phone's USB network interface and checks `10.0.42.1` |
-| `lib/bootimg_info.py` | Decodes an Android boot image (v0–v4, QCDT, appended DTB, Samsung footer) into `mkbootimg` args |
-| `lib/forbidden-partitions.txt` | The single list of partitions nothing may ever write |
+| `kit-next.sh` | Where the port stands and which steps are ready, derived from the evidence on disk |
+| `check-host.sh`, `detect-devices.sh`, `new-port.sh` | Host prerequisites, attached phones in any mode, a new port workspace |
+| `recon/collect.sh`, `prior-art.sh` | Read-only device recon; a scan of pmaports, lk2nd and the family for the device and SoC |
+| `scaffold-system.sh` | Ranks the existing Nerves systems by similarity and scaffolds the port's system from the closest one |
+| `backup-partitions.sh` | Partition dumps verified by sha256 on the device and on the host |
+| `safe-flash.sh` | Guarded `boot` / `flash` / `unlock`: serial, product, forbidden list, allowlist, backup, size, image format |
+| `await-boot.sh`, `usbnet.sh`, `return-to-flash.sh` | Boot a test image and judge it from the host; USB networking; a key-free way back to the flash mode |
+| `mk-test-initramfs.sh`, `fetch-prebuilt.sh`, `publish-prebuilt.sh`, `br-make.sh` | Test images from a prebuilt initramfs; shared Buildroot caches |
+| `user-mode.sh` | Your switches, where the agent has no prompt hook (run by you, never by the agent) |
 
-### Safety layers
+**Hooks** enforce the rules, so they do not depend on the agent remembering them.
 
-1. **Process:** gates, risk colors, RAM before flash, the experiment partition, and the backup +
-   allowlist requirement (`skills/device-safety`).
-2. **Role separation:** only `flash-guardian` executes device writes, from a plan file you approved.
-3. **`tools/safe-flash.sh`:** re-checks everything right before writing.
-4. **`hooks/device_guard.py`:** inspects every shell command. It **denies** bootloader/calibration
-   writes, relocking, repartitioning, EDL/BROM writes and raw writes to the host's disks, and **asks
-   you** before any other flash, unlock, wipe or block write. Regression tests:
-   `tests/test_device_guard.sh`.
+| Hook | When | What |
+|---|---|---|
+| `device_guard.py` | every shell command | **Denies** bootloader-chain and calibration writes, relocking, repartitioning, raw writes to your disks. **Allows** writes covered by your allowlist. **Asks** you for the rest (an unlock, a wipe, a raw block write) |
+| `start_trigger.py` | every prompt | Your words: `Start`, `allow writes …`, `override …`, `hands off`, `autonomous …` |
+| `session_context.py` | session start | Hands the agent the state of the active port |
+| `checkpoint.py` | when the agent stops | Commits the port workspace |
+
+In `.claude/settings.json` the last two are wired as:
+
+```json
+"SessionStart": [{"hooks": [{"type": "command", "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/hooks/session_context.py", "timeout": 10}]}],
+"Stop": [{"hooks": [{"type": "command", "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/hooks/checkpoint.py", "timeout": 30}]}]
+```
+
+**Skills** hold the method: one per stage, with the knowledge in reference files loaded only
+when needed.
+
+| Skill | What it holds |
+|---|---|
+| `start`, `status`, `explain` | The entry points |
+| `scout`, `open`, `boot-test`, `nerves-system`, `peripherals`, `share` | One per stage S1 to S6: its steps, its tools, and references (recon, prior art, unlock by vendor, boot images, test images, U-Boot chainloading, the family, A/B layouts, firmware, kernel work) |
+| `port-playbook` | The ladder, the gates, the decision trees |
+| `device-safety` | Partition classes, who enforces what, backups, the unbrick ladder, one file of traps per vendor |
+| `autonomy`, `hands-on-test`, `backlog-workflow`, `teach`, `buildroot-port` | Working while you are away; tests that need your hands; discovered work; lessons on request; the optional Buildroot branch |
+
+Three **agents** do focused work in parallel: `researcher` (read-only: recon, prior art,
+firmware), `builder` (host builds: kernel, test images, U-Boot, the Nerves system) and
+`boot-debugger`. Only the orchestrator flashes.
 
 > Don't run the kit with permission checks disabled (Claude Code's bypassPermissions mode): the
 > guard's "ask" decisions are your confirmation step.
 
-## Using it with other coding agents
+## Your switches
 
-The content is tool-neutral; the tool-specific glue is thin:
+| You type | Effect |
+|---|---|
+| `allow writes <partition…> [no backup <partition…>]` | The partitions the port may write without asking (gate G2); `allow writes off` clears it |
+| `override <target…> [for <N>m]` | Overrule a safety invariant for those targets, informed of the cost: the guard asks instead of denying |
+| `hands off` / `hands on` | You are working on the device yourself: every device command is denied meanwhile |
+| `autonomous on` / `autonomous full <goal>` / `autonomous off` | Work while you are away, queueing what needs you, or asking nothing until a goal |
+| `teach on` / `teach off` | Lessons along the way |
+
+## Using it with other coding agents
 
 | Tool | How it finds the kit |
 |---|---|
-| Claude Code | `CLAUDE.md` imports `AGENTS.md`; `.claude/skills` → `skills/`, `.claude/agents` → `agents/`; `.claude/settings.json` wires the guard and the "Start" hook |
+| Claude Code | `CLAUDE.md` imports `AGENTS.md`; `.claude/skills` → `skills/`, `.claude/agents` → `agents/`; `.claude/settings.json` wires the hooks |
 | Agents reading `AGENTS.md` + `.agents/skills` (Codex, opencode, …) | `AGENTS.md` at the root, `.agents/skills` → `skills/` |
-| Without a prompt hook (Codex…) | The user's switches (`autonomous …`, `override …`, `hands off/on`) go through `tools/user-mode.sh`, run by the user in their own terminal; the guard only runs where hooks exist, elsewhere `AGENTS.md` requires `--check` |
-| Anything else | Point it at `AGENTS.md`. If it has no subagents, it reads `agents/<name>.md` and plays that role itself. If it has no hook system, `AGENTS.md` requires running `hooks/device_guard.py --check "<cmd>"` before device commands, and `safe-flash.sh` enforces the same checks |
+| Without hooks | You run `tools/user-mode.sh` for your switches; `AGENTS.md` requires `tools/kit-next.sh` at session start and `hooks/device_guard.py --check "<cmd>"` before device commands; `safe-flash.sh` enforces the same checks |
+| Without subagents | The agent reads `agents/<name>.md` and does that job itself |
 
 ## A port's workspace
 
 ```
 ports/<vendor>-<codename>/        its own git repo
-  port.yaml                       device facts, safety flags, chosen path, learner profile
-  backlog/                        Backlog.md (run `backlog board` here)
-  dossier/                        recon, prior art, partition map, unbrick plan, init inventory
+  port.yaml                       device facts, safety flags, the chosen path, checks
+  dossier/                        recon, prior art, partition map, unlock and unbrick plans
   backups/                        partition dumps + SHA256SUMS (not in git; keep a copy elsewhere)
-  journal/                        sessions.md, lessons/, plans/ (flash plans + logs), photos/
-  buildroot-android/              your fork, branch port/<id> (M9+)
-  nerves_system_<id>/             the Nerves system (M11)
+  journal/                        boot records, sessions, lessons
+  backlog/                        Backlog.md: peripherals and discovered work
+  nerves_system_<name>/           the Nerves system, scaffolded from the closest existing one
 ```
 
 ## Requirements
 
-adb + fastboot, git, python3, curl, lsusb, and the [Backlog.md](https://github.com/MrLesk/Backlog.md)
-CLI (`npm i -g backlog.md`). Later milestones need the Buildroot build dependencies, Elixir + Nerves
-+ fwup, and device-specific tools (heimdall, mkbootimg…). `tools/check-host.sh` tells you what is
+adb + fastboot, git, python3, curl, lsusb. Later stages need the Buildroot build dependencies,
+Elixir + Nerves + fwup, device-specific tools (heimdall, mkbootimg…) and, for peripherals, the
+[Backlog.md](https://github.com/MrLesk/Backlog.md) CLI. `tools/check-host.sh` tells you what is
 missing and when it will be needed.
 
 ## Installing and updating the kit
@@ -150,13 +139,14 @@ To use it inside another project, copy the repository's top-level files (`AGENTS
 `agents/`, `skills/`, `hooks/`, `tools/`, `templates/`, `tests/`, `.claude/`) to that project's
 root, never into a subdirectory such as `tools/` (`tools/check-host.sh` warns about a nested copy).
 `.claude/` is the Claude Code adapter: `agents` and `skills` are symlinks and `settings.json` wires
-the guard and start hooks. Symlinks do not survive many copy methods (`cp -r` without `-a`, zip,
-some file managers): copy with `cp -a` or `rsync -a`, then run `tools/check-host.sh`, which checks
-the adapter and prints the fix.
+the hooks. Symlinks do not survive many copy methods (`cp -r` without `-a`, zip, some file
+managers): copy with `cp -a` or `rsync -a`, then run `tools/check-host.sh`, which checks the
+adapter and prints the fix.
 To update a copied kit, compare each file with the kit's history first (`git hash-object` of the
 local file against the kit's blobs) so local changes are never overwritten. Then run
 `tools/update-port.sh --port <id>` for each existing port: it adds the new ignore rules to the
-port's `.gitignore` and stops tracking files they now cover (kept on disk).
+port's `.gitignore` and stops tracking files they now cover (kept on disk). A port created before
+the write allowlist existed needs its allowlist typed once (`allow writes …`).
 
 ## Where to run the tools
 
@@ -173,8 +163,15 @@ says how). `tools/ums-target.sh` finds the disk and refuses while anything on it
 
 ## Extending the kit
 
-- A new vendor trap or partition name → `skills/device-safety/SKILL.md` and
+- A new vendor trap or partition name → `skills/device-safety/vendors/<vendor>.md` and
   `tools/lib/forbidden-partitions.txt`, plus a case in `tests/test_device_guard.sh`.
-- A new milestone task → `templates/backlog-seed.json` and `skills/port-playbook/milestones.md`.
+- A new step of the ladder → `tools/lib/kit_next.py` (its evidence) and
+  `skills/port-playbook/stages.md`, plus a case in `tests/test_kit_next.sh`.
+- A new system in the family → a line in `tools/lib/family.tsv`
+  (`tools/scaffold-system.sh --refresh` shows what the awesome-nerves-systems page has that the
+  index lacks).
 - A new reading → `skills/teach/reading-list.md` (check that the link resolves).
-- After finishing a port, add what you learned to the relevant skill: the kit gets smarter with every device.
+- After finishing a port, add what you learned to the relevant skill as a generic rule: the kit
+  gets smarter with every device.
+
+Tests: `tests/test_device_guard.sh`, `tests/test_kit_next.sh`, `tests/test_hooks.sh`.

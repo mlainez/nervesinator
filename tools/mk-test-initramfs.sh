@@ -7,7 +7,7 @@
 # device.return_mode) and the files of each --overlay directory (firmware, modules, panel bits).
 # The kernel accepts concatenated cpio archives and the later file wins, so the device cpio is
 # appended after the generic one. Writes ports/<id>/output/<image>-initramfs.cpio.gz and prints
-# its path and sha256; boot-images packs it with the device's kernel and DTB.
+# its path and sha256; boot-test/boot-images.md packs it with the device's kernel and DTB.
 set -uo pipefail
 KIT=$(cd "$(dirname "$0")/.." && pwd)
 PORT=""; IMAGE=""; ARCH=""; PRE=""; OVERLAYS=()

@@ -1,8 +1,3 @@
----
-name: uboot-chainload
-description: Mainline U-Boot as a second-stage bootloader chainloaded by the stock Android bootloader, for devices without lk2nd (MediaTek LK, Exynos, Tegra…) - choosing lk2nd vs U-Boot vs nothing, the closest mainline SoC/board, a pinned release built by Buildroot with a format-patch series (no fork), packing it as the kernel of the vendor boot image, console without a UART, watchdog, eMMC, extlinux/sysboot, an env compatible with Nerves fwup, the boot-once guard, optional U-Boot fastboot, and the test procedure. Use in M6 when lk2nd does not support the SoC, and in M11 for the Nerves boot flow.
----
-
 # Mainline U-Boot chainloaded by the stock bootloader
 
 ## 1. When
@@ -50,7 +45,7 @@ Shape that worked (MediaTek LK, mainline v2026.10):
   `soc-notes/`.
 - **Packing:** U-Boot (with its DTB appended when the bootloader expects zImage-dtb) becomes the
   "kernel" of an Android boot image built with the stock `mkbootimg` arguments, plus any vendor
-  header or footer (`boot-images`).
+  header or footer (`boot-test/boot-images.md`).
 - **DT:** a board DTS for U-Boot, ideally the same file the kernel uses.
 - **Console:** a UART if one is reachable; otherwise the framebuffer the stock bootloader leaves
   (a `simple-framebuffer` node, video console, mapped write-through), so the screen shows U-Boot's
@@ -61,8 +56,8 @@ Shape that worked (MediaTek LK, mainline v2026.10):
   or the phone resets mid-boot. Feeding is timer-driven: a stopped timer means no feeding.
 - **Storage:** the SoC's MMC driver at conservative settings first (8-bit SDR, no DDR/HS modes until
   writes are verified: DDR corrupted writes on one eMMC); check that U-Boot numbers partitions like
-  Linux (`mmc 0:N` = `mmcblk0pN`); find `userdata` by name. Buildroot: `sysboot`/distro boot of
-  `/extlinux/extlinux.conf` on the single root. Nerves (M11): partition 1 of the sub-image MBR inside
+  Linux (`mmc 0:N` = `mmcblk0pN`); find `userdata` by name. A single-root image (the rescue
+  test, the Buildroot branch): `sysboot`/distro boot of `/extlinux/extlinux.conf`. Nerves (S4): partition 1 of the sub-image MBR inside
   `userdata`, exposed with `blkmap` over the `userdata` slice.
 - **Environment:** where Nerves fwup can write it too: a region inside the sub-image that
   `fw_env.config` describes, so `nerves_fw_active` selects the slot (`ENV_IS_IN_MMC` at a fixed raw
@@ -74,7 +69,7 @@ Shape that worked (MediaTek LK, mainline v2026.10):
   network and no EFI unless needed, a short `bootdelay`.
 - **Fallback:** a `bootmode fastboot|recovery` command (set the boot-mode bit and reset) and a
   `bootcmd` that ends in it when extlinux fails, so a broken root lands in the flash mode.
-- **Nerves (M11):** `blkmap map <n> 0 <sectors> linear mmc 0 <partition start + sub-image offset>`,
+- **Nerves (S4):** `blkmap map <n> 0 <sectors> linear mmc 0 <partition start + sub-image offset>`,
   then `sysboot blkmap <n>:1`; a USB gadget (ACM console or fastboot) needs the SoC's USB glue and
   PHY init in U-Boot.
 
@@ -107,8 +102,8 @@ USB disk. Both are part of the definition of done (section 8), not options.
   with the tag); an older Buildroot's U-Boot license-file handling may not match a newer U-Boot
   (override it in the external tree's `external.mk`); `make uboot` plus the packing script avoids
   a full rebuild when the kernel uses `LINUX_OVERRIDE_SRCDIR`.
-- Bring U-Boot up against the **existing** single-root Buildroot system first (an M6/M9 re-run);
-  Nerves comes after.
+- Bring U-Boot up against the rescue image first (a single root with `/extlinux/extlinux.conf`);
+  the Nerves sub-image comes after.
 - Host or QEMU tests of the boot path go as far as `bootz`/`booti` with the real kernel, DTB and
   initramfs: proving that `sysboot` loads the files is not enough (a missing `SUPPORT_RAW_INITRD`
   only shows at that step).

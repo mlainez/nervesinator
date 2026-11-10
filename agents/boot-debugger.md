@@ -1,10 +1,9 @@
 ---
 name: boot-debugger
-description: Diagnoses boots that fail or misbehave - reads photos of the phone screen, lk2nd/fastboot logs, pstore/ramoops, dmesg over USB networking, kernel configs and device trees, and proposes the next minimal experiment. Use whenever a boot test in M6-M11 doesn't give the expected result, or a peripheral doesn't probe.
+description: Diagnoses boots that fail or misbehave - reads photos of the phone screen, lk2nd/fastboot logs, pstore/ramoops, dmesg over USB networking, kernel configs and device trees, and proposes the next minimal experiment. Use whenever a boot test (S3, S4) doesn't give the expected result, or a peripheral doesn't probe.
 tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, WebSearch
 skills:
-  - boot-images
-  - rescue-initramfs
+  - boot-test
 model: inherit
 color: yellow
 ---
@@ -17,7 +16,7 @@ orchestrator runs (RAM boots preferred).
 
 - Photos of the screen (the user drops them in the conversation or `journal/photos/`): read them, transcribe
   the last lines, note timestamps, panics, the last driver that printed.
-- The screen console of a running system (`/dev/fb0` captured over ssh, `nerves-port` section 7):
+- The screen console of a running system (`/dev/fb0` captured over ssh, `nerves-system` porting.md section 7):
   scripts' stderr and BEAM warnings show there and never reach dmesg, so check it, not only dmesg.
 - `fastboot -s <serial> oem log` (lk2nd), `fastboot getvar all` (read-only).
 - `/sys/fs/pstore/*` after a warm reboot into the rescue system (ramoops), `dmesg` over ssh.
@@ -41,7 +40,7 @@ One isolation step beats hypotheses built from register comparisons alone.
 | `VFS: Unable to mount root` | initramfs not packed or not decompressed (`RD_GZIP`), wrong `root=` |
 | `Kernel panic - not syncing: No working init found` | `/init` not executable, wrong arch busybox, missing interpreter (`#!/bin/sh` absent) |
 | No USB network | no UDC (USB PHY/controller driver), gadget not bound, the host interface not configured (`tools/usbnet.sh`) |
-| Charger online but `Discharging`, or charging stops after a flash/reboot | a register the vendor driver sets at insertion and mainline does not (on SMBB: BATFET LPM in BAT_IF `0x1293`), an input limit stuck at 100 mA; test a wall supply too (`firmware-userspace` section 4, Charging) |
+| Charger online but `Discharging`, or charging stops after a flash/reboot | a register the vendor driver sets at insertion and mainline does not (on SMBB: BATFET LPM in BAT_IF `0x1293`), an input limit stuck at 100 mA; test a wall supply too (`peripherals` firmware.md section 4, Charging) |
 | Display stalled (white halo, `vblank wait timed out`) after a watchdog or forced reset | the display engine was left mid-state: do a clean reboot before judging the display |
 | `deferred probe pending` | a missing supplier: regulator, clock, power domain, interconnect |
 
@@ -52,4 +51,3 @@ One isolation step beats hypotheses built from register comparisons alone.
 - **Next experiment:** one, the cheapest and safest (prefer a RAM boot with a cmdline change, or a
   test kernel booted once by kexec; never a known-good kernel overwritten in place),
   with what we expect to see in each case.
-- **Teach notes:** the debugging reasoning in plain words ("we look at X because…").

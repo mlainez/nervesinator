@@ -1,16 +1,11 @@
----
-name: bootloader-unlock
-description: Vendor-by-vendor knowledge for unlocking Android bootloaders and choosing a boot path - Google/AOSP fastboot, Qualcomm OEMs, Samsung download mode (Heimdall/Odin, KNOX, OEM unlock, RMM/KG), MediaTek (fastboot, mtkclient seccfg), Motorola/Sony/Xiaomi tokens, Huawei - plus second-stage bootloaders (lk2nd, U-Boot) and the unbrick-kit requirements. Use in M3, M4 and M6.
----
-
 # Bootloader unlock and boot path
 
 Always combine this generic knowledge with **device-specific** sources (pmOS wiki page, XDA thread,
 LineageOS install guide for the device). Write the device's procedure in
 `dossier/unlock.md` with the sources, the irreversible effects, and the exact command sequence.
-`flash-guardian` executes; the user approves.
+The user accepts those costs at gate G1; the unlock command itself still asks them.
 
-## Questions to answer first (M3/M4)
+## Questions to answer first (S1/S2)
 
 1. How does this device enter its flash mode(s)? (keys, `adb reboot bootloader|download|recovery`)
 2. Does the stock bootloader enforce signatures at all? (Old Samsung Qualcomm: often no "unlock";
@@ -43,11 +38,11 @@ LineageOS install guide for the device). Write the device's procedure in
   and `fastboot boot`). Download mode lives in the untouched `aboot`, so it can always reflash `BOOT`.
 - Getting back without keys: the stock `aboot` runs before lk2nd and may consume or clear the
   restart reason (seen on msm8226, where it lives at IMEM+0x65C), so `reboot-mode bootloader` may
-  never reach lk2nd's fastboot. Check it on the device in M8. If it fails, `reboot-mode download`
+  never reach lk2nd's fastboot. Check it on the device in S3. If it fails, `reboot-mode download`
   (Samsung's magic 0x12345671, as in Samsung's `restart.c`; needs a reboot-mode DT node with that
   value) lands in download mode, then heimdall flashes `BOOT`/`USERDATA`: record
   `device.return_mode: download`. The restart reason survives only a **warm** reset; mainline may
-  hard-reset through the PMIC (seen with PM8226 PS_HOLD), so the M8 check covers that too.
+  hard-reset through the PMIC (seen with PM8226 PS_HOLD), so the S3 check covers that too.
 
 **MediaTek**
 - Many expose fastboot from LK: `fastboot flashing unlock` (or `oem unlock`) after the OEM toggle.
@@ -62,7 +57,7 @@ LineageOS install guide for the device). Write the device's procedure in
 - Xiaomi: Mi Unlock tool + account binding + waiting period.
 - Huawei/Honor (post-2018): no official unlock. Treat as "secure boot: STOP" unless the community has a proven method.
 
-## Second-stage bootloaders (M6)
+## Second-stage bootloaders (S3)
 
 **Why:** the stock bootloader may pick the wrong DTB (QCDT), impose a size limit, rewrite the cmdline,
 lack `fastboot boot`, or only boot Android images. A second stage running *as the kernel* of a boot
@@ -74,12 +69,12 @@ image gives us a modern, open bootloader without touching the bootloader chain.
   into `boot`. Its `fastboot oem log` shows its own log: great for debugging. Try
   `fastboot boot lk2nd.img` before flashing it, when the stock bootloader allows that.
 - **U-Boot** chainloaded (Qualcomm newer SoCs, some Exynos/Tegra): same idea, packed as an Android boot image.
-- **Mainline U-Boot replacing the bootloader** (Tegra grouper style): requires class A writes →
-  `risk-red`, never automated. Only with a documented, community-proven procedure and the user typing the commands.
+- **Mainline U-Boot replacing the bootloader** (Tegra grouper style): requires class A writes:
+  denied by the guard, never automated. Only with a documented, community-proven procedure and the user typing the commands.
 
-## Unbrick kit requirements (M3)
+## Unbrick kit requirements (S1)
 
-Before M4, all must be true and recorded in `dossier/unbrick.md`:
+Before S2, all must be true and recorded in `dossier/unbrick.md`:
 
 - Stock firmware for the exact model/region downloaded and checksummed (`backups/stock/`).
 - The official or community flash tool installed and tested **in read-only mode** against the phone.

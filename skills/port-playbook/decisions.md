@@ -1,7 +1,7 @@
 # Decision trees
 
-Record each outcome as a Backlog.md decision (`backlog decision create "<title>"`) and in
-`port.yaml` `path:`. State the evidence and the fallback.
+Record each outcome in `port.yaml` `path:` and as a decision (`backlog decision create "<title>"`)
+when a newcomer would ask why. State the evidence and the fallback.
 
 ## 1. Which kernel?
 
@@ -40,7 +40,7 @@ Can the stock bootloader be unlocked (or does it already accept unsigned images)
                   │        └─ no / painful (DTB picking, a cmdline it overrides, a size limit)
                   │               → chainloaded U-Boot: `fastboot boot` it first, then `boot`.
                   └─ no (Samsung Exynos download mode, some MTK) →
-                           Chainloaded U-Boot available for this SoC? (uboot-engineer, uboot-chainload skill)
+                           Chainloaded U-Boot available for this SoC? (`boot-test` uboot-chainload.md)
                            ├─ yes → Flash it to `boot` (after backing up `boot`).
                            └─ no  → Use `boot` as the experiment partition for every test boot image.
 ```
@@ -53,33 +53,33 @@ Without a RAM boot, `boot` is the experiment partition; record it as `safety.exp
 
 ## 3. Where does the rootfs live?
 
-The Buildroot options below are single-root (M7 to M10); A/B is a Nerves matter (M11).
+This section is for the optional Buildroot branch (`buildroot-port`), which is single-root. The
+Nerves system (S4) uses the A/B layouts of `nerves-system` android-ab-layouts.md instead.
 
 **Recommended default: the whole system in one image on `userdata`**, and writes only to `boot`
 and `userdata`; every other partition only when the user explicitly asks.
 
 - With a second stage that reads extlinux (lk2nd on Qualcomm, U-Boot): the image is ext2 holding
   `/extlinux/extlinux.conf`, the kernel (zImage/Image with an appended DTB, or `fdt`/`fdtdir`) and
-  the root filesystem; `boot` holds the second stage (`boot-images` section 3 for lk2nd's ext2 rules).
+  the root filesystem; `boot` holds the second stage (`boot-test/boot-images.md` section 3 for lk2nd's ext2 rules).
 - With the stock bootloader only: `boot` holds `boot.img` (kernel + DTB as the bootloader expects)
   with `root=` on `userdata`, and the image on `userdata` is the root filesystem.
 
 Flash `userdata` the device's key-free way: fastboot (`safe-flash.sh --mode fastboot flash userdata
 <img>`, sparse handled by fastboot, size checked against `getvar partition-size:userdata`), or
 heimdall `--USERDATA` from Samsung download mode. `userdata` is personal and huge: instead of a backup the
-user may accept its loss (`safety.accepted_loss: [userdata]`, recorded with the date after they
-confirm), or dump it first from the rescue shell.
+user may accept its loss (`allow writes … no backup userdata`, in their own words), or dump it first from the rescue shell.
 
 | Option | When | Notes |
 |---|---|---|
 | **One image on `userdata`** (ext2 + /extlinux with lk2nd/U-Boot; rootfs + `boot.img` otherwise) | **Default** | Writes only `boot` + `userdata`; `root=PARTLABEL=userdata rootwait` (case as in the GPT) or `root=/dev/<block>` |
-| Initramfs only | M7–M8, rescue | Nothing written |
+| Initramfs only | S3 (first light, rescue) | Nothing written |
 | ext4 on `userdata` | First persistent Buildroot | Simple; `root=/dev/mmcblk0pN rootwait`. Check whether the vendor reserves a tail (MTK BMT pool, encryption footer) and keep the filesystem smaller |
 | extlinux + rootfs on `userdata` (lk2nd) | Qualcomm with lk2nd | lk2nd scans for `extlinux/extlinux.conf`; buildroot-android FP2 style |
-| Sub-image (MBR inside `userdata`) | Nerves A/B only (M11) | Partitions mapped by the initramfs with kpartx/losetup; FP2 Nerves style. Never for the Buildroot board |
+| Sub-image (MBR inside `userdata`) | Nerves A/B only (S4) | Partitions mapped by the initramfs with kpartx/losetup; FP2 Nerves style. Never for the Buildroot board |
 | `system` partition | userdata too small or must be kept | Often 1-3 GB, fine for Buildroot/Nerves |
 
-Never repartition (PIT/GPT rewrite) as a first choice: it is `risk-red`.
+Never repartition (PIT/GPT rewrite): the guard denies it, and only the user's override lifts that.
 
 ## 4. Display console
 

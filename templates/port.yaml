@@ -21,7 +21,7 @@ device:
   flash_mode: ""           # fastboot | samsung-download | mtk-fastboot | mtk-brom
   return_mode: ""          # reboot-mode target that reaches a flashable state with no keys:
                            # download (Samsung: heimdall) | bootloader (fastboot, stock or lk2nd)
-  modes: {}                # name -> how to enter (keys / command), tested in M3
+  modes: {}                # name -> how to enter (keys / command), tested in S1
   bootimg: {}              # header_version, pagesize, base, offsets, dtb (appended|qcdt|v2), cmdline, footer
   partition_sizes: {}      # name -> bytes, when dossier/raw cannot give it (safe-flash size check)
   pmos_name: ""            # <vendor>-<codename> as named in pmaports, if any
@@ -46,7 +46,6 @@ session:
   set_by: ""                        # the user's words that switched it
 
 safety:
-  unbrick_kit_ready: false
   bootloader_unlocked: unknown      # unknown | no | yes | not-needed
   backups_verified: false
   # The writable partitions are not listed here: the user types `allow writes <partition…>
@@ -55,7 +54,7 @@ safety:
   ram_boot: unknown                 # fastboot-boot | lk2nd | none | unknown
   irreversible_done: []             # e.g. knox-fuse-tripped (recorded honestly)
   root: unknown                     # unknown | already | wanted | declined | not-possible | done
-  root_method: ""                   # how root is obtained on this device (M3 research), e.g. custom recovery on recovery
+  root_method: ""                   # how root is obtained on this device (S1 research), e.g. custom recovery on recovery
 
 path:
   scenario: ""                      # A (mainline device) | B (mainline SoC) | C (downstream)

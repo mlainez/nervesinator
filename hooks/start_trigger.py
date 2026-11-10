@@ -44,7 +44,7 @@ def main():
     prompt = raw.lower().rstrip(".!")
     full = FULL_RE.match(raw)
     if full:
-        goal = full.group("goal").strip() or "the current milestone's gate"
+        goal = full.group("goal").strip() or "the next gate"
         hours = int(full.group("hours") or autonomy_grant.DEFAULT_HOURS)
         grant = autonomy_grant.write_grant(PORTS, goal, hours, raw)
         if grant:

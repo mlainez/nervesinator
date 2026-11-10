@@ -52,5 +52,5 @@ for _ in $(seq 1 $((TIMEOUT / 2))); do
   sleep 2
 done
 echo "the phone did not reach its flash mode within ${TIMEOUT}s: check device.return_mode, the"
-echo "reboot-mode DT node and the warm reset (rescue-initramfs: Traps); keys may be needed"
+echo "reboot-mode DT node and the warm reset (boot-test/test-images.md: Traps); keys may be needed"
 exit 1

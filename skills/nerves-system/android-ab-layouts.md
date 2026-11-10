@@ -61,7 +61,7 @@ standard fwup one inside `userdata` (layout 1). The Android slot machinery is ne
   MediaTek or Samsung, slot metadata in `misc` or a `para`-type partition) and do the same.
 - Nerves A/B stays inside `userdata` (the fp3 initramfs runs `kpartx -asf` on it to expose the
   sub-image's partitions).
-- The Buildroot board (M9) needs the same mark-successful step as an init script on such a device.
+- The Buildroot board (the Buildroot branch) needs the same mark-successful step as an init script on such a device.
 
 ## Checklist for any layout
 

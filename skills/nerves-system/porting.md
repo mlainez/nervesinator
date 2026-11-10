@@ -1,12 +1,7 @@
----
-name: nerves-port
-description: Turning the working Buildroot port into a Nerves system for an Android device - nerves_system_bootstrap, nerves_defconfig changes, the toolchain choice, required kernel options, A/B layouts inside fixed Android partitions (sub-image in userdata mapped by an initramfs, or boot+system+userdata), fwup.conf/fwup-ops.conf, erlinit.config, slot switching with lk2nd/extlinux or boot.img, replacing init scripts with OTP apps, and the first flash/upload/revert tests. Use in M11.
----
-
 # Nerves on an Android device
 
-Prerequisites: M9 done (a persistent Buildroot system that boots), `dossier/init-inventory.md`
-complete. Read the [porting guide](https://hexdocs.pm/nerves/porting-guide.html) sections that apply:
+Prerequisites: a rescue shell (S3) with the Linux inventory, and the reference system chosen
+([family.md](family.md)). Read the [porting guide](https://hexdocs.pm/nerves/porting-guide.html) sections that apply:
 this skill covers what is different on phones. Details on layouts: [android-ab-layouts.md](android-ab-layouts.md).
 
 ## 0. Reference systems
@@ -34,10 +29,15 @@ per-device repository holds only the kernel, the DT and the A/B partition mappin
 
 ## 1. Bootstrap
 
+When an existing system is similar, scaffold from it instead ([family.md](family.md),
+`tools/scaffold-system.sh`) and skip to section 2. Bootstrapping from a Buildroot defconfig is the
+fallback when nothing in the family is close; the defconfig is then the rescue one, or the
+Buildroot branch's board.
+
 ```bash
 mix archive.install hex nerves_bootstrap
 git clone https://github.com/mlainez/nerves_system_bootstrap cache/nerves_system_bootstrap
-# follow its README: point it at buildroot-android/buildroot-external/configs/<id>_defconfig
+# follow its README: point it at the port's Buildroot defconfig
 ```
 
 It produces `nerves_system_<id>/` (mix.exs, nerves_defconfig, linux config, fwup.conf, fwup-ops.conf,
@@ -64,7 +64,7 @@ version**: `erlinit.config`; `fw_env.config`, the board-id and provisioning setu
 and every `nerves_fw_*` variable `nerves_runtime` expects; the `nerves_defconfig` must-haves; the
 `nerves_package` fields of `mix.exs`; the USB gadget and console against an official system with a
 device port (rpi0, bbb); networking as `nerves_pack` sets it (no static 10.0.42.x, no DHCP server).
-The app is checked against a fresh `mix nerves.new` (`nerves-app-engineer`). Compliance means no
+The app is checked against a fresh `mix nerves.new` ([app.md](app.md)). Compliance means no
 carry-over from the Buildroot board unless the hardware requires it, each one justified. Results
 go into `dossier/nerves-config-review.md`.
 
@@ -106,7 +106,7 @@ Never copy them verbatim. Diff the kernel config against the official systems' d
 
 A/B is introduced here, with the standard Nerves mechanism (fwup env, rootfs A/B, app partition);
 the Buildroot board stays single-root as it is.
-Android's partition table is fixed: don't repartition (risk-red). Keep the port's default of writing
+Android's partition table is fixed: don't repartition (the guard denies it). Keep the port's default of writing
 only `boot` (the second stage or `boot.img`) and `userdata`. Choose from android-ab-layouts.md:
 - **Sub-image in userdata** (FP2 style, most common).
 - **Split across boot / system / userdata** when partitions are big enough.
@@ -122,7 +122,7 @@ Android A/B".
 Whoever starts the kernel must know the Nerves active slot:
 - **Chainloaded U-Boot** (no lk2nd for the SoC): its env lives where fwup writes it (`fw_env.config`),
   `nerves_fw_active` picks the slot, and `sysboot` reads extlinux from the sub-image through `blkmap`
-  (`uboot-chainload`). Its `ums` mode exposes only `userdata`, so the host writes the firmware with
+  (`boot-test/uboot-chainload.md`). Its `ums` mode exposes only `userdata`, so the host writes the firmware with
   `fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)`
   (the firmware goes with `-i`; a bare `x.fw` argument fails with "unexpected parameter"), or
   `mix burn`, and its own
@@ -167,9 +167,10 @@ Whoever starts the kernel must know the Nerves active slot:
   `ssh nerves.local`, `mix upload nerves.local`. The USB gadget follows an official system with a
   device port (rpi0, bbb): compare their kernel gadget config and console.
 
-## 6. Replace init scripts with Elixir
+## 6. Init work in Elixir
 
-For each row of `init-inventory.md`: VintageNet (WiFi/ethernet/QMI cellular), `nerves_ssh`, OTP apps
+For each thing the device needs at boot (the rows of `dossier/init-inventory.md`, starting from
+what the reference system does): VintageNet (WiFi/ethernet/QMI cellular), `nerves_ssh`, OTP apps
 for firmware loaders/daemons (supervised `MuonTrap`/port processes for rmtfs/qrtr, or native Elixir
 rewrites), `Circuits.GPIO/I2C` for power sequencing. Vendor binaries lie about exit codes: parse their output.
 Do the work in Elixir rather than shell once the BEAM runs; any shell left (initramfs, erlinit hooks)
@@ -214,12 +215,12 @@ Logger on recent Elixir (1.20 warns that the `:backends` key of `:logger` is dep
 `LoggerBackends.add(RingLogger)` (RingLogger 0.11.7 changelog). RingLogger keeps the boot logs and the
 console stays clean.
 
-`mix firmware` → `mix firmware.image <id>.img` → `flash-guardian` flashes it to the allowlisted
+`mix firmware` → `mix firmware.image <id>.img` → `tools/safe-flash.sh` flashes it to the allowlisted
 partition (fastboot/heimdall/`dd` from the rescue system, or the second stage's USB disk) → boot →
 `tools/await-boot.sh --watch-only --host nerves.local` → IEx over `ssh nerves.local` →
 `mix upload nerves.local` → reboot into the new slot → `Nerves.Runtime.revert()` → confirm it boots the old slot.
 
-## 8. Ship it: dependencies, a one-command installer, releases (M12)
+## 8. Ship it: dependencies, a one-command installer, releases (S6)
 
 With a U-Boot second stage, the installer flashes `boot` once through the vendor path, then uses
 U-Boot's `ums` for `userdata` (fwup straight to the USB disk, found by serial, never a guessed

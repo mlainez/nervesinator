@@ -1,14 +1,9 @@
----
-name: boot-images
-description: Building and testing bootable images for Android bootloaders - Android boot image headers v0-v4, mkbootimg arguments from the stock image or pmaports deviceinfo, zImage/Image.gz with appended DTB, QCDT dt.img, Samsung footers, lk2nd extlinux.conf, and the RAM-first test procedure (fastboot boot, lk2nd, experiment partition). Use in M6-M9 when packing a kernel for the device.
----
-
 # Boot images
 
 ## 1. Know the target format
 
 Take the facts from, in order of trust:
-1. The stock `boot.img` (from the M5 backup): `python3 -I tools/lib/bootimg_info.py backups/boot.img`
+1. The stock `boot.img` (from the S2 backup): `python3 -I tools/lib/bootimg_info.py backups/boot.img`
 2. pmaports `deviceinfo`: `deviceinfo_flash_offset_base/kernel/ramdisk/second/tags`,
    `deviceinfo_flash_pagesize`, `deviceinfo_header_version`, `deviceinfo_append_dtb`,
    `deviceinfo_bootimg_qcdt`, `deviceinfo_bootimg_mtk_mkimage`, `deviceinfo_bootimg_dtb_second`.
@@ -80,7 +75,7 @@ Order of preference (record the method in `port.yaml` `path.boot_method`):
 1. `fastboot -s <serial> boot boot.img` (stock or lk2nd): nothing written; a reboot returns to the previous state.
 2. On no-RAM-boot devices: install lk2nd to `boot` and use its `fastboot boot`; without lk2nd,
    flash to the **experiment partition** (`boot`) via `tools/safe-flash.sh`; `aboot`, never written, always brings back its flash mode to reflash `boot`.
-3. Only once proven, write to the final partition (M9).
+3. Only once proven, write to the final partition (S4, or the Buildroot branch).
 
 Before each test, tell the user what they should see, how long to wait, and how to get out
 (force reboot combo → bootloader/download mode). Ask for a photo of the screen when there is output.

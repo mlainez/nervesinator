@@ -19,7 +19,7 @@ Two invariants, whatever happens:
    the rest of class A are never written, so the phone can always be put back into it.
 2. **A return to stock is never made impossible.** Class B is never written and is backed up, the
    kit never relocks or repartitions, never flashes an older stock bootloader (anti-rollback), and
-   the stock firmware for this exact model is downloaded in M3 before the first write. When it
+   the stock firmware for this exact model is downloaded in S1 before the first write. When it
    cannot be found online, or only behind a payment the user declines, a **full dump of every
    partition** (including `system`, `vendor`/`super` this time) taken before the first partition
    write replaces it. Its limits, told to the user: it restores only what the flash tools can
@@ -38,100 +38,48 @@ are ours once backed up.
 
 ## The four partition classes
 
-Classify every partition in M1 (in `dossier/partitions.md`) and refer to the classes, not to memory.
+Classify every partition in S1 (in `dossier/partitions.md`) and refer to the classes, not to memory.
 
 | Class | Examples | Rule |
 |---|---|---|
 | **A: boot chain** | `sbl1`, `xbl`, `aboot`, `abl`, `rpm`, `tz`, `hyp`, `preloader`, `lk`, `bootloader`, `mmcblk0boot0/1`, the GPT/PIT itself | **Never written.** Not even with "the same version". A wrong byte = hard brick |
 | **B: irreplaceable data** | `efs`, `modemst1/2`, `fsg`, `persist`, `nvram`, `nvdata`, `proinfo`, `TA` (Sony), `param` (Samsung), `devinfo`, `frp` | **Never written. Backed up first.** Holds the IMEI, WiFi/BT MAC, sensor and radio calibration, DRM keys. It exists nowhere else on the planet |
 | **C: replaceable firmware** | `modem`/`NON-HLOS`, `dsp`, `vendor`, `vbmeta`, `dtbo` | Not written by default (on the forbidden list where it applies). Reading them is how we get firmware blobs |
-| **D: our playground** | `boot`, `recovery`, `userdata`, `cache`, `system` (and `super` with care) | Written **only** after a verified backup (for `userdata`: or the user's recorded `safety.accepted_loss`), when allowlisted in `safety.writable_partitions`. By default the port writes only `boot` and `userdata` |
+| **D: our playground** | `boot`, `recovery`, `userdata`, `cache`, `system` (and `super` with care) | Written **only** when the user allowlisted it (`allow writes <partition…>`, gate G2) and it has a verified backup, or the user accepted its loss (`… no backup userdata`). By default the port writes only `boot` and `userdata` |
 
 The machine-readable list of class A/B/C names is `tools/lib/forbidden-partitions.txt`. Both the
 guard and `tools/safe-flash.sh` refuse those names. If a device uses an unusual name for a class A/B
 partition, **add it to that file** (a commit in the kit) before going further.
 
-## Pre-flight checklist (before every device write)
+## Who enforces what
 
-`flash-guardian` runs it and shows the result to the user. Each line must be ✅:
+The rules above are enforced by code, so they do not depend on anyone remembering them:
 
-1. Exactly one device in the target mode, and its serial matches `port.yaml` `device.serial`.
-2. The product/model reported by the bootloader matches `device.product` (fastboot `getvar product`,
-   `heimdall print-pit` device info).
-3. The target partition is class D **and** listed in `safety.writable_partitions`.
-4. `backups/<partition>.img` exists and its line in `backups/SHA256SUMS` verifies.
-5. The image fits the partition (size), and has the expected format (`ANDROID!` magic for boot
-   images, the lk2nd/U-Boot image built for **this** SoC/device).
-6. The escape route is written in the plan: the key combo + the command + the backup image that
-   restores the previous state, and it was tested in M3.
-7. Battery > 50 % (`adb shell dumpsys battery` or the bootloader screen); a USB cable plugged
-   straight into the computer, not a hub.
-8. The user has seen the exact command and said yes.
+| Layer | What it does |
+|---|---|
+| `hooks/device_guard.py` (every shell command) | **Denies** class A/B/C names, relocking, repartitioning, EDL/BROM writes, raw writes to the host's disks. **Allows** a write to a partition in the user's allowlist that has a backup, addressed to this port's serial. **Asks** for everything else that changes the device: an unlock, a wipe, a raw block write, a partition outside the allowlist |
+| `tools/safe-flash.sh` (dry run, then `--execute`) | One device in the target mode with the port's serial and product; the partition not forbidden and allowlisted; its backup verifying against `SHA256SUMS`; the image fitting the partition, with the right magic; under lk2nd, a device tree it will find |
+| The user's own words | `allow writes …` (the allowlist), `override …` (overrule an invariant, asked each time), `hands off` (freeze device work), `autonomous full …` (no questions until a goal) |
 
-## Vendor traps (read the one for your device)
+Use `tools/safe-flash.sh` for every boot, flash and unlock it supports: its dry run is the
+pre-flight. What stays yours to check, because no tool can: the escape route (which key combo,
+which command and which backup image bring the previous state back), the battery (above 50 %
+before a write), and a cable plugged straight into the computer.
+
+## Vendor traps
+
+Read the file for the device's vendor before planning any write, and only that one:
+[Samsung](vendors/samsung.md), [Sony](vendors/sony.md), [Huawei / HiSilicon](vendors/huawei.md),
+[MediaTek](vendors/mediatek.md), [Qualcomm](vendors/qualcomm.md). A trap found on a new vendor
+gets its own file there. The traps below apply to every vendor.
 
 - **Relocking** (`fastboot flashing lock`, `oem lock`) with custom images installed bricks many
   devices (the bootloader refuses its own content). The kit never relocks. If the user wants to
   relock at the end: restore full stock first, and they type it themselves.
-- **Samsung:** no `fastboot boot`; download mode (Vol- + Home/Bixby + Power, or `adb reboot download`)
-  with Heimdall/Odin. **Never** `--repartition`/`--pit`. Flashing anything unofficial trips the
-  **KNOX warranty e-fuse** (irreversible, Samsung Pay/Knox features gone). Newer models: the "OEM
-  unlock" toggle + FRP + "RMM/KG state: prenormal" can block flashing ("Only official released
-  binaries are allowed"). lk2nd and test images go to `BOOT`. Keeping Android is not a goal: download
-  mode lives in the untouched `aboot` and can always reflash `BOOT`. Flash per partition only: an AP
-  tar can carry class B images (`persist.img.ext4` on some Qualcomm models), so a whole-AP Odin
-  flash overwrites calibration. The PIT's `PGPT`, `PIT`, `MD5` and `SGPT` entries are not partitions
-  to flash. After a heimdall command with `--no-reboot`, the next one in the same download mode
-  session needs `--resume` (`tools/safe-flash.sh --resume`), or reboot into download mode first.
-- **Sony:** unlocking erases the **TA partition DRM keys** forever: back up TA (needs an exploit,
-  before unlock) if the user cares about camera quality/DRM. Ask them.
-- **Huawei / HiSilicon (Kirin):** the boot chain is `xloader`, `fastboot` (the bootloader partition
-  itself), `vector`, `fw_lpm3`, `teeos`, `trustfirmware`, `sensorhub`, `hisee_*`, `bl2`; `nvme`
-  (IMEI, MACs, the unlock-code hash, FBLOCK), `oeminfo` and `modemnvm_*`/`modem_secure`/`modem_om`
-  are class B (all on the forbidden list). Huawei fastboot refuses most getvars ("Command not
-  allowed"): read the model with `fastboot oem get-product-model`, the state with
-  `oem lock-state info`, `oem get-build-number`, `oem get_bootinfo`. There is no `fastboot boot`, so
-  no RAM boot: test images go to an experiment partition (e.g. `recovery_ramdisk`). Treble Kirin
-  devices have no `boot` partition: the kernel image is in `kernel`, the ramdisk in `ramdisk`, and
-  recovery is `recovery_ramdisk` + `recovery_vendor` sharing that `kernel`. The DTB comes from the
-  `dts` partition (Huawei's own format) plus `dto` (both forbidden by default: a port that needs
-  its own DTB there decides it with the user, through an override). `ptable`, `vrl*`, the
-  eRecovery partitions and the unknown vendor partitions are on the forbidden list too. A dload or
-  service ROM writes class A itself through the vendor updater: a user-run path only. Versions:
-  `oem get-build-number` gives the base version + cust + preload (e.g. `9.1.0.401(C432E13R1P7)`),
-  which differs from `ro.build.display.id`; anti-rollback compares the base version, so a
-  restore uses the same or a newer base. Huawei stopped giving unlock codes in
-  2018; the community path (PotatoNV through a test point) writes `nvme`, class B: only with the
-  user's override, after explaining it. BootROM rescue mode enumerates as `12d1:3609` ("USB COM 1.0")
-  and `hisi-idt` loads images there: rung 3 of the unbrick ladder, run by the user. Never relock.
-  EMUI's by-name directory carries a dangling `boot_a -> kernel_a` alias: it is not an A/B slot
-  (`device.android_ab` stays false).
-- **MediaTek:** `preloader`, `nvram`, `nvdata`, `proinfo`, `protect*`, `seccfg` are untouchable;
-  SP Flash Tool "Format All + Download" erases calibration: never use it. mtkclient reads are fine.
-  Many MTK devices reserve a tail of `userdata` (BMT pool/encryption footer): do not grow
-  filesystems into it. Mainline's last partition can even extend over the BMT pool (seen: 21 MiB
-  past the scatter's USRDATA), so size and resize filesystems to the **scatter** size. MTK LK's
-  `fastboot getvar partition-size:*` can be wrong (and list a name several times): take sizes from
-  the scatter file or Linux sysfs into `device.partition_sizes`; `safe-flash.sh` ignores LK's value
-  on `mtk-*` flash modes. The scatter file is the source of truth for offsets and sizes; `boot`
-  and `recovery` often have no Linux block device, so fwup cannot write them from Linux. In
-  fastboot, `product` is the platform name, not the model. LK honours boot-mode bits in the PMIC
-  RTC (seen on MT6323: PDN1 bit 13 fastboot, bit 4 recovery), which gives both a key-free
-  `reboot-mode` from Linux and a boot-once guard (`uboot-chainload`); check it on the device. LK
-  arms the watchdog (up to about 31 s): the kernel, U-Boot and Nerves (`nerves_heart`) must feed it.
-  Scatter names to know: `uboot` is LK, `ebr1/ebr2` are partition records,
-  `bmtpool`, `kb`/`dkb`, `pro_info` (all on the forbidden list).
-- **Qualcomm:** `fastboot flash` to `aboot`/`sbl1` = hard brick, and only EDL with a signed firehose
-  programmer for this exact device saves it. `modemst1/2`, `fsg`, `fsc`, `persist` = IMEI/calibration.
-  Anti-rollback (`ro.boot.anti_rollback`, Pixel/OnePlus ARB): flashing an *older* stock bootloader
-  can brick: when restoring, use the same or a newer stock build. Under lk2nd, `getvar product` is
-  the SoC board name (e.g. `lk2nd-msm8916`): `safe-flash.sh` then matches `getvar lk2nd:compatible`
-  against `device.lk2nd_compatible`. On some SoCs (seen on msm8226), holding Vol Up + Vol Down while
-  lk2nd starts reboots into EDL (`05c6:9008`); a battery pull (or a long power-key hold) gets out of it.
 - **A/B devices:** know the active slot (`getvar current-slot`). Flash the kit's images to the
   active slot only; never `set_active` to an empty slot. The running system must mark the slot
   successful at every boot (qbootctl or the vendor equivalent), or the retry counter drains and
-  the phone falls back to fastboot (`nerves-port`, android-ab-layouts.md).
+  the phone falls back to fastboot (`nerves-system/android-ab-layouts.md`).
 - **AVB / dm-verity:** on Android 8+ devices, booting a custom kernel may need a `vbmeta` with
   verification disabled (`--disable-verity --disable-verification`). That is a write to class C:
   treat it as orange, back up `vbmeta` first.
@@ -145,7 +93,7 @@ partition, **add it to that file** (a commit in the kit) before going further.
   writing or leaving UMS while mounted corrupts them (udev rule:
   `templates/udev/99-porting-kit-no-automount.rules`).
 
-## Backups (M5)
+## Backups (S2)
 
 - Dump every partition **except** `userdata` (huge, personal) and `system`/`super` (downloadable as
   stock; dump them too when no stock firmware is available). Class B first, then class A (for reference and forensics, never to restore by us), then
@@ -157,14 +105,14 @@ partition, **add it to that file** (a commit in the kit) before going further.
   only some partitions), dump it from the port's own running Linux, read-only: the raw eMMC region
   split by the scatter file's offsets, `mmcblk0boot0/1`, and the tail after the last partition.
   Compute sha256 on the device and on the host; they must match.
-- When getting root (M5) must write a class D partition before it can be dumped, its backup is the
-  matching image from the stock firmware downloaded in M3, copied to `backups/<name>.img` and
+- When getting root (S2) must write a class D partition before it can be dumped, its backup is the
+  matching image from the stock firmware downloaded in S1, copied to `backups/<name>.img` and
   added to `SHA256SUMS`.
 - `tools/backup-partitions.sh` writes `backups/<name>.img` + `backups/SHA256SUMS` and re-reads to
   verify. The user then copies `backups/` somewhere else (a USB stick, the cloud). Backups are never
   committed to git and never deleted by the kit.
 
-## The unbrick ladder (written per device in M3 as `dossier/unbrick.md`)
+## The unbrick ladder (written per device in S1 as `dossier/unbrick.md`)
 
 1. **Bootloop / boots to a black screen:** force reboot (key combo, often Power 10–20 s) → bootloader
    or download mode → restore `backups/boot.img` (or recovery).
@@ -175,4 +123,4 @@ partition, **add it to that file** (a commit in the kit) before going further.
    BROM): stop and research. EDL needs a signed firehose programmer for the device; BROM can use
    mtkclient. **The user runs these, never the agents** (the guard denies writes).
 4. **Nothing at all:** battery fully drained? Try charging 30 min. Then a service center or a JTAG/ISP
-   repair shop. Being honest about this level is part of the briefing in M0.
+   repair shop. Being honest about this level is part of gate G1.

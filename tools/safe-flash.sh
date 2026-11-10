@@ -12,7 +12,7 @@
 # forbidden, partition in the user's write allowlist (they type `allow writes <partition…>`),
 # verified backup present (or its loss accepted by the user: `… no backup <partition>`), image
 # fits, boot image magic.
-# The partition size comes from port.yaml device.partition_sizes (bytes), else from the M1 recon
+# The partition size comes from port.yaml device.partition_sizes (bytes), else from the S1 recon
 # (dossier/raw/by-name.txt or partnames-sysfs.txt + partitions.txt), else from the backup, which is
 # right only when the backup is a full dump, not a stock image.
 #
@@ -160,7 +160,7 @@ check_lk2nd_dtb() { # image
   case $rc in
     0) ok "lk2nd device tree: ${out#ok: }" ;;
     1) bad "${out#refuse: }"
-       echo "     → build the image with an appended DTB (skills/boot-images), or, to get stock Android back,"
+       echo "     → build the image with an appended DTB (skills/boot-test/boot-images.md), or, to get stock Android back,"
        echo "       restore boot from the stock flash mode: tools/safe-flash.sh --port $PORT --mode ${STOCK_MODE:-<flash mode>} --execute flash boot backups/boot.img" ;;
     *) echo "  ⚠️  lk2nd device tree: ${out#unknown: }" ;;
   esac
@@ -237,7 +237,8 @@ case "$OP" in
     fi ;;
   unlock)
     how=${1:-flashing}
-    [ "$(cfg safety.unbrick_kit_ready)" = "true" ] && ok "unbrick kit ready (M3)" || bad "safety.unbrick_kit_ready is not true (finish M3 first)"
+    [ -s "$P/dossier/unbrick.md" ] && ok "unbrick kit written (dossier/unbrick.md)" || bad "no dossier/unbrick.md: finish the unbrick kit (S1) first"
+    cfg gates_passed | grep -qx G1 && ok "gate G1 passed: the user accepted the unlock's costs" || bad "gate G1 not passed (gates_passed in port.yaml)"
     check_fastboot_device
     if [ "$how" = "oem" ]; then CMD=(fastboot -s "$SER" oem unlock); else CMD=(fastboot -s "$SER" flashing unlock); fi
     echo "  ⚠️  unlocking WIPES ALL USER DATA and may be irreversible (warranty bits, DRM keys)" ;;
