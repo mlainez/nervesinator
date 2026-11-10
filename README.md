@@ -221,4 +221,4 @@ says how). `tools/ums-target.sh` finds the disk and refuses while anything on it
   gets smarter with every device.
 
 Tests: `tests/test_device_guard.sh`, `tests/test_kit_next.sh`, `tests/test_hooks.sh`,
-`tests/test_shims.sh`, `tests/test_nerves_check.sh`.
+`tests/test_shims.sh`, `tests/test_nerves_check.sh`, `tests/test_safe_flash.sh`.
