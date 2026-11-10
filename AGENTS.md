@@ -14,18 +14,29 @@ them rather than on memory:
 - **Skills** (`skills/`) hold the method, one per stage, with their knowledge in reference files
   you read only when you need them.
 
-This kit works with any coding agent that reads `AGENTS.md` and Agent Skills (`skills/*/SKILL.md`).
-Tool-specific glue lives in thin adapters (`CLAUDE.md` and `.claude/` for Claude Code,
-`.agents/skills` for tools that read that path). If your tool cannot spawn subagents, read
-`agents/<name>.md` and do that job yourself, following its rules. If it does not load skills on its
-own, read `skills/<name>/SKILL.md` when told to "load" a skill. If it has no hooks, run
-`tools/kit-next.sh` at the start of a session, check every device command with
-`hooks/device_guard.py --check "<command>"`, and commit the port workspace when you stop.
+## Any harness
+
+The kit is harness agnostic: these instructions, the skills, the agents' briefs and the tools are
+plain files and scripts. A harness contributes four behaviours, through its own hooks when it has
+them (an adapter such as `CLAUDE.md` + `.claude/`) and through the kit's tools when it does not:
+
+| Behaviour | With hooks (adapter) | Without hooks |
+|---|---|---|
+| The guard decides every device command | `hooks/device_guard.py` before each shell command | The user starts the agent with `tools/with-guard.sh <agent command>`: shims in front of fastboot, adb, heimdall… run the guard; a command that needs the user's yes is refused until they run `tools/user-mode.sh approve` |
+| The user's switches | `hooks/start_trigger.py` on each prompt | The user runs `tools/user-mode.sh …` in their own terminal |
+| The port's state at the start of a session | `hooks/session_context.py` | Run `tools/kit-next.sh` first |
+| The port workspace committed when work stops | `hooks/checkpoint.py` | Run `tools/checkpoint.sh` before you stop |
+
+Skills are Agent Skills (`skills/<name>/SKILL.md`): if your harness does not load them, read the
+file when told to "load" a skill. Agents are briefs (`agents/<name>.md`): if your harness cannot
+spawn subagents, do that job yourself, following the brief's rules, one after the other. Asking
+the user and notifying them use whatever your harness offers; a plain question in the
+conversation and a line in `journal/sessions.md` always work.
 
 ## The user's words
 
-Plain words, no leading `/`. The switches are typed as prompts where a prompt hook exists (Claude
-Code); elsewhere the user runs `tools/user-mode.sh` themselves. Never run or suggest that tool, or
+Plain words, no leading `/`. The switches are typed as prompts where a prompt hook is wired;
+elsewhere the user runs `tools/user-mode.sh` themselves. Never run or suggest that tool, or
 type any of these, on their behalf.
 
 | The user types | Effect |
@@ -84,9 +95,9 @@ anything, and only the orchestrator flashes.
 
 - **One device, one owner.** Exactly one agent uses the device at a time: it claims it
   (`tools/device-owner.sh --port <id> claim <agent> <purpose>`) and releases it when it reports.
-- **The kit's agents are real agent types.** If one is missing (the `.claude/agents` and
-  `.claude/skills` links or the hooks in `.claude/settings.json` did not survive a copy), stop and
-  fix the adapter (`tools/check-host.sh` prints how): without it, the guard does not run either.
+- **Check the adapter before device work.** `tools/check-host.sh` says whether the guard runs
+  (as a harness hook, or as shims from `tools/with-guard.sh`). If it does not, stop and fix that
+  first: a copy that lost its links or its hook wiring also lost the guard.
 - **Writes the host tool blocks.** The host's own permission rules may refuse a raw write (a
   `fwup` to the phone's USB disk). Then the user runs it: give the exact one-liner with its
   safety check inline (`tools/ums-target.sh`), to run with `!`.

@@ -58,7 +58,7 @@ Details: [`skills/port-playbook/SKILL.md`](skills/port-playbook/SKILL.md) and
 | `safe-flash.sh` | Guarded `boot` / `flash` / `unlock`: serial, product, forbidden list, allowlist, backup, size, image format |
 | `await-boot.sh`, `usbnet.sh`, `return-to-flash.sh` | Boot a test image and judge it from the host; USB networking; a key-free way back to the flash mode |
 | `mk-test-initramfs.sh`, `fetch-prebuilt.sh`, `publish-prebuilt.sh`, `br-make.sh` | Test images from a prebuilt initramfs; shared Buildroot caches |
-| `user-mode.sh` | Your switches, where the agent has no prompt hook (run by you, never by the agent) |
+| `with-guard.sh`, `user-mode.sh`, `checkpoint.sh` | The guard, your switches and the port checkpoint for harnesses without hooks (the first two are run by you, never by the agent) |
 
 **Hooks** enforce the rules, so they do not depend on the agent remembering them.
 
@@ -88,8 +88,8 @@ Three **agents** do focused work in parallel: `researcher` (read-only: recon, pr
 firmware), `builder` (host builds: kernel, test images, U-Boot, the Nerves system) and
 `boot-debugger`. Only the orchestrator flashes.
 
-> Don't run the kit with permission checks disabled (Claude Code's bypassPermissions mode): the
-> guard's "ask" decisions are your confirmation step.
+> Don't run the kit in a mode that skips hooks or permission checks (Claude Code's
+> bypassPermissions, for example): the guard's "ask" decisions are your confirmation step.
 
 ## Your switches
 
@@ -101,14 +101,27 @@ firmware), `builder` (host builds: kernel, test images, U-Boot, the Nerves syste
 | `autonomous on` / `autonomous full <goal>` / `autonomous off` | Work while you are away, queueing what needs you, or asking nothing until a goal |
 | `teach on` / `teach off` | Lessons along the way |
 
-## Using it with other coding agents
+## Harness agnostic
 
-| Tool | How it finds the kit |
+Nothing in the kit needs a particular coding agent: the instructions (`AGENTS.md`), the skills
+(Agent Skills), the agents' briefs and the tools are plain files and scripts. A harness plugs in
+four behaviours, with its own hooks when it has them and with the kit's tools when it does not:
+
+| Behaviour | With hooks | Without hooks |
+|---|---|---|
+| The guard in front of every device command | `hooks/device_guard.py` before each shell command | Start the agent with `tools/with-guard.sh <agent command>`: shims in front of fastboot, adb, heimdall… run the guard. A command that needs your yes is refused until you run `tools/user-mode.sh approve` |
+| Your switches (`allow writes`, `override`, `hands off`, `autonomous`) | `hooks/start_trigger.py` on each prompt | You run `tools/user-mode.sh …` |
+| The port's state at session start | `hooks/session_context.py` | The agent runs `tools/kit-next.sh` (`AGENTS.md` requires it) |
+| The port committed when work stops | `hooks/checkpoint.py` | The agent runs `tools/checkpoint.sh` |
+
+| Harness | How it finds the kit |
 |---|---|
-| Claude Code | `CLAUDE.md` imports `AGENTS.md`; `.claude/skills` → `skills/`, `.claude/agents` → `agents/`; `.claude/settings.json` wires the hooks |
-| Agents reading `AGENTS.md` + `.agents/skills` (Codex, opencode, …) | `AGENTS.md` at the root, `.agents/skills` → `skills/` |
-| Without hooks | You run `tools/user-mode.sh` for your switches; `AGENTS.md` requires `tools/kit-next.sh` at session start and `hooks/device_guard.py --check "<cmd>"` before device commands; `safe-flash.sh` enforces the same checks |
-| Without subagents | The agent reads `agents/<name>.md` and does that job itself |
+| Claude Code | `CLAUDE.md` imports `AGENTS.md`; `.claude/skills` → `skills/`, `.claude/agents` → `agents/`; `.claude/settings.json` wires the four hooks |
+| Agents reading `AGENTS.md` and `.agents/skills` (Codex, opencode, …) | `AGENTS.md` at the root, `.agents/skills` → `skills/`; start them through `tools/with-guard.sh` unless you wire the hooks in their own configuration |
+| Anything else | Point it at `AGENTS.md`. Without skill loading it reads `skills/<name>/SKILL.md`; without subagents it follows `agents/<name>.md` itself |
+
+An adapter for another harness is its instruction file importing `AGENTS.md` plus the wiring of
+those four scripts; nothing else in the kit changes.
 
 ## A port's workspace
 
@@ -201,4 +214,5 @@ says how). `tools/ums-target.sh` finds the disk and refuses while anything on it
 - After finishing a port, add what you learned to the relevant skill as a generic rule: the kit
   gets smarter with every device.
 
-Tests: `tests/test_device_guard.sh`, `tests/test_kit_next.sh`, `tests/test_hooks.sh`.
+Tests: `tests/test_device_guard.sh`, `tests/test_kit_next.sh`, `tests/test_hooks.sh`,
+`tests/test_shims.sh`.

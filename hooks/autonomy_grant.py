@@ -104,7 +104,10 @@ def hands_off_active(ports_dir):
 OVERRIDE_NAME = ".override"
 DEFAULT_OVERRIDE_MINUTES = 60
 ALLOWLIST_NAME = ".write-allowlist"
-PROTECTED_NAMES = (GRANT_NAME, HANDS_OFF_NAME, OVERRIDE_NAME, ALLOWLIST_NAME)
+PENDING_NAME = ".pending-ask"
+APPROVAL_NAME = ".approved-ask"
+PROTECTED_NAMES = (GRANT_NAME, HANDS_OFF_NAME, OVERRIDE_NAME, ALLOWLIST_NAME, APPROVAL_NAME)
+APPROVAL_MINUTES = 10
 
 
 def override_path(ports_dir):
@@ -200,6 +203,67 @@ def clear_allowlist(ports_dir):
         os.remove(path)
         return True
     return False
+
+
+# The user's yes without a harness hook. Where the guard runs as PATH shims (tools/with-guard.sh)
+# it cannot show a prompt, so a command it would ask about is refused and recorded as pending; the
+# user approves it with `tools/user-mode.sh approve`, and the next run of that exact command goes
+# through, once.
+def _port_file(ports_dir, name):
+    port = active_port(ports_dir)
+    return os.path.join(ports_dir, port, name) if port else None
+
+
+def command_id(command):
+    import hashlib
+    return hashlib.sha256(command.encode()).hexdigest()
+
+
+def record_pending(ports_dir, command, reasons):
+    path = _port_file(ports_dir, PENDING_NAME)
+    if not path or not os.path.isdir(os.path.dirname(path)):
+        return False
+    with open(path, "w") as f:
+        json.dump({"id": command_id(command), "command": command, "reasons": reasons,
+                   "asked_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}, f, indent=2)
+    return True
+
+
+def read_pending(ports_dir):
+    path = _port_file(ports_dir, PENDING_NAME)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def approve_pending(ports_dir, typed):
+    """The user approves the pending command; returns it, or None when nothing is pending."""
+    pending, path = read_pending(ports_dir), _port_file(ports_dir, APPROVAL_NAME)
+    if not pending or not path:
+        return None
+    expires = datetime.now(timezone.utc) + timedelta(minutes=APPROVAL_MINUTES)
+    with open(path, "w") as f:
+        json.dump({"id": pending["id"], "command": pending["command"],
+                   "expires_at": expires.isoformat(timespec="seconds"), "typed_by_user": typed}, f, indent=2)
+    os.remove(_port_file(ports_dir, PENDING_NAME))
+    return pending
+
+
+def consume_approval(ports_dir, command):
+    """True, once, when the user approved this exact command and the approval has not expired."""
+    path = _port_file(ports_dir, APPROVAL_NAME)
+    try:
+        with open(path) as f:
+            approval = json.load(f)
+        ok = approval["id"] == command_id(command) and \
+            datetime.fromisoformat(approval["expires_at"]) > datetime.now(timezone.utc)
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    if ok:
+        os.remove(path)
+    return ok
 
 
 def read_allowlist(ports_dir, port=None):

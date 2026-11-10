@@ -57,7 +57,7 @@ The rules above are enforced by code, so they do not depend on anyone rememberin
 
 | Layer | What it does |
 |---|---|
-| `hooks/device_guard.py` (every shell command) | **Denies** class A/B/C names, relocking, repartitioning, EDL/BROM writes, raw writes to the host's disks. **Allows** a write to a partition in the user's allowlist that has a backup, addressed to this port's serial. **Asks** for everything else that changes the device: an unlock, a wipe, a raw block write, a partition outside the allowlist |
+| `hooks/device_guard.py` (every device command: a harness hook, or shims from `tools/with-guard.sh`) | **Denies** class A/B/C names, relocking, repartitioning, EDL/BROM writes, raw writes to the host's disks. **Allows** a write to a partition in the user's allowlist that has a backup, addressed to this port's serial. **Asks** for everything else that changes the device: an unlock, a wipe, a raw block write, a partition outside the allowlist |
 | `tools/safe-flash.sh` (dry run, then `--execute`) | One device in the target mode with the port's serial and product; the partition not forbidden and allowlisted; its backup verifying against `SHA256SUMS`; the image fitting the partition, with the right magic; under lk2nd, a device tree it will find |
 | The user's own words | `allow writes …` (the allowlist), `override …` (overrule an invariant, asked each time), `hands off` (freeze device work), `autonomous full …` (no questions until a goal) |
 

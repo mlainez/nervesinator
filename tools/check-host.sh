@@ -59,7 +59,14 @@ for c in buildroot-dl buildroot-ccache prebuilt; do
 done
 . "$KIT/tools/lib/prebuilt.conf"
 echo "  prebuilt test images: ${PREBUILT_VERSION:-no release pinned (tools/lib/prebuilt.conf)}"
-echo "== Kit adapter (Claude Code: agents, skills, the guard hook)"
+echo "== The guard and the harness adapter"
+if [ -n "${KIT_DIR:-}" ] && command -v fastboot 2>/dev/null | grep -q "/cache/shims/"; then
+  echo "  ✅ the guard runs as PATH shims (tools/with-guard.sh)"
+elif [ ! -d "$KIT/.claude" ]; then
+  echo "  ❌ no hook adapter and no shims: start your agent with tools/with-guard.sh <agent command>"; missing_now=1
+fi
+if [ -d "$KIT/.claude" ]; then
+echo "  Claude Code adapter (.claude/):"
 for l in agents skills; do
   if [ -d "$KIT/.claude/$l" ] && [ "$(cd "$KIT/.claude/$l" && pwd -P)" = "$(cd "$KIT/$l" && pwd -P)" ]; then
     echo "  ✅ .claude/$l -> $l/"
@@ -78,6 +85,7 @@ for h in device_guard.py start_trigger.py; do
     echo "  ❌ .claude/settings.json does not run hooks/$h: copy the hooks block of the kit's .claude/settings.json"; missing_now=1
   fi
 done
+fi
 echo "== USB permissions"
 if command -v adb >/dev/null && adb devices 2>/dev/null | grep -q "no permissions"; then
   echo "  ❌ adb reports 'no permissions': install udev rules ($PM android-udev-rules or systemd uaccess) and replug"

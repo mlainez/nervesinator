@@ -2,7 +2,11 @@
 """Guard for shell commands that can modify a phone (or the host's disks).
 
 Usage:
-  As a Claude Code PreToolUse hook: reads the hook JSON on stdin (wired in .claude/settings.json).
+  As a harness hook that runs before each shell command: reads the hook JSON on stdin (for Claude
+  Code, a PreToolUse hook wired in .claude/settings.json).
+  As PATH shims, for a harness without hooks (tools/with-guard.sh <agent command>):
+      device_guard.py --shim <program> <arguments…>
+  exit 0 lets the shim run the program; an ask is refused until the user approves it.
   Standalone, for any other agent tool or a human:
       device_guard.py --check "<shell command>"
   prints ALLOW / ASK / DENY with the reasons; exit code 0, 1 (ask) or 2 (deny).
@@ -547,7 +551,43 @@ def check_cli(cmd, ports_dir=PORTS_DIR):
     return v.level
 
 
+def shim_cli(argv, ports_dir=PORTS_DIR):
+    """The guard as a PATH shim (tools/with-guard.sh), for harnesses without hooks: decides one
+    program invocation. Exit 0 lets the shim run it; an ask is refused until the user approves
+    that exact command with tools/user-mode.sh approve."""
+    cmd = shlex.join(argv)
+    v = Verdict()
+    analyse(cmd, v)
+    apply_override(cmd, v, ports_dir)
+    apply_hands_off(cmd, v, ports_dir)
+    apply_allowlist(v, ports_dir)
+    apply_grant(v, ports_dir)
+    reasons = " ".join(dict.fromkeys(v.reasons))
+    if v.level == ASK and autonomy_grant.consume_approval(ports_dir, cmd):
+        log("allow-approved", cmd, v.reasons)
+        return 0
+    if v.level == 0:
+        if v.reasons:
+            log("allow", cmd, v.reasons)
+        return 0
+    log("deny" if v.level == DENY else "ask", cmd, v.reasons)
+    if v.level == DENY:
+        print("[device-guard] DENIED: %s Do not work around this check." % reasons)
+    elif autonomy_grant.record_pending(ports_dir, cmd, v.reasons):
+        print("[device-guard] NEEDS THE USER'S YES: %s\nShow the user this exact command and what it "
+              "does. They approve it by running, themselves: tools/user-mode.sh approve\nThen run "
+              "the same command again (the approval is for this command, once)." % reasons)
+    else:
+        print("[device-guard] NEEDS THE USER'S YES, and there is no active port to record it in: "
+              "%s The user runs this command themselves." % reasons)
+    return v.level
+
+
 def main():
+    if len(sys.argv) >= 3 and sys.argv[1] == "--shim":
+        return shim_cli(sys.argv[2:])
+    if len(sys.argv) >= 5 and sys.argv[1] == "--ports" and sys.argv[3] == "--shim":
+        return shim_cli(sys.argv[4:], sys.argv[2])
     if len(sys.argv) >= 5 and sys.argv[1] == "--ports" and sys.argv[3] == "--check":
         return check_cli(" ".join(sys.argv[4:]), sys.argv[2])
     if len(sys.argv) >= 3 and sys.argv[1] == "--check":

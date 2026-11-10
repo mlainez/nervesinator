@@ -183,8 +183,8 @@ The test app is generated with `mix nerves.new` (it brings `nerves_pack`: `nerve
 MOTD, VintageNet), then gets the device's bits. A hand-assembled app misses pieces the system
 expects (e.g. `iex.exs` calling `NervesMOTD.print` with no `nerves_motd`).
 
-The raw write to the phone's USB disk may be blocked by the host tool's permission rules (Claude
-Code's auto mode refuses it): expect the user to run it. Give them the exact command with the
+The raw write to the phone's USB disk may be blocked by the harness's own permission rules:
+expect the user to run it. Give them the exact command with the
 target check inline (`fwup -a -i <app>.fw -t complete -d $(tools/ums-target.sh --port <id> | cut -d' ' -f1)`), or they add a permission rule for it.
 
 Load the display stack from the initramfs: loaded late (as a module after the BEAM starts) its

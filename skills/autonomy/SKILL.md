@@ -17,7 +17,7 @@ session:
 
 The user switches it at any moment: `autonomous on` or "I'm away" → `unattended`;
 `autonomous full <goal> [for <N>h]` → `full`; `autonomous off` or "I'm back" → `attended`
-(plain words; without a prompt hook, as in Codex, the user runs `tools/user-mode.sh autonomous …`).
+(plain words; without a prompt hook the user runs `tools/user-mode.sh autonomous …`).
 Record the switch in `port.yaml`, then say in one line what will and will not happen from now on.
 
 ## Attended (default)
@@ -89,9 +89,9 @@ bootloader charges it, not in a kit image.
 For each item that needs the user: a backlog task in `Needs User` with a note (what, why, the
 exact command or question, what was already checked), then notify:
 
-- Claude Code: the `PushNotification` tool, one short line ("<id>: rescue shell PASS; gate G1
-  waits for you").
-- Other tools: the line goes to `journal/sessions.md` under a `## Needs you` heading.
+- one short line ("<id>: rescue shell PASS; gate G1 waits for you") through the harness's
+  notification tool when it has one;
+- always, the same line in `journal/sessions.md` under a `## Needs you` heading.
 
 Notify on: a queued item, a gate reached, an `await-boot` HUNG (the phone needs hands), and
 anything that stops all progress. Do not notify for routine progress. After notifying, keep working
@@ -108,5 +108,6 @@ fallback, not the plan.
 ## Harness permissions
 
 The guard's decisions cover only the guard. The host tool may still ask its own permission
-questions; before leaving, the user picks a permission mode that lets the work run (in Claude
-Code, auto mode or allow rules; never bypassPermissions, which would also silence the guard).
+questions; before leaving, the user picks a permission mode that lets the work run, never one
+that skips hooks or permission checks altogether, which would also silence the guard. Where the
+guard runs as shims, a command that needs the user's yes waits for their `approve`: queue it.

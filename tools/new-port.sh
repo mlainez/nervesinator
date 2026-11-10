@@ -8,7 +8,7 @@ ID=${1:?usage: new-port.sh <id> <serial>}; SER=${2:?usage: new-port.sh <id> <ser
 [[ "$ID" =~ ^[a-z0-9]+(-[a-z0-9_]+)+$ ]] || { echo "id must look like <vendor>-<codename> (lowercase)"; exit 1; }
 P="$KIT/ports/$ID"
 [ -e "$P" ] && { echo "ports/$ID already exists: resume it instead"; exit 1; }
-# Without the Claude Code adapter the kit's agents are not registered and the guard hook never runs
+# A Claude Code adapter that lost its links or its hook wiring also lost the guard
 if [ -d "$KIT/.claude" ] || [ -n "${CLAUDECODE:-}" ]; then
   for l in agents skills; do
     [ "$(cd "$KIT/.claude/$l" 2>/dev/null && pwd -P)" = "$(cd "$KIT/$l" && pwd -P)" ] || \

@@ -15,7 +15,7 @@ _spec.loader.exec_module(autonomy_grant)
 PORTS = os.path.join(KIT, "ports")
 
 TRIGGERS = {"start", "/start", "resume", "continue", "let's start", "lets start"}
-# Plain words: CLIs (Claude Code, Codex) treat a leading "/" as their own command, so the slash is
+# Plain words: agent CLIs treat a leading "/" as their own command, so the slash is
 # optional. Tools without a prompt hook use tools/user-mode.sh, run by the user.
 AUTONOMY = {"autonomous on": "unattended", "/autonomous on": "unattended", "i'm away": "unattended",
             "im away": "unattended", "autonomous off": "attended", "/autonomous off": "attended",
