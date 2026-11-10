@@ -69,12 +69,9 @@ Details: [`skills/port-playbook/SKILL.md`](skills/port-playbook/SKILL.md) and
 | `session_context.py` | session start | Hands the agent the state of the active port |
 | `checkpoint.py` | when the agent stops | Commits the port workspace |
 
-In `.claude/settings.json` the last two are wired as:
-
-```json
-"SessionStart": [{"hooks": [{"type": "command", "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/hooks/session_context.py", "timeout": 10}]}],
-"Stop": [{"hooks": [{"type": "command", "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/hooks/checkpoint.py", "timeout": 30}]}]
-```
+All four are wired in `.claude/settings.json` (`PreToolUse`, `UserPromptSubmit`, `SessionStart`,
+`Stop`); `tools/check-host.sh` verifies it. The checkpoint commits only the port's own repository
+under `ports/<id>/`, with a `Checkpoint: <stage>` message, and only when something changed.
 
 **Skills** hold the method: one per stage, with the knowledge in reference files loaded only
 when needed.
@@ -147,6 +144,36 @@ local file against the kit's blobs) so local changes are never overwritten. Then
 `tools/update-port.sh --port <id>` for each existing port: it adds the new ignore rules to the
 port's `.gitignore` and stops tracking files they now cover (kept on disk). A port created before
 the write allowlist existed needs its allowlist typed once (`allow writes …`).
+
+## Moving an existing port to this version
+
+A port started with the thirteen-milestone version keeps all its work; what changes is where the
+kit looks:
+
+| Before | Now |
+|---|---|
+| Milestones M0 to M12, a gate after each | Stages S1 to S6, gates G1 to G3; `tools/kit-next.sh` shows the stage from the files already in the port |
+| `safety.writable_partitions` and `safety.accepted_loss` in `port.yaml` | Your typed allowlist: `allow writes boot userdata no backup userdata` (once per port) |
+| `safety.unbrick_kit_ready` | `dossier/unbrick.md` plus `G1` in `gates_passed` |
+| Seeded backlog tasks per milestone | Not needed any more: close or delete them; keep the peripheral tasks |
+| Proofs written in task notes (upload, revert, charging) | `checks:` in `port.yaml`, as `<name>: "<proof>"` |
+| Agents `device-recon`, `prior-art-scout`, `bootloader-strategist`, `firmware-hunter` | `researcher` |
+| Agents `buildroot-engineer`, `uboot-engineer`, `kernel-engineer`, `nerves-architect`, `nerves-app-engineer` | `builder` |
+| Agent `flash-guardian` and its plan files | The orchestrator, through `tools/safe-flash.sh` (its dry run is the pre-flight) |
+| Persistent Buildroot before Nerves | Optional: `path.buildroot_branch: true` |
+
+Run `tools/kit-next.sh --port <id>`: every line marked `later` or `READY` names the file or the
+`port.yaml` value it is waiting for. Add `G1` to `gates_passed` when the unlock was already
+accepted, and set `path.reference_system` (`none` when the port did not start from another system).
+
+## Prebuilt test images
+
+First light and the rescue shell use one generic initramfs per architecture, so a port builds only
+its kernel. `tools/fetch-prebuilt.sh` downloads the release pinned in `tools/lib/prebuilt.conf`;
+until one is pinned, the images are built from source once and imported with `--from-dir`.
+To publish a release (maintainers): `tools/publish-prebuilt.sh --tree <buildroot-android checkout>
+--tag <tag>` builds and packs the four images and prints the release command, `--only-pack
+--execute` creates it; then set `PREBUILT_VERSION`.
 
 ## Where to run the tools
 
