@@ -1,0 +1,18 @@
+# Existing Nerves systems for phones and tablets, indexed by what makes a device similar.
+# Source: https://github.com/mlainez/awesome-nerves-systems (tools/scaffold-system.sh --refresh
+# lists the systems of that page missing here). Tab-separated, one system per line:
+# repo	device	soc	arch	flash_mode	second_stage	layout	android_ab	template	notes
+# flash_mode and second_stage use port.yaml's words (device.flash_mode, path.bootloader).
+# layout: userdata-subimage (MBR + boot A/B + rootfs A/B + app inside userdata, mapped by an
+#   initramfs) | whole-emmc (the eMMC repartitioned) | single-root (no A/B).
+# template: yes when a port can start from it within the kit's invariants; no when it replaces the
+#   vendor bootloader or has no A/B (read it for ideas, do not scaffold from it).
+https://github.com/Spin42/nerves_system_fairphone2	Fairphone 2	qcom msm8974	armv7	fastboot	u-boot	userdata-subimage	no	yes	U-Boot built by the system and chainloaded by the stock LK (blkmap + boot.scr); extlinux also installed, so lk2nd works too; WiFi (wcn36xx), modem over QMI, ADSP sensors
+https://github.com/mlainez/nerves_system_fp3	Fairphone 3 / 3+	qcom msm8953	aarch64	fastboot	lk2nd	userdata-subimage	yes	yes	Android A/B phone: set_active a, slot marked successful with qbootctl; dummy dtbo; vendor/persist/dsp mounted read-only for firmware
+https://github.com/mlainez/nerves_system_samsung_expressatt	Samsung Galaxy Express SGH-I437	qcom msm8960	armv7	samsung-download	lk2nd	userdata-subimage	no	yes	Fixed offsets, redundant fwup env, initramfs mapping with dmsetup (no kpartx); kernel from stable plus a patch series; no installer
+https://github.com/mlainez/nerves_system_s3ve3g	Samsung Galaxy S III Neo GT-I9301I	qcom msm8226	armv7	samsung-download	lk2nd	userdata-subimage	no	yes	Complete example of a one-command install.sh (dry run, backups, checksums) and host-check-fwup.sh; userdata found by GPT name; grow-app task
+https://github.com/mlainez/nerves_system_lenovo_tb3_710f	Lenovo Tab3 7 Essential TB3-710F	mediatek mt8127	armv7	mtk-fastboot	u-boot	userdata-subimage	no	yes	Mainline U-Boot chainloaded by MediaTek LK (blkmap + sysboot extlinux); FAT boot A/B; layout stops before the BMT pool; MediaTek connectivity packages
+https://github.com/mlainez/nerves_system_tickwatch_pro3	Mobvoi TicWatch Pro 3	qcom sdm429w	aarch64	fastboot	lk2nd	userdata-subimage	unknown	yes	Wear 4100 (msm89x7 kernel tree); prebuilt lk2nd with its build recipe; inert dtbo flashed first; flash.sh installer; userdata found by GPT name
+https://github.com/Spin42/nerves_system_grouper	ASUS / Google Nexus 7 (2012)	nvidia tegra30	armv7	apx	u-boot	whole-emmc	no	no	Mainline U-Boot replaces the vendor bootloader (class A write) and the eMMC is repartitioned: outside the kit's invariants
+https://github.com/arjan/nerves_system_nexus7	ASUS / Google Nexus 7 (2012)	nvidia tegra30	armv7	apx	u-boot	whole-emmc	no	no	Same device as grouper with a newer kernel; slot switch by rewriting extlinux.conf; replaces the vendor bootloader
+https://github.com/arjan/nerves_system_bravo	HTC Desire	qcom qsd8250	armv7	recovery	stock	single-root	no	no	Stock downstream 2.6 kernel in an Android boot image, YAFFS2 on NAND, musl toolchain, no fwup on the device
