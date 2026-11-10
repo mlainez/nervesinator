@@ -1,6 +1,6 @@
 # Lesson NN: <title>
 
-*Milestone: Mx · Device: <model> · Level: <learner.level> · Date: <yyyy-mm-dd>*
+*Stage: Sx · Device: <model> · Level: <learner.level> · Date: <yyyy-mm-dd>*
 
 ## In one sentence
 
@@ -20,7 +20,7 @@
 
 ## How we used it
 
-<what we did in this milestone because of it, and why that was the safe/smart choice>
+<what we did in this stage because of it, and why that was the safe/smart choice>
 
 ## Quick check (answers below)
 
