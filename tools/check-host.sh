@@ -69,13 +69,13 @@ for l in agents skills; do
 done
 for h in session_context.py checkpoint.py; do
   grep -q "$h" "$KIT/.claude/settings.json" 2>/dev/null && echo "  ✅ .claude/settings.json runs hooks/$h" \
-    || echo "  ⏳ .claude/settings.json does not run hooks/$h (state at session start, port checkpoints): add it (README, Hooks)"
+    || echo "  ⏳ .claude/settings.json does not run hooks/$h (state at session start, port checkpoints): copy the hooks block of the kit's .claude/settings.json"
 done
 for h in device_guard.py start_trigger.py; do
   if grep -q "$h" "$KIT/.claude/settings.json" 2>/dev/null; then
     echo "  ✅ .claude/settings.json runs hooks/$h"
   else
-    echo "  ❌ .claude/settings.json does not run hooks/$h: add it (README, Hooks)"; missing_now=1
+    echo "  ❌ .claude/settings.json does not run hooks/$h: copy the hooks block of the kit's .claude/settings.json"; missing_now=1
   fi
 done
 echo "== USB permissions"
