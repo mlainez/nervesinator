@@ -16,3 +16,5 @@ nerves_system_*/deps/
 .device-owner
 # The user's override of a safety invariant (set by their own words)
 .override
+# The user's write allowlist (set by their own words: allow writes <partition…>)
+.write-allowlist

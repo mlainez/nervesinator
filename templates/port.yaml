@@ -29,15 +29,15 @@ device:
   active_slot: ""          # _a | _b (getprop ro.boot.slot_suffix, fastboot getvar current-slot)
 
 learner:
-  level: ""                # beginner | intermediate | expert
-  depth: normal            # short | normal | deep
+  teach: off               # off | on: lessons are given on request ("teach on", explain <topic>)
+  level: ""                # beginner | intermediate | expert (asked when teaching is switched on)
   language: en
-  linux_experience: ""
-  elixir_experience: ""
-  accepted_costs: []       # e.g. [data-wipe, knox-warranty-fuse]
+  accepted_costs: []       # the irreversible costs the user accepted at gate G1, e.g. [data-wipe, knox-warranty-fuse]
 
-milestone: M0
-gates_passed: []
+# The stage is not stored: tools/kit-next.sh derives it from the evidence on disk.
+gates_passed: []           # G1 (go + accepted costs), G3 (publish). G2 is the user's write allowlist
+checks: {}                 # proofs that leave no file, name -> "<proof>": stock_firmware, fwup_host,
+                           # nerves_boot, upload, revert, charging, release, awesome_row
 
 session:
   autonomy: attended                # attended | unattended | full (skills/autonomy)
@@ -49,9 +49,8 @@ safety:
   unbrick_kit_ready: false
   bootloader_unlocked: unknown      # unknown | no | yes | not-needed
   backups_verified: false
-  writable_partitions: []           # default boot + userdata; others only when the user asks
-  accepted_loss: []                 # partitions written without a backup because the user accepted
-                                    # losing them (userdata); the date and words go in the journal
+  # The writable partitions are not listed here: the user types `allow writes <partition…>
+  # [no backup <partition…>]` at gate G2 (default boot + userdata), read by the guard and safe-flash.
   experiment_partition: ""          # boot: lk2nd or test images when there is no RAM boot
   ram_boot: unknown                 # fastboot-boot | lk2nd | none | unknown
   irreversible_done: []             # e.g. knox-fuse-tripped (recorded honestly)
@@ -66,10 +65,11 @@ path:
   dtb: ""
   bootloader: ""                    # stock | lk2nd | u-boot
   boot_method: ""                   # how we load our kernel (command)
-  after_buildroot: ""               # nerves | peripherals | subset (decided once Buildroot boots)
-  peripherals: []                   # the peripherals chosen for M10 (charging is always first)
-  rootfs_placement: ""              # recommended: userdata-image (the whole system on userdata; decisions.md)
-  nerves_layout: ""
+  reference_system: ""              # the closest existing Nerves system (tools/scaffold-system.sh --list), or none
+  nerves_layout: ""                 # recommended: userdata-subimage (nerves-system/android-ab-layouts.md)
+  peripherals: []                   # the peripherals the user wants (charging always comes first)
+  buildroot_branch: false           # true when the user also wants a buildroot-android board
+  rootfs_placement: ""              # Buildroot branch only (port-playbook/decisions.md section 3)
 
 repos:
   buildroot_android: ""             # fork URL used in ports/<id>/buildroot-android

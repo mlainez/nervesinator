@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Check the host tools needed by the porting kit, grouped by the milestone that needs them.
-# Usage: tools/check-host.sh            exit 1 if a tool needed now (M0-M3) is missing
+# Check the host tools needed by the porting kit, grouped by the stage that needs them.
+# Usage: tools/check-host.sh            exit 1 if a tool needed now (S1 Scout) is missing
 set -u
 . /etc/os-release 2>/dev/null || true
 case "${ID:-}${ID_LIKE:-}" in
@@ -16,26 +16,26 @@ chk() { # group tool package-hint
   if command -v "$2" >/dev/null 2>&1; then printf "  ✅ %-14s %s\n" "$2" "$(command -v "$2")"
   else printf "  %s %-14s -> %s\n" "$([ "$1" = now ] && echo ❌ || echo ⏳)" "$2" "$3"; [ "$1" = now ] && missing_now=1; fi
 }
-echo "== Needed now (M0-M3)"
+echo "== Needed now (S1 Scout, S2 Open)"
 chk now adb      "$PM android-tools (or adb)"
 chk now fastboot "$PM android-tools (or fastboot)"
 chk now git      "$PM git"
 chk now python3  "$PM python3"
 chk now curl     "$PM curl"
 chk now lsusb    "$PM usbutils"
-chk now backlog  "npm i -g backlog.md   (or: bun add -g backlog.md)"
+chk later backlog "npm i -g backlog.md   (or: bun add -g backlog.md); tracks peripherals and discovered work"
 echo "== Device-specific flash tools (when the device needs them)"
 chk later heimdall "Samsung: $PM heimdall (or build https://git.sr.ht/~grimler/Heimdall)"
 chk later edl      "Qualcomm EDL reads: pip install --user edlclient (https://github.com/bkerler/edl)"
 chk later mtk      "MediaTek BROM: https://github.com/bkerler/mtkclient"
-echo "== Boot images and kernels (M6-M8)"
+echo "== Boot images and kernels (S3 Boot from RAM)"
 chk later mkbootimg "pip install --user mkbootimg (or buildroot-android board/tb3_710f/scripts/mkbootimg.py)"
 chk later dtc       "$PM dtc"
 chk later cpio      "$PM cpio"
 chk later lz4       "$PM lz4"
-echo "== Buildroot (M7-M10)"
+echo "== Kernel and Buildroot builds (S3 on)"
 for t in make gcc g++ patch perl rsync bc bison flex unzip file wget which tar xz; do chk later "$t" "$PM $t"; done
-echo "== Nerves (M11)"
+echo "== Nerves (S4)"
 if grep -qE "^hosts:.*mdns" /etc/nsswitch.conf 2>/dev/null; then
   echo "  ✅ mDNS name resolution (nss-mdns) for nerves.local"
 else
@@ -67,11 +67,15 @@ for l in agents skills; do
     echo "  ❌ .claude/$l does not resolve to $l/: mkdir -p \"$KIT/.claude\" && ln -sfn ../$l \"$KIT/.claude/$l\""; missing_now=1
   fi
 done
+for h in session_context.py checkpoint.py; do
+  grep -q "$h" "$KIT/.claude/settings.json" 2>/dev/null && echo "  ✅ .claude/settings.json runs hooks/$h" \
+    || echo "  ⏳ .claude/settings.json does not run hooks/$h (state at session start, port checkpoints): add it (README, Hooks)"
+done
 for h in device_guard.py start_trigger.py; do
   if grep -q "$h" "$KIT/.claude/settings.json" 2>/dev/null; then
     echo "  ✅ .claude/settings.json runs hooks/$h"
   else
-    echo "  ❌ .claude/settings.json does not run hooks/$h: copy .claude/settings.json from the kit"; missing_now=1
+    echo "  ❌ .claude/settings.json does not run hooks/$h: add it (README, Hooks)"; missing_now=1
   fi
 done
 echo "== USB permissions"
@@ -81,4 +85,4 @@ if command -v adb >/dev/null && adb devices 2>/dev/null | grep -q "no permission
 else
   echo "  ✅ no adb permission problem detected"
 fi
-[ $missing_now = 0 ] && echo "host ready for M0-M3" || { echo "install the ❌ items, then run again"; exit 1; }
+[ $missing_now = 0 ] && echo "host ready to scout" || { echo "install the ❌ items, then run again"; exit 1; }
